@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
-import { userListingsAPI } from '../services/api';
+import { userListingsAPI, districtsAPI, type District, type IndianState } from '../services/api';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 
@@ -23,6 +23,7 @@ interface FormState {
   title: string;
   type: string;
   availability: string;
+  district: string;
   location: string;
   price: string;
   beds: string;
@@ -51,6 +52,7 @@ const AddPropertyPage: React.FC = () => {
     title: '',
     type: 'Flat',
     availability: 'For Sale',
+    district: '',
     location: '',
     price: '',
     beds: '',
@@ -67,6 +69,33 @@ const AddPropertyPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State narrows the district list; the chosen district's team reviews the listing
+  const [states, setStates] = useState<IndianState[] | null>(null);
+  const [selectedState, setSelectedState] = useState('');
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+
+  useEffect(() => {
+    districtsAPI.states()
+      .then((res) => setStates(res.data.states))
+      .catch(() => setStates([]));
+  }, []);
+
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, district: '' }));
+    if (!selectedState) {
+      setDistricts([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDistricts(true);
+    districtsAPI.list({ state: selectedState })
+      .then((res) => { if (!cancelled) setDistricts(res.data.districts); })
+      .catch(() => { if (!cancelled) setDistricts([]); })
+      .finally(() => { if (!cancelled) setLoadingDistricts(false); });
+    return () => { cancelled = true; };
+  }, [selectedState]);
 
   // ── Handlers ──────────────────────────────────────────────
 
@@ -134,8 +163,8 @@ const AddPropertyPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F4]">
-        <div className="w-12 h-12 border-4 border-[#D4755B] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF8FB]">
+        <div className="w-12 h-12 border-4 border-[#A3078F] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -144,7 +173,7 @@ const AddPropertyPage: React.FC = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#FAF8F4]">
+      <div className="min-h-screen bg-[#FAF8FB]">
         <Navbar />
         <div className="max-w-xl mx-auto px-4 py-24 text-center">
           <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -152,7 +181,7 @@ const AddPropertyPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="font-fraunces text-3xl font-bold text-[#221410] mb-3">Listing Submitted!</h2>
+          <h2 className="font-fraunces text-3xl font-bold text-[#1A0A1E] mb-3">Listing Submitted!</h2>
           <p className="font-manrope text-[#6B7280] mb-8">
             Your property listing is under review. Our team will approve it within 24–48 hours.
             You'll receive an email once it goes live.
@@ -160,13 +189,13 @@ const AddPropertyPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/my-listings"
-              className="bg-[#D4755B] text-white font-manrope font-semibold px-6 py-3 rounded-lg hover:bg-[#B86851] transition-[background-color]"
+              className="bg-[#A3078F] text-white font-manrope font-semibold px-6 py-3 rounded-lg hover:bg-[#8E0A82] transition-[background-color]"
             >
               View My Listings
             </Link>
             <Link
               to="/properties"
-              className="border border-[#D4755B] text-[#D4755B] font-manrope font-semibold px-6 py-3 rounded-lg hover:bg-[#D4755B] hover:text-white transition-[background-color,color]"
+              className="border border-[#A3078F] text-[#A3078F] font-manrope font-semibold px-6 py-3 rounded-lg hover:bg-[#A3078F] hover:text-white transition-[background-color,color]"
             >
               Browse Properties
             </Link>
@@ -180,13 +209,13 @@ const AddPropertyPage: React.FC = () => {
   // ── Main form ──────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
+    <div className="min-h-screen bg-[#FAF8FB]">
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="font-fraunces text-4xl font-bold text-[#221410] mb-2">
+          <h1 className="font-fraunces text-4xl font-bold text-[#1A0A1E] mb-2">
             List Your Property
           </h1>
           <p className="font-manrope text-[#6B7280]">
@@ -197,8 +226,8 @@ const AddPropertyPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-8">
 
           {/* ── Basic info ── */}
-          <section className="bg-white border border-[#E6E0DA] rounded-2xl p-6 space-y-5">
-            <h2 className="font-fraunces text-xl font-semibold text-[#221410]">Basic Information</h2>
+          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5">
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Basic Information</h2>
 
             <div>
               <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
@@ -210,7 +239,7 @@ const AddPropertyPage: React.FC = () => {
                 onChange={handleChange}
                 required
                 placeholder="e.g. Spacious 3 BHK Apartment in Bandra"
-                className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B]"
+                className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
               />
             </div>
 
@@ -224,7 +253,7 @@ const AddPropertyPage: React.FC = () => {
                   value={form.type}
                   onChange={handleChange}
                   required
-                  className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B] bg-white"
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] bg-white"
                 >
                   {PROPERTY_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -240,10 +269,57 @@ const AddPropertyPage: React.FC = () => {
                   value={form.availability}
                   onChange={handleChange}
                   required
-                  className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B] bg-white"
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] bg-white"
                 >
                   {AVAILABILITY_OPTIONS.map((a) => (
                     <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="state" className="block font-manrope text-sm font-medium text-[#374151] mb-1">
+                  State <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="state"
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  required
+                  disabled={states === null}
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] bg-white disabled:opacity-60"
+                >
+                  <option value="">{states === null ? 'Loading states…' : 'Choose state'}</option>
+                  {states?.map((s) => (
+                    <option key={s.name} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+                {states?.length === 0 && (
+                  <p className="font-manrope text-xs text-red-600 mt-1">
+                    No districts are open for listings yet. Please try again later.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="district" className="block font-manrope text-sm font-medium text-[#374151] mb-1">
+                  District <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="district"
+                  name="district"
+                  value={form.district}
+                  onChange={handleChange}
+                  required
+                  disabled={!selectedState || loadingDistricts}
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] bg-white disabled:opacity-60"
+                >
+                  <option value="">
+                    {!selectedState ? 'Choose a state first' : loadingDistricts ? 'Loading districts…' : 'Choose district'}
+                  </option>
+                  {districts.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
               </div>
@@ -259,14 +335,14 @@ const AddPropertyPage: React.FC = () => {
                 onChange={handleChange}
                 required
                 placeholder="e.g. 12, MG Road, Bandra West, Mumbai, Maharashtra"
-                className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B]"
+                className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
               />
             </div>
           </section>
 
           {/* ── Price & specs ── */}
-          <section className="bg-white border border-[#E6E0DA] rounded-2xl p-6 space-y-5">
-            <h2 className="font-fraunces text-xl font-semibold text-[#221410]">Price &amp; Details</h2>
+          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5">
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Price &amp; Details</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -281,7 +357,7 @@ const AddPropertyPage: React.FC = () => {
                   required
                   min="1"
                   placeholder="e.g. 8500000"
-                  className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B]"
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
                 />
               </div>
               <div>
@@ -296,7 +372,7 @@ const AddPropertyPage: React.FC = () => {
                   required
                   min="1"
                   placeholder="e.g. 1200"
-                  className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B]"
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
                 />
               </div>
               <div>
@@ -311,7 +387,7 @@ const AddPropertyPage: React.FC = () => {
                   required
                   min="0"
                   placeholder="e.g. 3"
-                  className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B]"
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
                 />
               </div>
               <div>
@@ -326,15 +402,15 @@ const AddPropertyPage: React.FC = () => {
                   required
                   min="0"
                   placeholder="e.g. 2"
-                  className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B]"
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
                 />
               </div>
             </div>
           </section>
 
           {/* ── Description & contact ── */}
-          <section className="bg-white border border-[#E6E0DA] rounded-2xl p-6 space-y-5">
-            <h2 className="font-fraunces text-xl font-semibold text-[#221410]">Description &amp; Contact</h2>
+          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5">
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Description &amp; Contact</h2>
 
             <div>
               <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
@@ -347,7 +423,7 @@ const AddPropertyPage: React.FC = () => {
                 required
                 rows={4}
                 placeholder="Describe the property — highlights, surroundings, unique features..."
-                className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B] resize-none"
+                className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] resize-none"
               />
             </div>
 
@@ -362,7 +438,7 @@ const AddPropertyPage: React.FC = () => {
                   onChange={handleChange}
                   required
                   placeholder="+91 98765 43210"
-                  className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B]"
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
                 />
               </div>
               <div>
@@ -374,15 +450,15 @@ const AddPropertyPage: React.FC = () => {
                   value={form.googleMapLink}
                   onChange={handleChange}
                   placeholder="https://maps.google.com/..."
-                  className="w-full border border-[#E6E0DA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#221410] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/40 focus:border-[#D4755B]"
+                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
                 />
               </div>
             </div>
           </section>
 
           {/* ── Amenities ── */}
-          <section className="bg-white border border-[#E6E0DA] rounded-2xl p-6">
-            <h2 className="font-fraunces text-xl font-semibold text-[#221410] mb-4">Amenities</h2>
+          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6">
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E] mb-4">Amenities</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {AMENITIES_LIST.map((amenity) => {
                 const checked = amenities.includes(amenity);
@@ -391,8 +467,8 @@ const AddPropertyPage: React.FC = () => {
                     key={amenity}
                     className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-[background-color,border-color] select-none ${
                       checked
-                        ? 'border-[#D4755B] bg-[#D4755B]/5 text-[#D4755B]'
-                        : 'border-[#E6E0DA] text-[#374151] hover:border-[#D4755B]/50'
+                        ? 'border-[#A3078F] bg-[#A3078F]/5 text-[#A3078F]'
+                        : 'border-[#E8E1EA] text-[#374151] hover:border-[#A3078F]/50'
                     }`}
                   >
                     <input
@@ -403,7 +479,7 @@ const AddPropertyPage: React.FC = () => {
                     />
                     <span
                       className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
-                        checked ? 'bg-[#D4755B] border-[#D4755B]' : 'border-[#D4CEC8]'
+                        checked ? 'bg-[#A3078F] border-[#A3078F]' : 'border-[#D6CFDA]'
                       }`}
                     >
                       {checked && (
@@ -420,8 +496,8 @@ const AddPropertyPage: React.FC = () => {
           </section>
 
           {/* ── Images ── */}
-          <section className="bg-white border border-[#E6E0DA] rounded-2xl p-6">
-            <h2 className="font-fraunces text-xl font-semibold text-[#221410] mb-1">
+          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6">
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E] mb-1">
               Images <span className="text-red-500">*</span>
             </h2>
             <p className="font-manrope text-sm text-[#6B7280] mb-4">
@@ -432,7 +508,7 @@ const AddPropertyPage: React.FC = () => {
             {previews.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 {previews.map((src, idx) => (
-                  <div key={idx} className="relative group rounded-lg overflow-hidden aspect-square border border-[#E6E0DA]">
+                  <div key={idx} className="relative group rounded-lg overflow-hidden aspect-square border border-[#E8E1EA]">
                     <img src={src} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
                     <button
                       type="button"
@@ -443,7 +519,7 @@ const AddPropertyPage: React.FC = () => {
                       ×
                     </button>
                     {idx === 0 && (
-                      <span className="absolute bottom-1 left-1 bg-[#D4755B] text-white font-manrope text-xs px-2 py-0.5 rounded">
+                      <span className="absolute bottom-1 left-1 bg-[#A3078F] text-white font-manrope text-xs px-2 py-0.5 rounded">
                         Cover
                       </span>
                     )}
@@ -457,7 +533,7 @@ const AddPropertyPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 border-2 border-dashed border-[#D4755B]/40 rounded-lg px-6 py-4 text-[#D4755B] font-manrope text-sm hover:border-[#D4755B] hover:bg-[#D4755B]/5 transition-[border-color,background-color]"
+                className="flex items-center gap-2 border-2 border-dashed border-[#A3078F]/40 rounded-lg px-6 py-4 text-[#A3078F] font-manrope text-sm hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-[border-color,background-color]"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -492,7 +568,7 @@ const AddPropertyPage: React.FC = () => {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[#D4755B] text-white font-manrope font-semibold text-base py-3.5 rounded-xl hover:bg-[#B86851] transition-[background-color] disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full bg-[#A3078F] text-white font-manrope font-semibold text-base py-3.5 rounded-xl hover:bg-[#8E0A82] transition-[background-color] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <span className="flex items-center justify-center gap-2">

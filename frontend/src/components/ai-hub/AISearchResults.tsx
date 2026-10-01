@@ -88,7 +88,7 @@ const PropertyCard: React.FC<{
   const srcKey     = property.source?.toLowerCase() ?? '';
   const sourceMeta = SOURCE_META[srcKey] ?? {
     label: property.source || 'Portal',
-    cls: 'bg-[#FAF8F4] text-[#9CA3AF] border-[#E6E0DA]',
+    cls: 'bg-[#FAF8FB] text-[#9CA3AF] border-[#E8E1EA]',
   };
   const verdictMeta   = insight?.value_verdict ? VERDICT_META[insight.value_verdict] : null;
   const isVerified    = property.builder_name
@@ -105,13 +105,13 @@ const PropertyCard: React.FC<{
         transition-[box-shadow,transform] duration-200 ease-out
         hover:-translate-y-0.5
         ${isComparing
-          ? 'shadow-[0_0_0_2px_#D4755B,0_8px_24px_-4px_rgba(212,117,91,0.2)]'
+          ? 'shadow-[0_0_0_2px_#A3078F,0_8px_24px_-4px_rgba(163,7,143,0.2)]'
           : 'shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_2px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_8px_24px_-4px_rgba(0,0,0,0.12)]'
         }
       `}
     >
       {/* Top gradient accent — stronger for #1 pick */}
-      <div className={`absolute top-0 inset-x-0 h-0.5 ${isBest ? 'bg-gradient-to-r from-[#D4755B] via-amber-400 to-[#D4755B]' : 'bg-gradient-to-r from-[#D4755B]/40 to-amber-400/40'}`} />
+      <div className={`absolute top-0 inset-x-0 h-0.5 ${isBest ? 'bg-gradient-to-r from-[#A3078F] via-amber-400 to-[#A3078F]' : 'bg-gradient-to-r from-[#A3078F]/40 to-amber-400/40'}`} />
 
       <div className="p-5 flex flex-col flex-1">
 
@@ -132,7 +132,7 @@ const PropertyCard: React.FC<{
         </div>
 
         {/* Building name */}
-        <h3 className="font-syne text-[18px] font-bold text-[#221410] mb-0.5 leading-tight line-clamp-2 [text-wrap:balance]">
+        <h3 className="font-syne text-[18px] font-bold text-[#1A0A1E] mb-0.5 leading-tight line-clamp-2 [text-wrap:balance]">
           {property.building_name || 'Premium Property'}
         </h3>
 
@@ -153,22 +153,22 @@ const PropertyCard: React.FC<{
 
         {/* Location */}
         <div className="flex items-center gap-1.5 mb-4">
-          <MapPin className="w-3 h-3 text-[#D4755B]/60 shrink-0" />
+          <MapPin className="w-3 h-3 text-[#A3078F]/60 shrink-0" />
           <span className="font-manrope text-[12px] text-[#6B7280] line-clamp-1">
             {property.location_address || 'Location not specified'}
           </span>
         </div>
 
         {/* Price box */}
-        <div className="flex items-center justify-between bg-[#FAF8F4] rounded-xl px-4 py-3 mb-3 shadow-[0_0_0_1px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between bg-[#FAF8FB] rounded-xl px-4 py-3 mb-3 shadow-[0_0_0_1px_rgba(0,0,0,0.05)]">
           <div>
             <p className="font-space-mono text-[9px] text-[#9CA3AF] font-bold tracking-widest uppercase mb-0.5">Price</p>
-            <p className="font-manrope font-extrabold text-[#D4755B] text-[20px] leading-none tabular-nums">
+            <p className="font-manrope font-extrabold text-[#A3078F] text-[20px] leading-none tabular-nums">
               {property.price || 'Contact for price'}
             </p>
           </div>
           {(property.price_per_sqft || property.area_sqft) && (
-            <div className="text-right border-l border-[#E6E0DA] pl-3">
+            <div className="text-right border-l border-[#E8E1EA] pl-3">
               {property.price_per_sqft && (
                 <p className="font-manrope text-[13px] font-semibold text-[#4B5563] tabular-nums">
                   {property.price_per_sqft}
@@ -219,7 +219,7 @@ const PropertyCard: React.FC<{
               </span>
             )}
             {!property.facing_direction && property.parking && property.parking.toLowerCase() !== 'none' && (
-              <span className="inline-flex items-center gap-1 font-manrope text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[#FAF8F4] border border-[#E6E0DA] text-[#4B5563]">
+              <span className="inline-flex items-center gap-1 font-manrope text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[#FAF8FB] border border-[#E8E1EA] text-[#4B5563]">
                 P {property.parking}
               </span>
             )}
@@ -228,11 +228,11 @@ const PropertyCard: React.FC<{
 
         {/* AI insight block — hero section */}
         {insight?.one_line_insight && (
-          <div className="relative bg-gradient-to-br from-[#FDF6F3] to-[#FAF4F0] border border-[#D4755B]/20 rounded-xl px-4 py-3 mb-3 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-[#FDF4FC] to-[#FBF3FA] border border-[#A3078F]/20 rounded-xl px-4 py-3 mb-3 overflow-hidden">
             <div className="absolute top-2 right-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#D4755B]/30" />
+              <Sparkles className="w-3.5 h-3.5 text-[#A3078F]/30" />
             </div>
-            <p className="font-space-mono text-[9px] text-[#D4755B]/60 font-bold uppercase tracking-widest mb-1.5">
+            <p className="font-space-mono text-[9px] text-[#A3078F]/60 font-bold uppercase tracking-widest mb-1.5">
               AI Insight
             </p>
             <p className="font-manrope text-[12px] text-[#4B5563] leading-relaxed pr-4 [text-wrap:pretty]">
@@ -240,9 +240,9 @@ const PropertyCard: React.FC<{
             </p>
             {hasMatchScore && (
               <div className="flex items-center gap-2 mt-2.5">
-                <div className="flex-1 h-1 bg-[#E6E0DA] rounded-full overflow-hidden">
+                <div className="flex-1 h-1 bg-[#E8E1EA] rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-[#D4755B] to-amber-400 rounded-full"
+                    className="h-full bg-gradient-to-r from-[#A3078F] to-amber-400 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${insight.match_score}%` }}
                     transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
@@ -299,19 +299,19 @@ const PropertyCard: React.FC<{
         <div className="flex-1" />
 
         {/* Action buttons */}
-        <div className="flex gap-2 mt-4 pt-4 border-t border-[#E6E0DA]/50">
+        <div className="flex gap-2 mt-4 pt-4 border-t border-[#E8E1EA]/50">
           {property.property_url ? (
             <a
               href={property.property_url}
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#D4755B] hover:bg-[#C05621] text-white font-manrope font-semibold text-sm py-2.5 rounded-xl transition-[background-color,box-shadow] duration-150 shadow-sm shadow-[#D4755B]/20 active:scale-[0.96]"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#A3078F] hover:bg-[#7A0A74] text-white font-manrope font-semibold text-sm py-2.5 rounded-xl transition-[background-color,box-shadow] duration-150 shadow-sm shadow-[#A3078F]/20 active:scale-[0.96]"
             >
               View Listing <ExternalLink className="w-3.5 h-3.5" />
             </a>
           ) : (
-            <span className="flex-1 inline-flex items-center justify-center bg-[#F3F0EC] text-[#9CA3AF] font-manrope font-semibold text-sm py-2.5 rounded-xl cursor-not-allowed">
+            <span className="flex-1 inline-flex items-center justify-center bg-[#F3F0F4] text-[#9CA3AF] font-manrope font-semibold text-sm py-2.5 rounded-xl cursor-not-allowed">
               No link
             </span>
           )}
@@ -321,10 +321,10 @@ const PropertyCard: React.FC<{
             disabled={!isComparing && !canCompare}
             className={`px-4 py-2.5 font-manrope font-semibold text-sm rounded-xl transition-[background-color,border-color,color] duration-150 border active:scale-[0.96] ${
               isComparing
-                ? 'bg-[#D4755B] border-[#D4755B] text-white hover:bg-[#C05621]'
+                ? 'bg-[#A3078F] border-[#A3078F] text-white hover:bg-[#7A0A74]'
                 : canCompare
-                  ? 'border-[#E6E0DA] text-[#6B7280] hover:border-[#D4755B]/50 hover:text-[#D4755B]'
-                  : 'border-[#E6E0DA]/50 text-[#C4C4C4] cursor-not-allowed opacity-50'
+                  ? 'border-[#E8E1EA] text-[#6B7280] hover:border-[#A3078F]/50 hover:text-[#A3078F]'
+                  : 'border-[#E8E1EA]/50 text-[#C4C4C4] cursor-not-allowed opacity-50'
             }`}
           >
             {isComparing ? '✓ Added' : '+ Compare'}
@@ -346,7 +346,7 @@ const ComparisonModal: React.FC<{
     const insight = insightMap.get((property.building_name || '').toLowerCase().trim());
     switch (key) {
       case 'price':
-        return <span className="font-bold text-[#D4755B] tabular-nums">{property.price || '—'}</span>;
+        return <span className="font-bold text-[#A3078F] tabular-nums">{property.price || '—'}</span>;
       case 'price_per_sqft':
         return <span className="tabular-nums">{property.price_per_sqft || '—'}</span>;
       case 'area_sqft':
@@ -412,17 +412,17 @@ const ComparisonModal: React.FC<{
         exit={{ y: 20, opacity: 0, filter: 'blur(4px)' }}
         transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E6E0DA] shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8E1EA] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#FAF8F4] border border-[#E6E0DA] rounded-full flex items-center justify-center">
-              <BarChart2 className="w-4 h-4 text-[#D4755B]" />
+            <div className="w-8 h-8 bg-[#FAF8FB] border border-[#E8E1EA] rounded-full flex items-center justify-center">
+              <BarChart2 className="w-4 h-4 text-[#A3078F]" />
             </div>
-            <h2 className="font-syne text-xl font-bold text-[#221410]">Compare Properties</h2>
+            <h2 className="font-syne text-xl font-bold text-[#1A0A1E]">Compare Properties</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#FAF8F4] text-[#9CA3AF] hover:text-[#221410] transition-[background-color,color] active:scale-[0.96]"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#FAF8FB] text-[#9CA3AF] hover:text-[#1A0A1E] transition-[background-color,color] active:scale-[0.96]"
           >
             <X className="w-4 h-4" />
           </button>
@@ -430,11 +430,11 @@ const ComparisonModal: React.FC<{
         <div className="overflow-auto flex-1">
           <table className="w-full border-collapse min-w-[480px]">
             <thead>
-              <tr className="border-b-2 border-[#E6E0DA]">
-                <th className="w-[140px] sm:w-[160px] bg-[#FAF8F4] px-4 py-4 sticky left-0 z-10 border-r border-[#E6E0DA]" />
+              <tr className="border-b-2 border-[#E8E1EA]">
+                <th className="w-[140px] sm:w-[160px] bg-[#FAF8FB] px-4 py-4 sticky left-0 z-10 border-r border-[#E8E1EA]" />
                 {items.map((p, i) => (
                   <th key={i} className="px-5 py-4 text-left min-w-[220px]">
-                    <p className="font-syne font-bold text-[#221410] text-[15px] leading-tight">{p.building_name || 'Property'}</p>
+                    <p className="font-syne font-bold text-[#1A0A1E] text-[15px] leading-tight">{p.building_name || 'Property'}</p>
                     <p className="font-manrope text-[12px] text-[#9CA3AF] mt-1 line-clamp-1">{p.location_address || ''}</p>
                   </th>
                 ))}
@@ -442,8 +442,8 @@ const ComparisonModal: React.FC<{
             </thead>
             <tbody>
               {COMPARE_ROWS.map(({ key, label }, ri) => (
-                <tr key={key} className={`border-b border-[#E6E0DA]/60 ${ri % 2 === 0 ? 'bg-white' : 'bg-[#FAF8F4]/40'}`}>
-                  <td className="sticky left-0 z-10 px-4 py-3.5 border-r border-[#E6E0DA] bg-inherit">
+                <tr key={key} className={`border-b border-[#E8E1EA]/60 ${ri % 2 === 0 ? 'bg-white' : 'bg-[#FAF8FB]/40'}`}>
+                  <td className="sticky left-0 z-10 px-4 py-3.5 border-r border-[#E8E1EA] bg-inherit">
                     <span className="font-space-mono text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider whitespace-nowrap">{label}</span>
                   </td>
                   {items.map((p, ci) => (
@@ -485,10 +485,10 @@ const AILoadingState: React.FC<{ city: string; sseStage?: 'searching' | 'analyzi
       <div className="flex justify-center mb-10">
         <div className="relative w-20 h-20">
           {/* Outer pulse rings */}
-          <div className="absolute inset-0 rounded-full bg-[#D4755B]/10 animate-ping" style={{ animationDuration: '1.8s' }} />
-          <div className="absolute inset-2 rounded-full bg-[#D4755B]/15 animate-ping" style={{ animationDuration: '2.4s', animationDelay: '0.4s' }} />
+          <div className="absolute inset-0 rounded-full bg-[#A3078F]/10 animate-ping" style={{ animationDuration: '1.8s' }} />
+          <div className="absolute inset-2 rounded-full bg-[#A3078F]/15 animate-ping" style={{ animationDuration: '2.4s', animationDelay: '0.4s' }} />
           {/* Core orb */}
-          <div className="absolute inset-4 rounded-full bg-gradient-to-br from-[#D4755B] to-amber-400 shadow-[0_0_24px_rgba(212,117,91,0.5)]" />
+          <div className="absolute inset-4 rounded-full bg-gradient-to-br from-[#A3078F] to-amber-400 shadow-[0_0_24px_rgba(163,7,143,0.5)]" />
           {/* Inner shimmer */}
           <div className="absolute inset-4 rounded-full bg-gradient-to-tr from-white/30 to-transparent" />
           {/* Icon */}
@@ -507,12 +507,12 @@ const AILoadingState: React.FC<{ city: string; sseStage?: 'searching' | 'analyzi
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: -6, filter: 'blur(4px)' }}
             transition={{ duration: 0.25 }}
-            className="font-space-mono text-[10px] text-[#D4755B] font-bold uppercase tracking-widest mb-2"
+            className="font-space-mono text-[10px] text-[#A3078F] font-bold uppercase tracking-widest mb-2"
           >
             {stage === 'analyzing' ? 'AI Analysis' : 'Live Search'}
           </motion.p>
         </AnimatePresence>
-        <h2 className="font-syne text-2xl font-bold text-[#221410] mb-1 [text-wrap:balance]">
+        <h2 className="font-syne text-2xl font-bold text-[#1A0A1E] mb-1 [text-wrap:balance]">
           {stage === 'analyzing' ? 'AI is reviewing listings' : `Searching in ${city}`}
         </h2>
         <p className="font-manrope text-sm text-[#6B7280]">This takes about 25–35 seconds. Stay on this page.</p>
@@ -521,7 +521,7 @@ const AILoadingState: React.FC<{ city: string; sseStage?: 'searching' | 'analyzi
       {/* Streaming status messages */}
       <div className="max-w-sm mx-auto bg-white rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_4px_12px_-2px_rgba(0,0,0,0.08)] overflow-hidden">
         {/* Terminal header */}
-        <div className="flex items-center gap-1.5 px-4 py-3 border-b border-[#E6E0DA] bg-[#FAF8F4]">
+        <div className="flex items-center gap-1.5 px-4 py-3 border-b border-[#E8E1EA] bg-[#FAF8FB]">
           <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
           <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
@@ -542,7 +542,7 @@ const AILoadingState: React.FC<{ city: string; sseStage?: 'searching' | 'analyzi
           )}
           {/* Active line */}
           <div className="flex items-start gap-2.5">
-            <span className="font-space-mono text-[10px] text-[#D4755B] mt-0.5 shrink-0">›</span>
+            <span className="font-space-mono text-[10px] text-[#A3078F] mt-0.5 shrink-0">›</span>
             <AnimatePresence mode="wait">
               <motion.span
                 key={displayMsg}
@@ -550,7 +550,7 @@ const AILoadingState: React.FC<{ city: string; sseStage?: 'searching' | 'analyzi
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -4 }}
                 transition={{ duration: 0.2 }}
-                className="font-space-mono text-[11px] text-[#221410]"
+                className="font-space-mono text-[11px] text-[#1A0A1E]"
               >
                 {displayMsg}
               </motion.span>
@@ -558,7 +558,7 @@ const AILoadingState: React.FC<{ city: string; sseStage?: 'searching' | 'analyzi
           </div>
           {/* Blinking cursor */}
           <div className="flex items-center gap-2.5 pl-5">
-            <span className="font-space-mono text-[11px] text-[#D4755B] animate-pulse">▋</span>
+            <span className="font-space-mono text-[11px] text-[#A3078F] animate-pulse">▋</span>
           </div>
         </div>
       </div>
@@ -568,20 +568,20 @@ const AILoadingState: React.FC<{ city: string; sseStage?: 'searching' | 'analyzi
         {[1, 2, 3, 4].map(i => (
           <div key={i} className="bg-white rounded-2xl p-5 shadow-[0_0_0_1px_rgba(0,0,0,0.06)] animate-pulse">
             <div className="flex justify-between mb-3">
-              <div className="h-5 w-16 bg-[#E6E0DA] rounded-full" />
-              <div className="h-5 w-20 bg-[#E6E0DA]/60 rounded-full" />
+              <div className="h-5 w-16 bg-[#E8E1EA] rounded-full" />
+              <div className="h-5 w-20 bg-[#E8E1EA]/60 rounded-full" />
             </div>
-            <div className="h-5 bg-[#E6E0DA] rounded-lg w-3/4 mb-1.5" />
-            <div className="h-3.5 bg-[#E6E0DA]/60 rounded w-1/2 mb-4" />
-            <div className="h-14 bg-[#FAF8F4] rounded-xl mb-3" />
+            <div className="h-5 bg-[#E8E1EA] rounded-lg w-3/4 mb-1.5" />
+            <div className="h-3.5 bg-[#E8E1EA]/60 rounded w-1/2 mb-4" />
+            <div className="h-14 bg-[#FAF8FB] rounded-xl mb-3" />
             <div className="flex gap-1.5 mb-4">
-              <div className="h-6 bg-[#E6E0DA]/40 rounded-lg w-14" />
-              <div className="h-6 bg-[#E6E0DA]/40 rounded-lg w-20" />
+              <div className="h-6 bg-[#E8E1EA]/40 rounded-lg w-14" />
+              <div className="h-6 bg-[#E8E1EA]/40 rounded-lg w-20" />
             </div>
-            <div className="h-12 bg-[#FDF6F3] rounded-xl mb-3" />
-            <div className="flex gap-2 pt-3 border-t border-[#E6E0DA]/30">
-              <div className="flex-1 h-9 bg-[#D4755B]/15 rounded-xl" />
-              <div className="h-9 w-20 bg-[#E6E0DA]/40 rounded-xl" />
+            <div className="h-12 bg-[#FDF4FC] rounded-xl mb-3" />
+            <div className="flex gap-2 pt-3 border-t border-[#E8E1EA]/30">
+              <div className="flex-1 h-9 bg-[#A3078F]/15 rounded-xl" />
+              <div className="h-9 w-20 bg-[#E8E1EA]/40 rounded-xl" />
             </div>
           </div>
         ))}
@@ -622,7 +622,7 @@ const AISearchResults: React.FC<Props> = ({ properties, loading, sseStage, statu
         <div className="w-16 h-16 bg-red-50 border border-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <SearchX className="w-8 h-8 text-red-400" />
         </div>
-        <h3 className="font-syne text-2xl text-[#221410] mb-2">Search Failed</h3>
+        <h3 className="font-syne text-2xl text-[#1A0A1E] mb-2">Search Failed</h3>
         <p className="font-manrope font-light text-[#6b7280] [text-wrap:pretty]">{error}</p>
       </div>
     );
@@ -631,10 +631,10 @@ const AISearchResults: React.FC<Props> = ({ properties, loading, sseStage, statu
   if (properties.length === 0) {
     return (
       <div className="py-10 text-center">
-        <div className="w-16 h-16 bg-[#D4755B]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Home className="w-8 h-8 text-[#D4755B]" />
+        <div className="w-16 h-16 bg-[#A3078F]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Home className="w-8 h-8 text-[#A3078F]" />
         </div>
-        <h3 className="font-syne text-2xl text-[#221410] mb-2">No Properties Found</h3>
+        <h3 className="font-syne text-2xl text-[#1A0A1E] mb-2">No Properties Found</h3>
         <p className="font-manrope font-light text-[#6b7280]">
           No properties found in {city} within your budget. Try increasing your budget or changing the property type.
         </p>
@@ -652,18 +652,18 @@ const AISearchResults: React.FC<Props> = ({ properties, loading, sseStage, statu
         {/* Header */}
         <div className="mb-7 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <div className="font-space-mono text-[10px] text-[#D4755B] font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+            <div className="font-space-mono text-[10px] text-[#A3078F] font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
               <TrendingUp className="w-3 h-3" />
               Live AI Results
             </div>
-            <h2 className="font-syne text-3xl font-bold text-[#221410] mb-1.5 [text-wrap:balance]">
+            <h2 className="font-syne text-3xl font-bold text-[#1A0A1E] mb-1.5 [text-wrap:balance]">
               Properties in {city}
             </h2>
             <p className="font-manrope text-sm text-[#6B7280]">
-              <span className="tabular-nums font-semibold text-[#221410]">{properties.length}</span>{' '}
+              <span className="tabular-nums font-semibold text-[#1A0A1E]">{properties.length}</span>{' '}
               {properties.length === 1 ? 'match' : 'matches'} found
               {aiMatchCount > 0 && (
-                <> · <span className="tabular-nums font-semibold text-[#D4755B]">{aiMatchCount}</span> with AI insights</>
+                <> · <span className="tabular-nums font-semibold text-[#A3078F]">{aiMatchCount}</span> with AI insights</>
               )}
             </p>
           </div>
@@ -712,18 +712,18 @@ const AISearchResults: React.FC<Props> = ({ properties, loading, sseStage, statu
             exit={{ y: '100%' }}
             transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
           >
-            <div className="bg-white border-t border-[#E6E0DA] shadow-[0_-8px_32px_-8px_rgba(0,0,0,0.12)]">
+            <div className="bg-white border-t border-[#E8E1EA] shadow-[0_-8px_32px_-8px_rgba(0,0,0,0.12)]">
               <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center gap-4">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   {compareList.map((p, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-[#FAF8F4] border border-[#E6E0DA] rounded-xl px-3 py-1.5 min-w-0 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
-                      <span className="font-manrope text-[13px] font-semibold text-[#221410] truncate max-w-[140px]">
+                    <div key={i} className="flex items-center gap-2 bg-[#FAF8FB] border border-[#E8E1EA] rounded-xl px-3 py-1.5 min-w-0 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+                      <span className="font-manrope text-[13px] font-semibold text-[#1A0A1E] truncate max-w-[140px]">
                         {p.building_name || 'Property'}
                       </span>
                       <button
                         type="button"
                         onClick={() => toggleCompare(p)}
-                        className="shrink-0 text-[#9CA3AF] hover:text-[#D4755B] transition-[color] active:scale-[0.96]"
+                        className="shrink-0 text-[#9CA3AF] hover:text-[#A3078F] transition-[color] active:scale-[0.96]"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -737,7 +737,7 @@ const AISearchResults: React.FC<Props> = ({ properties, loading, sseStage, statu
                   <button
                     type="button"
                     onClick={() => setShowModal(true)}
-                    className="inline-flex items-center gap-2 bg-[#D4755B] hover:bg-[#C05621] text-white font-manrope font-semibold text-sm px-5 py-2.5 rounded-xl transition-[background-color] duration-150 shadow-sm shadow-[#D4755B]/25 active:scale-[0.96]"
+                    className="inline-flex items-center gap-2 bg-[#A3078F] hover:bg-[#7A0A74] text-white font-manrope font-semibold text-sm px-5 py-2.5 rounded-xl transition-[background-color] duration-150 shadow-sm shadow-[#A3078F]/25 active:scale-[0.96]"
                   >
                     <BarChart2 className="w-4 h-4" />
                     Compare Now

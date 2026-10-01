@@ -18,6 +18,13 @@ import appointmentRouter from './routes/appointmentRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 import propertyRoutes from './routes/propertyRoutes.js';
 import healthRouter from './routes/healthRoutes.js';
+import appRouter from './routes/appRoutes.js';
+import blogRouter from './routes/blogRoutes.js';
+import careerRouter from './routes/careerRoutes.js';
+import districtRouter from './routes/districtRoutes.js';
+import swaggerUi from 'swagger-ui-express';
+import openapiSpec from './docs/openapi.js';
+import { LOCAL_MEDIA_DIR, LOCAL_MEDIA_ROUTE } from './services/mediaStorageService.js';
 import getStatusPage from './serverweb.js';
 import { startExpireListingsJob } from './utils/expireListings.js';
 import { startAutoUnsuspendJob } from './utils/autoUnsuspend.js';
@@ -142,7 +149,7 @@ app.use(cors({
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Github-Key', 'X-Firecrawl-Key', 'X-Nvidia-Key']
 }));
 
@@ -189,7 +196,30 @@ app.use('/api/forms', formrouter);
 app.use('/api/news', newsrouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/blog', blogRouter);
+app.use('/api/careers', careerRouter);
+app.use('/api/districts', districtRouter);
 app.use('/api', propertyRoutes);
+
+// Mobile app API + Swagger docs. Docs are on by default outside production;
+// set SWAGGER_ENABLED=true/false to override.
+app.use('/api/v1/app', appRouter);
+const swaggerEnabled = process.env.SWAGGER_ENABLED
+  ? process.env.SWAGGER_ENABLED === 'true'
+  : process.env.NODE_ENV !== 'production';
+if (swaggerEnabled) {
+  app.get('/api-docs.json', (req, res) => res.json(openapiSpec));
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, {
+    customSiteTitle: 'Bhumi Bazar API',
+    swaggerOptions: { persistAuthorization: true },
+  }));
+}
+
+// Listing media stored on local disk when ImageKit isn't configured
+app.use(LOCAL_MEDIA_ROUTE, express.static(LOCAL_MEDIA_DIR, {
+  maxAge: '7d',
+  setHeaders: (res) => res.set('Cross-Origin-Resource-Policy', 'cross-origin'),
+}));
 
 
 app.use((err, req, res, next) => {

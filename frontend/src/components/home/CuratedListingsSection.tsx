@@ -14,11 +14,11 @@ const CuratedListingsSection: React.FC = () => {
     ];
 
   return (
-    <section className="bg-[#F9F7F2] py-24 relative overflow-hidden">
+    <section className="bg-[#F9F7FA] py-24 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-30 pointer-events-none">
         <svg className="w-5 h-5" fill="none" viewBox="0 0 20 20">
-          <path d="M0 0h20v20H0z" fill="#D4755B" opacity="0.05" />
+          <path d="M0 0h20v20H0z" fill="#A3078F" opacity="0.05" />
         </svg>
       </div>
 
@@ -26,11 +26,11 @@ const CuratedListingsSection: React.FC = () => {
         {/* Section Header */}
         <div className="flex justify-between items-center mb-16">
           <div>
-            <div className="font-space-mono text-sm text-[#D4755B] uppercase tracking-widest mb-4">Exclusive Selection</div>
+            <div className="font-space-mono text-sm text-[#A3078F] uppercase tracking-widest mb-4">Exclusive Selection</div>
             <h2 className="font-fraunces text-5xl text-[#111827]">Curated Listings</h2>
           </div>
 
-          <Link to="/properties" className="flex items-center gap-2 font-manrope font-bold text-[#D4755B] hover:gap-4 transition-all">
+          <Link to="/properties" className="flex items-center gap-2 font-manrope font-bold text-[#A3078F] hover:gap-4 transition-all">
             View All Properties
             <span className="font-material-icons text-sm" aria-hidden="true">arrow_forward</span>
           </Link>
@@ -51,7 +51,7 @@ const CuratedListingsSection: React.FC = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-8">
-                <div className="bg-[#D4755B] inline-block px-3 py-1 rounded text-white font-manrope font-bold text-xs mb-4">
+                <div className="bg-[#A3078F] inline-block px-3 py-1 rounded text-white font-manrope font-bold text-xs mb-4">
                   FEATURED
                 </div>
                 <h3 className="font-fraunces text-3xl text-white mb-2">The Glass Pavilion</h3>

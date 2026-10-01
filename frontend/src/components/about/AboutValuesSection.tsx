@@ -21,14 +21,14 @@ const AboutValuesSection: React.FC = () => {
   ];
 
   return (
-    <section className="bg-[#F8F6F6] py-24">
+    <section className="bg-[#F8F6F9] py-24">
       <div className="max-w-[1280px] mx-auto px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <div className="font-space-mono text-xs text-[#D4755B] uppercase tracking-[1.2px] mb-4">
+          <div className="font-space-mono text-xs text-[#A3078F] uppercase tracking-[1.2px] mb-4">
             Our Ethos
           </div>
-          <h2 className="font-syne text-4xl text-[#221410]">
+          <h2 className="font-syne text-4xl text-[#1A0A1E]">
             Driven by Purpose
           </h2>
         </div>
@@ -38,15 +38,15 @@ const AboutValuesSection: React.FC = () => {
           {values.map((value, index) => (
             <div 
               key={index}
-              className="bg-white border border-[#E6E0DA] rounded-xl p-8 text-center hover:shadow-lg transition-shadow"
+              className="bg-white border border-[#E8E1EA] rounded-xl p-8 text-center hover:shadow-lg transition-shadow"
             >
               {/* Icon Circle */}
-              <div className="w-16 h-16 bg-[rgba(236,70,19,0.1)] rounded-full flex items-center justify-center mx-auto mb-6">
-                <value.icon className="w-8 h-8 text-[#D4755B]" strokeWidth={1.5} />
+              <div className="w-16 h-16 bg-[rgba(203,2,185,0.1)] rounded-full flex items-center justify-center mx-auto mb-6">
+                <value.icon className="w-8 h-8 text-[#A3078F]" strokeWidth={1.5} />
               </div>
 
               {/* Title */}
-              <h3 className="font-syne text-xl text-[#221410] mb-4">
+              <h3 className="font-syne text-xl text-[#1A0A1E] mb-4">
                 {value.title}
               </h3>
 

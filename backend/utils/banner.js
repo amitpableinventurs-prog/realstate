@@ -15,8 +15,8 @@ function pad(str, total) {
 export function printBanner({ port, env, db, imagekit, nvidia }) {
   if (process.env.NODE_ENV === 'production') return;
 
-  const title = `${B}${C}BuildEstate API${R}  ${D}v1.0.0${R}`;
-  const titleVisible = `BuildEstate API  v1.0.0`;
+  const title = `${B}${C}Bhumi Bazar API${R}  ${D}v1.0.0${R}`;
+  const titleVisible = `Bhumi Bazar API  v1.0.0`;
   const titlePad = Math.floor((WIDTH - titleVisible.length) / 2);
   const titleLine = ' '.repeat(titlePad) + title;
 

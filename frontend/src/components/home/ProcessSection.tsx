@@ -2,16 +2,16 @@ import React from 'react';
 
 const ProcessSection: React.FC = () => {
   return (
-    <section className="bg-[#F0EBE5] py-24">
+    <section className="bg-[#F0EBF2] py-24">
       <div className="max-w-[1280px] mx-auto px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           {/* Left - Sticky Content */}
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-24">
-              <div className="font-space-mono text-sm text-[#D4755B] uppercase tracking-widest mb-6">Process</div>
+              <div className="font-space-mono text-sm text-[#A3078F] uppercase tracking-widest mb-6">Process</div>
               <h2 className="font-fraunces text-5xl text-[#111827] mb-6 leading-tight">
                 The Path to Your<br />
-                <span className="italic text-[#D4755B]">New Beginning</span>
+                <span className="italic text-[#A3078F]">New Beginning</span>
               </h2>
               <p className="font-manrope font-light text-lg text-[#4b5563] mb-8 leading-relaxed">
                 We've simplified the complex journey of buying a home into four seamless, AI-

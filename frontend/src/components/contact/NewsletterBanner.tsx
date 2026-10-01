@@ -24,7 +24,7 @@ const NewsletterBanner: React.FC = () => {
   };
 
   return (
-    <section className="bg-[#C05621] py-16">
+    <section className="bg-[#7A0A74] py-16">
       <div className="max-w-[1280px] mx-auto px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Left - Text Content */}
@@ -58,7 +58,7 @@ const NewsletterBanner: React.FC = () => {
                 <button
                   type="submit"
                   disabled={state === 'loading'}
-                  className="bg-white hover:bg-[#F2EFE9] disabled:opacity-60 disabled:cursor-not-allowed text-[#C05621] font-manrope font-bold text-base px-8 py-3.5 rounded-xl transition-[background-color] shadow-lg hover:shadow-xl whitespace-nowrap"
+                  className="bg-white hover:bg-[#F2EFF3] disabled:opacity-60 disabled:cursor-not-allowed text-[#7A0A74] font-manrope font-bold text-base px-8 py-3.5 rounded-xl transition-[background-color] shadow-lg hover:shadow-xl whitespace-nowrap"
                 >
                   {state === 'loading' ? 'Subscribing...' : 'Subscribe'}
                 </button>

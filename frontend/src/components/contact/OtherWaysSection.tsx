@@ -38,11 +38,11 @@ const OtherWaysSection: React.FC = () => {
   ];
 
   return (
-    <section className="bg-[#F2EFE9] py-24">
+    <section className="bg-[#F2EFF3] py-24">
       <div className="max-w-[1280px] mx-auto px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="font-syne font-bold text-4xl text-[#221410] mb-4">
+          <h2 className="font-syne font-bold text-4xl text-[#1A0A1E] mb-4">
             Other Ways to Connect
           </h2>
           <p className="font-manrope text-lg text-[#4B5563] leading-relaxed max-w-[640px] mx-auto">
@@ -55,17 +55,17 @@ const OtherWaysSection: React.FC = () => {
           {methods.map((method, index) => (
             <div 
               key={index}
-              className="bg-white border border-[#E6E0DA] rounded-2xl p-8 hover:shadow-xl transition-all group"
+              className="bg-white border border-[#E8E1EA] rounded-2xl p-8 hover:shadow-xl transition-all group"
             >
               {/* Icon */}
               <div className={`w-16 h-16 ${method.bgColor} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                <span className="material-icons text-3xl text-[#D4755B]">
+                <span className="material-icons text-3xl text-[#A3078F]">
                   {method.icon}
                 </span>
               </div>
 
               {/* Title */}
-              <h3 className="font-syne font-bold text-xl text-[#221410] mb-3">
+              <h3 className="font-syne font-bold text-xl text-[#1A0A1E] mb-3">
                 {method.title}
               </h3>
 
@@ -79,7 +79,7 @@ const OtherWaysSection: React.FC = () => {
                 href={method.actionLink}
                 target={method.actionLink.startsWith('http') ? '_blank' : '_self'}
                 rel={method.actionLink.startsWith('http') ? 'noopener noreferrer' : ''}
-                className="inline-flex items-center gap-2 font-manrope font-bold text-sm text-[#D4755B] hover:text-[#C05621] transition-[color] group"
+                className="inline-flex items-center gap-2 font-manrope font-bold text-sm text-[#A3078F] hover:text-[#7A0A74] transition-[color] group"
               >
                 <span>{method.action}</span>
                 <span className="material-icons text-sm group-hover:translate-x-1 transition-transform">

@@ -203,7 +203,7 @@ const ActivityLogs = () => {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#1C1B1A]">Activity Logs</h1>
+            <h1 className="text-2xl font-bold text-[#17131A]">Activity Logs</h1>
             <p className="text-gray-600 mt-1">
               Comprehensive audit trail of all administrative actions
             </p>
@@ -214,7 +214,7 @@ const ActivityLogs = () => {
               onClick={() => setShowFilters(!showFilters)}
               className={`px-4 py-2 rounded-lg border transition-colors duration-200 ${
                 showFilters
-                  ? 'bg-[#D4755B] text-white border-[#D4755B]'
+                  ? 'bg-[#A3078F] text-white border-[#A3078F]'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -225,7 +225,7 @@ const ActivityLogs = () => {
             <button
               onClick={handleExport}
               disabled={exporting || logs.length === 0}
-              className="px-4 py-2 bg-[#D4755B] text-white rounded-lg hover:bg-[#C06549]
+              className="px-4 py-2 bg-[#A3078F] text-white rounded-lg hover:bg-[#7A0A74]
                        disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
             >
               <ArrowDownTrayIcon className="w-4 h-4 inline mr-2" />
@@ -243,7 +243,7 @@ const ActivityLogs = () => {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="mb-6 bg-white rounded-lg border border-[#E6D5C3] p-4"
+            className="mb-6 bg-white rounded-lg border border-[#E6D6E8] p-4"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Action Filter */}
@@ -255,7 +255,7 @@ const ActivityLogs = () => {
                   value={filters.action}
                   onChange={(e) => handleFilterChange('action', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2
-                           focus:ring-[#D4755B] focus:border-transparent"
+                           focus:ring-[#A3078F] focus:border-transparent"
                 >
                   {actionOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -274,7 +274,7 @@ const ActivityLogs = () => {
                   value={filters.targetType}
                   onChange={(e) => handleFilterChange('targetType', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2
-                           focus:ring-[#D4755B] focus:border-transparent"
+                           focus:ring-[#A3078F] focus:border-transparent"
                 >
                   {targetTypeOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -295,7 +295,7 @@ const ActivityLogs = () => {
                   onChange={(e) => handleFilterChange('adminEmail', e.target.value)}
                   placeholder="admin@buildestate.com"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2
-                           focus:ring-[#D4755B] focus:border-transparent"
+                           focus:ring-[#A3078F] focus:border-transparent"
                 />
               </div>
 
@@ -309,7 +309,7 @@ const ActivityLogs = () => {
                   value={filters.startDate}
                   onChange={(e) => handleFilterChange('startDate', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2
-                           focus:ring-[#D4755B] focus:border-transparent"
+                           focus:ring-[#A3078F] focus:border-transparent"
                 />
               </div>
 
@@ -323,7 +323,7 @@ const ActivityLogs = () => {
                   value={filters.endDate}
                   onChange={(e) => handleFilterChange('endDate', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2
-                           focus:ring-[#D4755B] focus:border-transparent"
+                           focus:ring-[#A3078F] focus:border-transparent"
                 />
               </div>
 
@@ -344,28 +344,28 @@ const ActivityLogs = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="bg-white rounded-lg border border-[#E6D5C3] p-6">
+        <div className="bg-white rounded-lg border border-[#E6D6E8] p-6">
           <div className="animate-pulse space-y-4">
             {[...Array(10)].map((_, i) => (
               <div key={i} className="flex items-center space-x-4">
-                <div className="h-4 bg-[#E6D5C3] rounded w-24"></div>
-                <div className="h-4 bg-[#E6D5C3] rounded w-32"></div>
-                <div className="h-4 bg-[#E6D5C3] rounded w-20"></div>
-                <div className="h-4 bg-[#E6D5C3] rounded w-40"></div>
-                <div className="h-4 bg-[#E6D5C3] rounded w-16"></div>
+                <div className="h-4 bg-[#E6D6E8] rounded w-24"></div>
+                <div className="h-4 bg-[#E6D6E8] rounded w-32"></div>
+                <div className="h-4 bg-[#E6D6E8] rounded w-20"></div>
+                <div className="h-4 bg-[#E6D6E8] rounded w-40"></div>
+                <div className="h-4 bg-[#E6D6E8] rounded w-16"></div>
               </div>
             ))}
           </div>
         </div>
       ) : error ? (
-        <div className="bg-white rounded-lg border border-[#E6D5C3] p-6">
+        <div className="bg-white rounded-lg border border-[#E6D6E8] p-6">
           <div className="text-center">
             <ExclamationTriangleIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Logs</h3>
             <p className="text-gray-600 mb-4">{error}</p>
             <button
               onClick={() => fetchLogs()}
-              className="px-4 py-2 bg-[#D4755B] text-white rounded-lg hover:bg-[#C06549]
+              className="px-4 py-2 bg-[#A3078F] text-white rounded-lg hover:bg-[#7A0A74]
                        transition-colors duration-200"
             >
               Try Again
@@ -373,7 +373,7 @@ const ActivityLogs = () => {
           </div>
         </div>
       ) : logs.length === 0 ? (
-        <div className="bg-white rounded-lg border border-[#E6D5C3] p-6">
+        <div className="bg-white rounded-lg border border-[#E6D6E8] p-6">
           <div className="text-center">
             <MagnifyingGlassIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Logs Found</h3>
@@ -386,7 +386,7 @@ const ActivityLogs = () => {
             {Object.values(filters).some(v => v && v !== 1 && v !== 20) && (
               <button
                 onClick={clearFilters}
-                className="px-4 py-2 bg-[#D4755B] text-white rounded-lg hover:bg-[#C06549]
+                className="px-4 py-2 bg-[#A3078F] text-white rounded-lg hover:bg-[#7A0A74]
                          transition-colors duration-200"
               >
                 Clear Filters
@@ -395,11 +395,11 @@ const ActivityLogs = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-[#E6D5C3] overflow-hidden">
+        <div className="bg-white rounded-lg border border-[#E6D6E8] overflow-hidden">
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[#FAF8F4] border-b border-[#E6D5C3]">
+              <thead className="bg-[#FAF8FB] border-b border-[#E6D6E8]">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Timestamp
@@ -421,9 +421,9 @@ const ActivityLogs = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E6D5C3]">
+              <tbody className="divide-y divide-[#E6D6E8]">
                 {logs.map((log) => (
-                  <tr key={log._id} className="hover:bg-[#FAF8F4] transition-colors duration-150">
+                  <tr key={log._id} className="hover:bg-[#FAF8FB] transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(log.createdAt)}
                     </td>
@@ -462,7 +462,7 @@ const ActivityLogs = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="text-[#D4755B] hover:text-[#C06549] font-medium"
+                        className="text-[#A3078F] hover:text-[#7A0A74] font-medium"
                       >
                         <EyeIcon className="w-4 h-4 inline mr-1" />
                         View Details
@@ -476,7 +476,7 @@ const ActivityLogs = () => {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="bg-[#FAF8F4] px-6 py-3 border-t border-[#E6D5C3] flex items-center justify-between">
+            <div className="bg-[#FAF8FB] px-6 py-3 border-t border-[#E6D6E8] flex items-center justify-between">
               <div className="text-sm text-gray-700">
                 Showing {((pagination.currentPage - 1) * pagination.limit) + 1} to{' '}
                 {Math.min(pagination.currentPage * pagination.limit, pagination.total)} of{' '}

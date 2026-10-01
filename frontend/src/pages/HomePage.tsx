@@ -15,12 +15,12 @@ import CTASection from '../components/home/CTASection';
 const HomePage: React.FC = () => {
   useSEO({
     title: 'Find Flats, Villas & Apartments in India with AI',
-    description: 'BuildEstate helps you find flats, villas, and apartments in Mumbai, Delhi, Bangalore, Ahmedabad, and Pune using AI-powered search and live market analysis.',
+    description: 'Bhumi Bazar helps you find flats, villas, and apartments in Mumbai, Delhi, Bangalore, Ahmedabad, and Pune using AI-powered search and live market analysis.',
     url: 'https://buildestate.vercel.app',
   });
 
   return (
-    <div className="bg-[#F8F6F6] min-h-screen">
+    <div className="bg-[#F8F6F9] min-h-screen">
       <StructuredData
         type="speakable"
         data={{ cssSelector: ['h1', '[data-speakable]'] }}
@@ -28,7 +28,7 @@ const HomePage: React.FC = () => {
       <StructuredData
         type="howTo"
         data={{
-          howToName: 'How to Buy Property with BuildEstate',
+          howToName: 'How to Buy Property with Bhumi Bazar',
           howToDescription: 'AI-assisted steps to find and purchase your perfect home in India.',
           steps: [
             { name: 'Profile Analysis', text: 'Our AI deep-dives into your preferences, lifestyle needs, and financial goals to build a comprehensive buyer profile.' },

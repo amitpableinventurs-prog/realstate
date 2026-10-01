@@ -57,8 +57,8 @@ const Dropdown: React.FC<{
         onClick={() => setOpen(o => !o)}
         className={`flex items-center gap-1.5 h-10 px-4 rounded-xl border font-manrope text-sm font-medium transition-colors duration-200 active:scale-[0.96] ${
           active
-            ? 'bg-[#221410] border-[#221410] text-white'
-            : 'bg-white border-[#E6E0DA] text-[#374151] hover:border-[#D4755B]'
+            ? 'bg-[#1A0A1E] border-[#1A0A1E] text-white'
+            : 'bg-white border-[#E8E1EA] text-[#374151] hover:border-[#A3078F]'
         }`}
       >
         {label}
@@ -72,7 +72,7 @@ const Dropdown: React.FC<{
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.98 }}
             transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
-            className="absolute top-full left-0 mt-2 z-30 bg-white border border-[#E6E0DA] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.10)] min-w-[220px]"
+            className="absolute top-full left-0 mt-2 z-30 bg-white border border-[#E8E1EA] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.10)] min-w-[220px]"
           >
             {children}
           </motion.div>
@@ -141,7 +141,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
     setSelectedAmenities(p => p.includes(a) ? p.filter(x => x !== a) : [...p, a]);
 
   return (
-    <div className="bg-white border-b border-[#E6E0DA] sticky top-[72px] z-20">
+    <div className="bg-white border-b border-[#E8E1EA] sticky top-[72px] z-20">
       <div className="max-w-[1440px] mx-auto px-6 py-3">
 
         {/* ── Top row: search + filters + sort + view ── */}
@@ -155,7 +155,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="City or neighbourhood…"
-              className="w-full h-10 bg-[#F5F1E8] border border-[#E6E0DA] rounded-xl pl-9 pr-3 font-manrope text-sm text-[#221410] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#D4755B] transition-[border-color]"
+              className="w-full h-10 bg-[#F5F0F6] border border-[#E8E1EA] rounded-xl pl-9 pr-3 font-manrope text-sm text-[#1A0A1E] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#A3078F] transition-[border-color]"
             />
             {location && (
               <button onClick={() => setLocation('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -165,15 +165,15 @@ const FilterBar: React.FC<FilterBarProps> = ({
           </div>
 
           {/* Buy / Rent toggle */}
-          <div className="flex items-center gap-1 h-10 bg-[#F5F1E8] rounded-xl p-1">
+          <div className="flex items-center gap-1 h-10 bg-[#F5F0F6] rounded-xl p-1">
             {['buy', 'rent'].map(a => (
               <button
                 key={a}
                 onClick={() => setAvailability(av => av === a ? '' : a)}
                 className={`h-8 px-4 rounded-lg font-manrope text-sm font-medium transition-all duration-200 active:scale-[0.96] ${
                   availability === a
-                    ? 'bg-white text-[#221410] shadow-sm'
-                    : 'text-[#6B7280] hover:text-[#221410]'
+                    ? 'bg-white text-[#1A0A1E] shadow-sm'
+                    : 'text-[#6B7280] hover:text-[#1A0A1E]'
                 }`}
               >
                 {a.charAt(0).toUpperCase() + a.slice(1)}
@@ -189,8 +189,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
             active={priceRange[0] > 0 || priceRange[1] < 200}
           >
             <div className="p-4 space-y-4 w-[260px]">
-              <p className="font-manrope font-semibold text-xs text-[#221410] uppercase tracking-wider">Price Range</p>
-              <div className="flex justify-between font-space-mono text-sm text-[#D4755B] tabular-nums">
+              <p className="font-manrope font-semibold text-xs text-[#1A0A1E] uppercase tracking-wider">Price Range</p>
+              <div className="flex justify-between font-space-mono text-sm text-[#A3078F] tabular-nums">
                 <span>₹{formatPriceLabel(priceRange[0])}</span>
                 <span>₹{formatPriceLabel(priceRange[1])}</span>
               </div>
@@ -199,13 +199,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
                   <label className="font-manrope text-xs text-[#9CA3AF] mb-1 block">Min</label>
                   <input type="range" min="0" max="200" step="1" value={priceRange[0]}
                     onChange={e => { const v = +e.target.value; if (v < priceRange[1]) setPriceRange([v, priceRange[1]]); }}
-                    className="w-full accent-[#D4755B]" />
+                    className="w-full accent-[#A3078F]" />
                 </div>
                 <div>
                   <label className="font-manrope text-xs text-[#9CA3AF] mb-1 block">Max</label>
                   <input type="range" min="0" max="200" step="1" value={priceRange[1]}
                     onChange={e => { const v = +e.target.value; if (v > priceRange[0]) setPriceRange([priceRange[0], v]); }}
-                    className="w-full accent-[#D4755B]" />
+                    className="w-full accent-[#A3078F]" />
                 </div>
               </div>
             </div>
@@ -217,7 +217,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
             active={selectedTypes.length > 0}
           >
             <div className="p-3 w-[200px]">
-              <p className="font-manrope font-semibold text-xs text-[#221410] uppercase tracking-wider mb-3 px-1">Property Type</p>
+              <p className="font-manrope font-semibold text-xs text-[#1A0A1E] uppercase tracking-wider mb-3 px-1">Property Type</p>
               <div className="grid grid-cols-2 gap-1.5">
                 {PROPERTY_TYPES.map(t => (
                   <button
@@ -225,8 +225,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
                     onClick={() => toggleType(t)}
                     className={`h-9 rounded-xl font-manrope text-sm font-medium transition-all duration-200 active:scale-[0.96] ${
                       selectedTypes.includes(t)
-                        ? 'bg-[#221410] text-white'
-                        : 'bg-[#F5F1E8] text-[#374151] hover:bg-[#EBE5DE]'
+                        ? 'bg-[#1A0A1E] text-white'
+                        : 'bg-[#F5F0F6] text-[#374151] hover:bg-[#EBE5ED]'
                     }`}
                   >
                     {t}
@@ -242,7 +242,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
             active={bedrooms > 0}
           >
             <div className="p-3 w-[200px]">
-              <p className="font-manrope font-semibold text-xs text-[#221410] uppercase tracking-wider mb-3 px-1">Bedrooms</p>
+              <p className="font-manrope font-semibold text-xs text-[#1A0A1E] uppercase tracking-wider mb-3 px-1">Bedrooms</p>
               <div className="flex gap-1.5 flex-wrap">
                 {[0, 1, 2, 3, 4, 5].map(n => (
                   <button
@@ -250,8 +250,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
                     onClick={() => setBedrooms(n)}
                     className={`w-9 h-9 rounded-xl font-space-mono text-sm font-bold transition-all duration-200 active:scale-[0.96] ${
                       bedrooms === n
-                        ? 'bg-[#221410] text-white'
-                        : 'bg-[#F5F1E8] text-[#374151] hover:bg-[#EBE5DE]'
+                        ? 'bg-[#1A0A1E] text-white'
+                        : 'bg-[#F5F0F6] text-[#374151] hover:bg-[#EBE5ED]'
                     }`}
                   >
                     {n === 0 ? 'Any' : n === 5 ? '5+' : n}
@@ -267,8 +267,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
               onClick={() => setShowMoreFilters(o => !o)}
               className={`flex items-center gap-1.5 h-10 px-4 rounded-xl border font-manrope text-sm font-medium transition-colors duration-200 active:scale-[0.96] ${
                 selectedAmenities.length > 0
-                  ? 'bg-[#221410] border-[#221410] text-white'
-                  : 'bg-white border-[#E6E0DA] text-[#374151] hover:border-[#D4755B]'
+                  ? 'bg-[#1A0A1E] border-[#1A0A1E] text-white'
+                  : 'bg-white border-[#E8E1EA] text-[#374151] hover:border-[#A3078F]'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -282,9 +282,9 @@ const FilterBar: React.FC<FilterBarProps> = ({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.98 }}
                   transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
-                  className="absolute top-full right-0 mt-2 z-30 bg-white border border-[#E6E0DA] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.10)] w-[300px] p-4"
+                  className="absolute top-full right-0 mt-2 z-30 bg-white border border-[#E8E1EA] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.10)] w-[300px] p-4"
                 >
-                  <p className="font-manrope font-semibold text-xs text-[#221410] uppercase tracking-wider mb-3">Amenities</p>
+                  <p className="font-manrope font-semibold text-xs text-[#1A0A1E] uppercase tracking-wider mb-3">Amenities</p>
                   <div className="grid grid-cols-2 gap-1.5 max-h-64 overflow-y-auto">
                     {AMENITIES.map(a => (
                       <button
@@ -292,8 +292,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
                         onClick={() => toggleAmenity(a)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl font-manrope text-xs text-left transition-all duration-200 ${
                           selectedAmenities.includes(a)
-                            ? 'bg-[#221410] text-white'
-                            : 'bg-[#F5F1E8] text-[#374151] hover:bg-[#EBE5DE]'
+                            ? 'bg-[#1A0A1E] text-white'
+                            : 'bg-[#F5F0F6] text-[#374151] hover:bg-[#EBE5ED]'
                         }`}
                       >
                         {a}
@@ -309,7 +309,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
           {activeCount > 0 && (
             <button
               onClick={handleReset}
-              className="flex items-center gap-1 h-10 px-3 rounded-xl font-manrope text-sm text-[#6B7280] hover:text-[#D4755B] transition-colors duration-200"
+              className="flex items-center gap-1 h-10 px-3 rounded-xl font-manrope text-sm text-[#6B7280] hover:text-[#A3078F] transition-colors duration-200"
             >
               <X className="w-3.5 h-3.5" /> Clear
             </button>
@@ -327,7 +327,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
           <select
             value={sortBy}
             onChange={e => onSortChange?.(e.target.value)}
-            className="h-10 bg-white border border-[#E6E0DA] rounded-xl px-3 pr-7 font-manrope text-sm text-[#221410] cursor-pointer focus:outline-none focus:border-[#D4755B] appearance-none transition-[border-color]"
+            className="h-10 bg-white border border-[#E8E1EA] rounded-xl px-3 pr-7 font-manrope text-sm text-[#1A0A1E] cursor-pointer focus:outline-none focus:border-[#A3078F] appearance-none transition-[border-color]"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236B7280' d='M5 7L1 3h8z'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.6rem center'
@@ -341,14 +341,14 @@ const FilterBar: React.FC<FilterBarProps> = ({
           </select>
 
           {/* View toggle */}
-          <div className="flex items-center gap-0.5 h-10 bg-[#F5F1E8] rounded-xl p-1">
+          <div className="flex items-center gap-0.5 h-10 bg-[#F5F0F6] rounded-xl p-1">
             {(['grid', 'list'] as const).map(m => (
               <button
                 key={m}
                 onClick={() => onViewChange?.(m)}
                 aria-label={`${m} view`}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${
-                  viewMode === m ? 'bg-white shadow-sm text-[#221410]' : 'text-[#6B7280]'
+                  viewMode === m ? 'bg-white shadow-sm text-[#1A0A1E]' : 'text-[#6B7280]'
                 }`}
               >
                 <span className="material-icons text-[18px]">

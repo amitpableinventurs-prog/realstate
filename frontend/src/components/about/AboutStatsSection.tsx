@@ -26,18 +26,18 @@ const AboutStatsSection: React.FC = () => {
   ];
 
   return (
-    <section className="bg-[#F2EFE9] border-y border-[#E6E0DA] py-20">
+    <section className="bg-[#F2EFF3] border-y border-[#E8E1EA] py-20">
       <div className="max-w-[1280px] mx-auto px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
           {stats.map((stat, index) => (
             <div key={index} className="text-center group hover:transform hover:scale-105 transition-all duration-300">
               {/* Icon */}
               <div className="flex items-center justify-center mb-6">
-                <stat.icon className="w-10 h-10 text-[#C05621]" strokeWidth={1.5} />
+                <stat.icon className="w-10 h-10 text-[#7A0A74]" strokeWidth={1.5} />
               </div>
               
               {/* Value */}
-              <div className="font-space-mono font-bold text-4xl text-[#221410] mb-2">
+              <div className="font-space-mono font-bold text-4xl text-[#1A0A1E] mb-2">
                 {stat.value}
               </div>
               

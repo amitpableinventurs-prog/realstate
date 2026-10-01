@@ -140,17 +140,17 @@ const MyListingsPage: React.FC = () => {
 
   if (isLoading || fetchLoading) {
     return (
-      <div className="min-h-screen bg-[#FAF8F4]">
+      <div className="min-h-screen bg-[#FAF8FB]">
         <Navbar />
         <div className="max-w-5xl mx-auto px-4 py-16">
-          <div className="h-8 w-48 bg-[#E6E0DA] rounded animate-pulse mb-10" />
+          <div className="h-8 w-48 bg-[#E8E1EA] rounded animate-pulse mb-10" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white border border-[#E6E0DA] rounded-2xl overflow-hidden">
-                <div className="h-44 bg-[#E6E0DA] animate-pulse" />
+              <div key={i} className="bg-white border border-[#E8E1EA] rounded-2xl overflow-hidden">
+                <div className="h-44 bg-[#E8E1EA] animate-pulse" />
                 <div className="p-4 space-y-3">
-                  <div className="h-4 bg-[#E6E0DA] rounded animate-pulse w-3/4" />
-                  <div className="h-3 bg-[#E6E0DA] rounded animate-pulse w-1/2" />
+                  <div className="h-4 bg-[#E8E1EA] rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-[#E8E1EA] rounded animate-pulse w-1/2" />
                 </div>
               </div>
             ))}
@@ -165,22 +165,22 @@ const MyListingsPage: React.FC = () => {
 
   if (!fetchLoading && listings.length === 0) {
     return (
-      <div className="min-h-screen bg-[#FAF8F4]">
+      <div className="min-h-screen bg-[#FAF8FB]">
         <Navbar />
         <div className="max-w-xl mx-auto px-4 py-24 text-center">
-          <div className="w-20 h-20 bg-[#F3EDE8] rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-[#D4755B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 bg-[#F3EDF4] rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-[#A3078F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
           </div>
-          <h2 className="font-fraunces text-3xl font-bold text-[#221410] mb-3">No listings yet</h2>
+          <h2 className="font-fraunces text-3xl font-bold text-[#1A0A1E] mb-3">No listings yet</h2>
           <p className="font-manrope text-[#6B7280] mb-8">
             You haven't posted any properties. List your first property and reach thousands of buyers.
           </p>
           <Link
             to="/add-property"
-            className="inline-block bg-[#D4755B] text-white font-manrope font-semibold px-8 py-3 rounded-xl hover:bg-[#B86851] transition-[background-color]"
+            className="inline-block bg-[#A3078F] text-white font-manrope font-semibold px-8 py-3 rounded-xl hover:bg-[#8E0A82] transition-[background-color]"
           >
             + List a Property
           </Link>
@@ -201,7 +201,7 @@ const MyListingsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
+    <div className="min-h-screen bg-[#FAF8FB]">
       <Navbar />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
@@ -209,14 +209,14 @@ const MyListingsPage: React.FC = () => {
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-fraunces text-4xl font-bold text-[#221410]">My Listings</h1>
+            <h1 className="font-fraunces text-4xl font-bold text-[#1A0A1E]">My Listings</h1>
             <p className="font-manrope text-[#6B7280] mt-1">
               {counts.all} {counts.all === 1 ? 'property' : 'properties'} total
             </p>
           </div>
           <Link
             to="/add-property"
-            className="inline-flex items-center gap-2 bg-[#D4755B] text-white font-manrope font-semibold px-5 py-2.5 rounded-xl hover:bg-[#B86851] transition-[background-color] self-start sm:self-auto"
+            className="inline-flex items-center gap-2 bg-[#A3078F] text-white font-manrope font-semibold px-5 py-2.5 rounded-xl hover:bg-[#8E0A82] transition-[background-color] self-start sm:self-auto"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -230,12 +230,12 @@ const MyListingsPage: React.FC = () => {
           {(['active', 'pending', 'rejected', 'expired'] as const).map((status) => {
             const cfg = STATUS_CONFIG[status];
             return (
-              <div key={status} className="bg-white border border-[#E6E0DA] rounded-xl p-4">
+              <div key={status} className="bg-white border border-[#E8E1EA] rounded-xl p-4">
                 <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-manrope font-medium ${cfg.bg} ${cfg.text} mb-2`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                   {cfg.label}
                 </div>
-                <p className="font-fraunces text-2xl font-bold text-[#221410]">{counts[status]}</p>
+                <p className="font-fraunces text-2xl font-bold text-[#1A0A1E]">{counts[status]}</p>
               </div>
             );
           })}
@@ -253,10 +253,10 @@ const MyListingsPage: React.FC = () => {
             return (
               <div
                 key={listing._id}
-                className="bg-white border border-[#E6E0DA] rounded-2xl overflow-hidden flex flex-col sm:flex-row"
+                className="bg-white border border-[#E8E1EA] rounded-2xl overflow-hidden flex flex-col sm:flex-row"
               >
                 {/* Thumbnail */}
-                <div className="sm:w-48 sm:flex-shrink-0 h-44 sm:h-auto bg-[#F3EDE8] relative">
+                <div className="sm:w-48 sm:flex-shrink-0 h-44 sm:h-auto bg-[#F3EDF4] relative">
                   {coverImage ? (
                     <img
                       src={coverImage}
@@ -266,7 +266,7 @@ const MyListingsPage: React.FC = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <svg className="w-10 h-10 text-[#D4CEC8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-10 h-10 text-[#D6CFDA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                           d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -279,7 +279,7 @@ const MyListingsPage: React.FC = () => {
                   <div>
                     {/* Title row */}
                     <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
-                      <h3 className="font-fraunces text-lg font-semibold text-[#221410] leading-snug">
+                      <h3 className="font-fraunces text-lg font-semibold text-[#1A0A1E] leading-snug">
                         {listing.title}
                       </h3>
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-manrope font-semibold ${cfg.bg} ${cfg.text} flex-shrink-0`}>
@@ -298,7 +298,7 @@ const MyListingsPage: React.FC = () => {
                     </p>
 
                     <div className="flex flex-wrap gap-3 font-manrope text-sm text-[#374151]">
-                      <span className="font-semibold text-[#D4755B]">{formatPrice(listing.price)}</span>
+                      <span className="font-semibold text-[#A3078F]">{formatPrice(listing.price)}</span>
                       <span>·</span>
                       <span>{listing.beds} bed · {listing.baths} bath · {listing.sqft.toLocaleString()} sqft</span>
                       <span>·</span>
@@ -334,7 +334,7 @@ const MyListingsPage: React.FC = () => {
                   )}
 
                   {/* Footer: date + actions */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[#F3EDE8]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[#F3EDF4]">
                     <p className="font-manrope text-xs text-[#9CA3AF]">
                       Listed {formatDate(listing.createdAt)}
                       {listing.status === 'active' && listing.expiresAt && (
@@ -347,7 +347,7 @@ const MyListingsPage: React.FC = () => {
                       {listing.status === 'active' && (
                         <Link
                           to={`/property/${listing._id}`}
-                          className="font-manrope text-xs font-medium text-[#D4755B] hover:underline"
+                          className="font-manrope text-xs font-medium text-[#A3078F] hover:underline"
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -358,7 +358,7 @@ const MyListingsPage: React.FC = () => {
                       {/* Edit */}
                       <Link
                         to={`/edit-property/${listing._id}`}
-                        className="flex items-center gap-1.5 font-manrope text-xs font-semibold text-[#374151] border border-[#E6E0DA] px-3 py-1.5 rounded-lg hover:border-[#D4755B] hover:text-[#D4755B] transition-[border-color,color]"
+                        className="flex items-center gap-1.5 font-manrope text-xs font-semibold text-[#374151] border border-[#E8E1EA] px-3 py-1.5 rounded-lg hover:border-[#A3078F] hover:text-[#A3078F] transition-[border-color,color]"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -391,7 +391,7 @@ const MyListingsPage: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this listing?</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong className="text-[#221410]">{deleteTarget?.title}</strong> will be permanently
+              <strong className="text-[#1A0A1E]">{deleteTarget?.title}</strong> will be permanently
               removed. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

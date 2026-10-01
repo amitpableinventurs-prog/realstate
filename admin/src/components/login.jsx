@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, Shield, ArrowRight, Loader2, Home, Building2, Users, TrendingUp } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Shield, ArrowRight, Loader2, Building2, Users, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../services/apiClient";
 import { cn } from "../lib/utils";
+import { getAdminSession, homePathFor } from "../lib/adminSession";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -27,8 +28,9 @@ const Login = () => {
       if (response.data.success) {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("isAdmin", "true");
-        toast.success("Welcome back, Admin!");
-        navigate("/dashboard");
+        const session = getAdminSession();
+        toast.success(`Welcome back, ${session?.name || "Admin"}!`);
+        navigate(homePathFor(session));
       } else {
         toast.error(response.data.message || "Login failed");
       }
@@ -53,37 +55,37 @@ const Login = () => {
         initial={{ opacity: 0, x: -40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="hidden lg:flex lg:w-1/2 bg-[#1C1B1A] flex-col justify-between p-12 relative overflow-hidden"
+        className="hidden lg:flex lg:w-1/2 bg-[#17131A] flex-col justify-between p-12 relative overflow-hidden"
       >
         {/* Background texture */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-0 w-full h-full"
             style={{
-              backgroundImage: `radial-gradient(circle at 25% 25%, #D4755B 0%, transparent 50%), radial-gradient(circle at 75% 75%, #D4755B 0%, transparent 50%)`,
+              backgroundImage: `radial-gradient(circle at 25% 25%, #A3078F 0%, transparent 50%), radial-gradient(circle at 75% 75%, #A3078F 0%, transparent 50%)`,
             }}
           />
         </div>
 
         {/* Decorative circles */}
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-[#D4755B]/10 rounded-full" />
-        <div className="absolute -top-12 -left-12 w-64 h-64 bg-[#D4755B]/5 rounded-full" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-[#A3078F]/10 rounded-full" />
+        <div className="absolute -top-12 -left-12 w-64 h-64 bg-[#A3078F]/5 rounded-full" />
 
         {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 bg-[#D4755B] rounded-xl flex items-center justify-center">
-              <Home className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 bg-white rounded-xl p-1 flex items-center justify-center">
+              <img src="/logo.png" alt="Bhumi Bazar" className="h-full w-full object-contain" />
             </div>
             <div>
-              <div className="text-xl font-bold text-[#FAF8F4]">BuildEstate</div>
+              <div className="text-xl font-bold text-[#FAF8FB]">Bhumi Bazar</div>
               <div className="text-xs text-[#9CA3AF] uppercase tracking-widest">Admin Panel</div>
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-[#FAF8F4] leading-tight mb-4">
+          <h1 className="text-4xl font-bold text-[#FAF8FB] leading-tight mb-4">
             Manage Your
             <br />
-            <span className="text-[#D4755B]">Real Estate</span>
+            <span className="text-[#A3078F]">Real Estate</span>
             <br />
             Portfolio
           </h1>
@@ -96,8 +98,8 @@ const Login = () => {
         <div className="relative z-10 grid grid-cols-3 gap-4">
           {stats.map(({ icon: Icon, label, value }) => (
             <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <Icon className="w-5 h-5 text-[#D4755B] mb-2" />
-              <div className="text-xl font-bold text-[#FAF8F4]">{value}</div>
+              <Icon className="w-5 h-5 text-[#A3078F] mb-2" />
+              <div className="text-xl font-bold text-[#FAF8FB]">{value}</div>
               <div className="text-xs text-[#9CA3AF]">{label}</div>
             </div>
           ))}
@@ -106,7 +108,7 @@ const Login = () => {
         {/* Footer */}
         <div className="relative z-10 flex items-center gap-2 text-xs text-[#5A5856]">
           <Shield className="w-3.5 h-3.5" />
-          <span>Secured with 256-bit encryption • BuildEstate © 2025</span>
+          <span>Secured with 256-bit encryption • Bhumi Bazar © 2025</span>
         </div>
       </motion.div>
 
@@ -115,20 +117,20 @@ const Login = () => {
         initial={{ opacity: 0, x: 40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-        className="flex-1 flex items-center justify-center bg-[#FAF8F4] px-6 py-12"
+        className="flex-1 flex items-center justify-center bg-[#FAF8FB] px-6 py-12"
       >
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="w-9 h-9 bg-[#1C1B1A] rounded-xl flex items-center justify-center">
-              <Home className="h-5 w-5 text-[#D4755B]" />
+            <div className="w-9 h-9 bg-white border border-[#E6D6E8] rounded-xl p-1 flex items-center justify-center">
+              <img src="/logo.png" alt="Bhumi Bazar" className="h-full w-full object-contain" />
             </div>
-            <div className="text-lg font-bold text-[#1C1B1A]">BuildEstate Admin</div>
+            <div className="text-lg font-bold text-[#17131A]">Bhumi Bazar Admin</div>
           </div>
 
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-[#1C1B1A] mb-2">Welcome back</h2>
+            <h2 className="text-3xl font-bold text-[#17131A] mb-2">Welcome back</h2>
             <p className="text-[#5A5856]">Sign in to your admin account to continue</p>
           </div>
 
@@ -136,14 +138,14 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-[#1C1B1A] mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-[#17131A] mb-2">
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Mail className={cn(
                     "h-4.5 w-4.5 transition-colors duration-200",
-                    focusedField === "email" ? "text-[#D4755B]" : "text-[#9CA3AF]"
+                    focusedField === "email" ? "text-[#A3078F]" : "text-[#9CA3AF]"
                   )} />
                 </div>
                 <input
@@ -157,10 +159,10 @@ const Login = () => {
                   onBlur={() => setFocusedField(null)}
                   placeholder="admin@buildestate.com"
                   className={cn(
-                    "w-full pl-11 pr-4 py-3.5 bg-white border rounded-xl text-[#1C1B1A] placeholder-[#9CA3AF] text-sm transition-all duration-200 outline-none",
+                    "w-full pl-11 pr-4 py-3.5 bg-white border rounded-xl text-[#17131A] placeholder-[#9CA3AF] text-sm transition-all duration-200 outline-none",
                     focusedField === "email"
-                      ? "border-[#D4755B] ring-3 ring-[#D4755B]/15 shadow-sm"
-                      : "border-[#E6D5C3] hover:border-[#D4755B]/50"
+                      ? "border-[#A3078F] ring-3 ring-[#A3078F]/15 shadow-sm"
+                      : "border-[#E6D6E8] hover:border-[#A3078F]/50"
                   )}
                 />
               </div>
@@ -168,14 +170,14 @@ const Login = () => {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-[#1C1B1A] mb-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-[#17131A] mb-2">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock className={cn(
                     "h-4.5 w-4.5 transition-colors duration-200",
-                    focusedField === "password" ? "text-[#D4755B]" : "text-[#9CA3AF]"
+                    focusedField === "password" ? "text-[#A3078F]" : "text-[#9CA3AF]"
                   )} />
                 </div>
                 <input
@@ -189,16 +191,16 @@ const Login = () => {
                   onBlur={() => setFocusedField(null)}
                   placeholder="Enter your password"
                   className={cn(
-                    "w-full pl-11 pr-12 py-3.5 bg-white border rounded-xl text-[#1C1B1A] placeholder-[#9CA3AF] text-sm transition-all duration-200 outline-none",
+                    "w-full pl-11 pr-12 py-3.5 bg-white border rounded-xl text-[#17131A] placeholder-[#9CA3AF] text-sm transition-all duration-200 outline-none",
                     focusedField === "password"
-                      ? "border-[#D4755B] ring-3 ring-[#D4755B]/15 shadow-sm"
-                      : "border-[#E6D5C3] hover:border-[#D4755B]/50"
+                      ? "border-[#A3078F] ring-3 ring-[#A3078F]/15 shadow-sm"
+                      : "border-[#E6D6E8] hover:border-[#A3078F]/50"
                   )}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#9CA3AF] hover:text-[#D4755B] transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#9CA3AF] hover:text-[#A3078F] transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
                 </button>
@@ -211,7 +213,7 @@ const Login = () => {
               disabled={loading}
               whileHover={{ scale: loading ? 1 : 1.01 }}
               whileTap={{ scale: loading ? 1 : 0.99 }}
-              className="w-full flex items-center justify-center gap-2.5 bg-[#1C1B1A] hover:bg-[#D4755B] text-[#FAF8F4] py-3.5 px-6 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-terracotta disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              className="w-full flex items-center justify-center gap-2.5 bg-[#17131A] hover:bg-[#A3078F] text-[#FAF8FB] py-3.5 px-6 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-terracotta disabled:opacity-60 disabled:cursor-not-allowed mt-2"
             >
               {loading ? (
                 <>

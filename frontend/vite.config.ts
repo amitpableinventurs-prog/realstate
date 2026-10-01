@@ -19,7 +19,7 @@ const banner = (mode: string, env: Record<string, string>): Plugin => ({
         console.log([
           '',
           '╔══════════════════════════════════════════════╗',
-          '║         BuildEstate Frontend  v1.0.0         ║',
+          '║         Bhumi Bazar Frontend  v1.0.0         ║',
           '╚══════════════════════════════════════════════╝',
           '',
           `  ◆ Environment       ${mode}`,

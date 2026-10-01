@@ -28,20 +28,20 @@ const AILocationTrends: React.FC<Props> = ({
   /* Loading skeleton (Modern pulsing state) */
   if (loading) {
     return (
-      <section className="bg-white py-20 relative border-t border-[#E6E0DA]/50">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,117,91,0.02)_0%,transparent_100%)] pointer-events-none" />
+      <section className="bg-white py-20 relative border-t border-[#E8E1EA]/50">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(163,7,143,0.02)_0%,transparent_100%)] pointer-events-none" />
         <div className="max-w-[1200px] mx-auto px-6 relative z-10 text-center animate-pulse">
-          <div className="inline-flex items-center gap-3 bg-[#FAF8F4] border border-[#E6E0DA] shadow-sm rounded-full px-5 py-2.5 mb-8">
-            <div className="w-2 h-2 rounded-full bg-[#D4755B] animate-ping" />
+          <div className="inline-flex items-center gap-3 bg-[#FAF8FB] border border-[#E8E1EA] shadow-sm rounded-full px-5 py-2.5 mb-8">
+            <div className="w-2 h-2 rounded-full bg-[#A3078F] animate-ping" />
             <span className="font-space-mono text-xs text-[#6B7280] font-bold uppercase tracking-wider">
               AI is analyzing {city} trends...
             </span>
           </div>
 
           <div className="max-w-[800px] mx-auto space-y-4 pt-4">
-            <div className="h-16 bg-[#FAF8F4] border border-[#E6E0DA]/60 rounded-xl" />
-            <div className="h-16 bg-[#FAF8F4] border border-[#E6E0DA]/60 rounded-xl" />
-            <div className="h-16 bg-[#FAF8F4] border border-[#E6E0DA]/60 rounded-xl" />
+            <div className="h-16 bg-[#FAF8FB] border border-[#E8E1EA]/60 rounded-xl" />
+            <div className="h-16 bg-[#FAF8FB] border border-[#E8E1EA]/60 rounded-xl" />
+            <div className="h-16 bg-[#FAF8FB] border border-[#E8E1EA]/60 rounded-xl" />
           </div>
         </div>
       </section>
@@ -51,7 +51,7 @@ const AILocationTrends: React.FC<Props> = ({
   /* Error */
   if (error) {
     return (
-      <section className="bg-[#FAF8F4] py-16">
+      <section className="bg-[#FAF8FB] py-16">
         <div className="max-w-[600px] mx-auto px-6 text-center">
           <div className="flex items-center justify-center gap-2 text-amber-600 mb-2">
             <AlertCircle className="w-5 h-5" />
@@ -70,18 +70,18 @@ const AILocationTrends: React.FC<Props> = ({
   if (!locations.length && !analysis) return null;
 
   return (
-    <section className="bg-[#FAF8F4] py-20 border-t border-[#E6E0DA]/50 relative">
+    <section className="bg-[#FAF8FB] py-20 border-t border-[#E8E1EA]/50 relative">
       <div className="absolute top-0 inset-x-0 h-[400px] bg-gradient-to-b from-white to-transparent pointer-events-none" />
 
       <div className="max-w-[1200px] mx-auto px-6 relative z-10">
         {/* ── Header ─────────────────────────────── */}
         <div className="flex items-center gap-4 mb-10">
-          <div className="w-12 h-12 bg-white border border-[#E6E0DA] shadow-sm rounded-full flex items-center justify-center relative">
-            <div className="absolute inset-0 bg-[#D4755B]/5 rounded-full" />
-            <BarChart3 className="w-5 h-5 text-[#D4755B] relative z-10" />
+          <div className="w-12 h-12 bg-white border border-[#E8E1EA] shadow-sm rounded-full flex items-center justify-center relative">
+            <div className="absolute inset-0 bg-[#A3078F]/5 rounded-full" />
+            <BarChart3 className="w-5 h-5 text-[#A3078F] relative z-10" />
           </div>
           <div>
-            <h2 className="font-syne text-3xl font-bold text-[#221410] mb-1">
+            <h2 className="font-syne text-3xl font-bold text-[#1A0A1E] mb-1">
               Location Trends — {city}
             </h2>
             <p className="font-manrope text-[15px] text-[#6B7280]">
@@ -92,11 +92,11 @@ const AILocationTrends: React.FC<Props> = ({
 
         {/* ── Raw location data table ────────────── */}
         {locations.length > 0 && (
-          <div className="bg-white border border-[#E6E0DA] rounded-2xl overflow-hidden mb-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <div className="bg-white border border-[#E8E1EA] rounded-2xl overflow-hidden mb-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#FAF8F4] border-b border-[#E6E0DA]/70">
+                  <tr className="bg-[#FAF8FB] border-b border-[#E8E1EA]/70">
                     <th className="text-left font-space-mono text-[11px] font-bold uppercase tracking-widest text-[#9CA3AF] px-8 py-5">
                       Location
                     </th>
@@ -111,16 +111,16 @@ const AILocationTrends: React.FC<Props> = ({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E6E0DA]/40">
+                <tbody className="divide-y divide-[#E8E1EA]/40">
                   {locations.map((loc, i) => (
                     <tr
                       key={i}
-                      className="hover:bg-[#FAF8F4]/50 transition-[background-color] group cursor-default"
+                      className="hover:bg-[#FAF8FB]/50 transition-[background-color] group cursor-default"
                     >
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-3">
-                          <MapPin className="w-4 h-4 text-[#D4755B]/60 group-hover:text-[#D4755B] transition-[color]" />
-                          <span className="font-manrope text-[15px] text-[#221410] font-semibold">
+                          <MapPin className="w-4 h-4 text-[#A3078F]/60 group-hover:text-[#A3078F] transition-[color]" />
+                          <span className="font-manrope text-[15px] text-[#1A0A1E] font-semibold">
                             {loc.location}
                           </span>
                         </div>
@@ -160,9 +160,9 @@ const AILocationTrends: React.FC<Props> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Trend cards */}
             {analysis.trends?.length > 0 && (
-              <div className="bg-white border border-[#E6E0DA] shadow-sm rounded-2xl p-8">
-                <h3 className="font-syne text-xl font-bold text-[#221410] mb-6 flex items-center gap-2.5">
-                  <TrendingUp className="w-5 h-5 text-[#D4755B]" />
+              <div className="bg-white border border-[#E8E1EA] shadow-sm rounded-2xl p-8">
+                <h3 className="font-syne text-xl font-bold text-[#1A0A1E] mb-6 flex items-center gap-2.5">
+                  <TrendingUp className="w-5 h-5 text-[#A3078F]" />
                   AI Trend Analysis
                 </h3>
 
@@ -178,10 +178,10 @@ const AILocationTrends: React.FC<Props> = ({
                       outlookLower.includes('declin');
 
                     return (
-                      <div key={i} className="bg-[#FAF8F4] border border-[#E6E0DA]/60 rounded-xl p-5 hover:border-[#D4755B]/30 transition-[border-color]">
+                      <div key={i} className="bg-[#FAF8FB] border border-[#E8E1EA]/60 rounded-xl p-5 hover:border-[#A3078F]/30 transition-[border-color]">
                         <div className="flex items-start justify-between mb-4">
                           {/* Location name */}
-                          <h4 className="font-syne text-[17px] font-bold text-[#221410]">
+                          <h4 className="font-syne text-[17px] font-bold text-[#1A0A1E]">
                             {trend.location}
                           </h4>
 
@@ -199,17 +199,17 @@ const AILocationTrends: React.FC<Props> = ({
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
-                          <div className="bg-white rounded-lg border border-[#E6E0DA]/50 p-3 text-center">
+                          <div className="bg-white rounded-lg border border-[#E8E1EA]/50 p-3 text-center">
                             <span className="font-space-mono text-[10px] text-[#9CA3AF] font-bold uppercase tracking-widest block mb-1">
                               ₹/sq.ft
                             </span>
-                            <span className="font-manrope font-semibold text-[#221410] text-[15px]">
+                            <span className="font-manrope font-semibold text-[#1A0A1E] text-[15px]">
                               {trend.price_per_sqft
                                 ? `₹${Number(trend.price_per_sqft).toLocaleString('en-IN')}`
                                 : '—'}
                             </span>
                           </div>
-                          <div className="bg-white rounded-lg border border-[#E6E0DA]/50 p-3 text-center">
+                          <div className="bg-white rounded-lg border border-[#E8E1EA]/50 p-3 text-center">
                             <span className="font-space-mono text-[10px] text-[#9CA3AF] font-bold uppercase tracking-widest block mb-1">
                               YoY
                             </span>
@@ -222,11 +222,11 @@ const AILocationTrends: React.FC<Props> = ({
                                 : '—'}
                             </span>
                           </div>
-                          <div className="bg-white rounded-lg border border-[#E6E0DA]/50 p-3 text-center">
+                          <div className="bg-white rounded-lg border border-[#E8E1EA]/50 p-3 text-center">
                             <span className="font-space-mono text-[10px] text-[#9CA3AF] font-bold uppercase tracking-widest block mb-1">
                               Yield
                             </span>
-                            <span className="font-manrope font-semibold text-[#221410] text-[15px]">
+                            <span className="font-manrope font-semibold text-[#1A0A1E] text-[15px]">
                               {trend.rental_yield_pct && Number(trend.rental_yield_pct) !== 0
                                 ? `${trend.rental_yield_pct}%`
                                 : '—'}
@@ -276,15 +276,15 @@ const AILocationTrends: React.FC<Props> = ({
 
               {/* Investment Tips */}
               {analysis.investment_tips?.length > 0 && (
-                <div className="bg-white border border-[#E6E0DA] shadow-sm rounded-2xl p-7 relative overflow-hidden">
-                  <h3 className="font-syne text-xl font-bold text-[#221410] mb-5">
+                <div className="bg-white border border-[#E8E1EA] shadow-sm rounded-2xl p-7 relative overflow-hidden">
+                  <h3 className="font-syne text-xl font-bold text-[#1A0A1E] mb-5">
                     Investment Tips
                   </h3>
                   <ul className="space-y-3">
                     {analysis.investment_tips.map((tip, i) => (
                       <li key={i} className="flex items-start gap-3">
-                        <div className="mt-1 bg-[#FAF8F4] p-1 rounded-full border border-[#E6E0DA] shrink-0">
-                          <ChevronRight className="w-3 h-3 text-[#D4755B]" />
+                        <div className="mt-1 bg-[#FAF8FB] p-1 rounded-full border border-[#E8E1EA] shrink-0">
+                          <ChevronRight className="w-3 h-3 text-[#A3078F]" />
                         </div>
                         <span className="font-manrope font-medium text-[15px] text-[#4B5563] leading-relaxed">
                           {tip}

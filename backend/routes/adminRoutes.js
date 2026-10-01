@@ -4,6 +4,8 @@ import {
   getAllAppointments,
   updateAppointmentStatus,
   getPendingListings,
+  listAllProperties,
+  getPropertyForAdmin,
   approveListing,
   rejectListing,
   // User Management
@@ -28,22 +30,53 @@ import {
   getEnhancedOverview,
 } from '../controller/adminController.js';
 import { listModels, createModel, updateModel, deleteModel } from '../controller/aiModelController.js';
-import { adminProtect } from '../middleware/authMiddleware.js';
+import {
+  adminListDistricts,
+  createDistrict,
+  updateDistrict,
+  deleteDistrict,
+  listDistrictAdmins,
+  createDistrictAdmin,
+  updateDistrictAdmin,
+  deleteDistrictAdmin,
+  assignPropertyDistrict,
+  assignListingDistrict,
+} from '../controller/districtController.js';
+import { adminProtect, reviewerProtect } from '../middleware/authMiddleware.js';
 import { registry } from '../utils/circuitBreaker.js';
 
 const router = express.Router();
 
-// Apply admin authentication to ALL routes
+// Listing review queue — super admin or district admins (scoped to their
+// district in the controllers). Registered before the super-admin guard below.
+router.get('/properties/pending', reviewerProtect, getPendingListings);
+router.put('/properties/:id/approve', reviewerProtect, approveListing);
+router.put('/properties/:id/reject', reviewerProtect, rejectListing);
+router.post('/properties/bulk-approve', reviewerProtect, bulkApproveProperties);
+router.post('/properties/bulk-reject', reviewerProtect, bulkRejectProperties);
+
+// Everything below is super admin only
 router.use(adminProtect);
 
 router.get('/stats', getAdminStats);
 router.get('/appointments', getAllAppointments);
 router.put('/appointments/status', updateAppointmentStatus);
 
-// Listing review queue
-router.get('/properties/pending', getPendingListings);
-router.put('/properties/:id/approve', approveListing);
-router.put('/properties/:id/reject', rejectListing);
+// All website properties with review status ("All Properties" page)
+router.get('/properties', listAllProperties);
+router.get('/properties/:id', getPropertyForAdmin);
+
+// Districts and district admins
+router.get('/districts', adminListDistricts);
+router.post('/districts', createDistrict);
+router.put('/districts/:id', updateDistrict);
+router.delete('/districts/:id', deleteDistrict);
+router.get('/district-admins', listDistrictAdmins);
+router.post('/district-admins', createDistrictAdmin);
+router.put('/district-admins/:id', updateDistrictAdmin);
+router.delete('/district-admins/:id', deleteDistrictAdmin);
+router.put('/properties/:id/district', assignPropertyDistrict);
+router.put('/app-listings/:id/district', assignListingDistrict);
 
 // User Management
 router.get('/users', getAllUsers);
@@ -57,9 +90,7 @@ router.delete('/users/:id', deleteUser);
 router.post('/users/bulk-suspend', bulkSuspendUsers);
 router.post('/users/bulk-ban', bulkBanUsers);
 
-// Bulk Property Operations
-router.post('/properties/bulk-approve', bulkApproveProperties);
-router.post('/properties/bulk-reject', bulkRejectProperties);
+// Bulk Property Operations (bulk approve/reject are with the review queue above)
 router.post('/properties/bulk-delete', bulkDeleteProperties);
 
 // Activity Logs

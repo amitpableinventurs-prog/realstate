@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# BuildEstate Backend Quick Setup Script
-# This script helps you set up the BuildEstate backend quickly
+# Bhumi Bazar Backend Quick Setup Script
+# This script helps you set up the Bhumi Bazar backend quickly
 
 # Colors for output
 RED='\033[0;31m'
@@ -33,7 +33,7 @@ print_header() {
 }
 
 # Header
-print_header "🏠 BuildEstate Backend Setup"
+print_header "🏠 Bhumi Bazar Backend Setup"
 print_header "============================"
 echo ""
 

@@ -57,19 +57,19 @@ const BanUserModal = ({
           className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-[#E6E0DA]">
+          <div className="flex items-center justify-between p-6 border-b border-[#E8E1EA]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
                 <Shield className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#1C1B1A]">Ban User</h3>
+                <h3 className="text-lg font-bold text-[#17131A]">Ban User</h3>
                 <p className="text-sm text-[#5A5856]">{user?.name}</p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-[#F5F1E8] rounded-lg transition-colors"
+              className="p-2 hover:bg-[#F5F0F6] rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -94,17 +94,17 @@ const BanUserModal = ({
 
             {/* Reason Input */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-[#1C1B1A] mb-2">
+              <label className="block text-sm font-semibold text-[#17131A] mb-2">
                 Reason for Ban <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
-                className={`w-full px-4 py-3 border rounded-xl bg-white text-[#1C1B1A] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 resize-none transition-all ${
+                className={`w-full px-4 py-3 border rounded-xl bg-white text-[#17131A] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 resize-none transition-all ${
                   errors.reason
                     ? 'border-red-300 focus:ring-red-500/20'
-                    : 'border-[#E6E0DA] focus:border-[#D4755B] focus:ring-[#D4755B]/20'
+                    : 'border-[#E8E1EA] focus:border-[#A3078F] focus:ring-[#A3078F]/20'
                 }`}
                 placeholder="Provide detailed explanation for the permanent ban..."
               />
@@ -115,17 +115,17 @@ const BanUserModal = ({
 
             {/* Confirmation Input */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-[#1C1B1A] mb-2">
+              <label className="block text-sm font-semibold text-[#17131A] mb-2">
                 Type "PERMANENTLY BAN" to confirm <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl bg-white text-[#1C1B1A] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 transition-all ${
+                className={`w-full px-4 py-3 border rounded-xl bg-white text-[#17131A] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 transition-all ${
                   errors.confirmText
                     ? 'border-red-300 focus:ring-red-500/20'
-                    : 'border-[#E6E0DA] focus:border-[#D4755B] focus:ring-[#D4755B]/20'
+                    : 'border-[#E8E1EA] focus:border-[#A3078F] focus:ring-[#A3078F]/20'
                 }`}
                 placeholder="PERMANENTLY BAN"
               />
@@ -140,7 +140,7 @@ const BanUserModal = ({
                 type="button"
                 onClick={handleClose}
                 disabled={isLoading}
-                className="flex-1 px-4 py-3 border border-[#E6E0DA] text-[#1C1B1A] rounded-xl font-semibold text-sm hover:bg-[#F5F1E8] transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-[#E8E1EA] text-[#17131A] rounded-xl font-semibold text-sm hover:bg-[#F5F0F6] transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>

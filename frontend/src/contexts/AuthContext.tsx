@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { userAPI } from '../services/api';
+import { userAPI, type SignUpData } from '../services/api';
 
 interface User {
   _id: string;
   name: string;
   email: string;
+  phone?: string | null;
+  state?: string | null;
+  district?: { id: string; name: string } | null;
 }
 
 interface AuthContextType {
@@ -13,7 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  register: (fullName: string, email: string, phone: string, password: string) => Promise<{ requiresVerification?: boolean }>;
+  register: (data: SignUpData) => Promise<{ requiresVerification?: boolean }>;
   logout: () => void;
   updateUser: (partial: Partial<User>) => void;
 }
@@ -53,8 +56,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const register = useCallback(async (fullName: string, email: string, phone: string, password: string) => {
-    const { data } = await userAPI.register({ fullName, email, phone, password });
+  const register = useCallback(async (signUp: SignUpData) => {
+    const { data } = await userAPI.register(signUp);
     if (data.success && data.requiresVerification) {
       return { requiresVerification: true };
     }

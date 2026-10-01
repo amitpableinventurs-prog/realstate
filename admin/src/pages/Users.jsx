@@ -299,10 +299,10 @@ const UsersManagement = () => {
           <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-7 h-7 text-red-500" />
           </div>
-          <h3 className="font-semibold text-[#111110] mb-1">Failed to load users</h3>
+          <h3 className="font-semibold text-[#0F0C11] mb-1">Failed to load users</h3>
           <p className="text-sm text-[#9B9B99] mb-5">{error}</p>
           <button onClick={() => fetchUsers()}
-            className="px-5 py-2.5 bg-[#D4755B] text-white rounded-lg text-sm font-medium hover:bg-[#C05E44] active:scale-[0.98] transition-all">
+            className="px-5 py-2.5 bg-[#A3078F] text-white rounded-lg text-sm font-medium hover:bg-[#7A0A74] active:scale-[0.98] transition-all">
             Try Again
           </button>
         </div>
@@ -317,7 +317,7 @@ const UsersManagement = () => {
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-[#111110] tracking-tight mb-0.5">Users</h1>
+            <h1 className="text-2xl font-bold text-[#0F0C11] tracking-tight mb-0.5">Users</h1>
             <p className="text-sm text-[#9B9B99]">
               {pagination.totalUsers ?? users.length} registered accounts
             </p>
@@ -325,7 +325,7 @@ const UsersManagement = () => {
           <button
             onClick={() => fetchUsers(true)}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E8E7E5] text-[#6B6B6A] rounded-lg text-sm font-medium hover:border-[#D4755B] hover:text-[#D4755B] active:scale-[0.97] transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E8E7E5] text-[#6B6B6A] rounded-lg text-sm font-medium hover:border-[#A3078F] hover:text-[#A3078F] active:scale-[0.97] transition-all shadow-sm disabled:opacity-50"
           >
             <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
             {refreshing ? "Refreshing…" : "Refresh"}
@@ -343,15 +343,15 @@ const UsersManagement = () => {
                 className={cn(
                   "px-5 py-3.5 text-sm font-medium transition-all border-b-2 -mb-px",
                   statusFilter === tab.key
-                    ? "border-[#D4755B] text-[#D4755B]"
-                    : "border-transparent text-[#9B9B99] hover:text-[#111110]"
+                    ? "border-[#A3078F] text-[#A3078F]"
+                    : "border-transparent text-[#9B9B99] hover:text-[#0F0C11]"
                 )}
               >
                 {tab.label}
                 {tab.count !== undefined && (
                   <span className={cn(
                     "ml-2 px-1.5 py-0.5 rounded text-xs tabular-nums",
-                    statusFilter === tab.key ? "bg-[#D4755B]/10 text-[#D4755B]" : "bg-[#F5F5F3] text-[#9B9B99]"
+                    statusFilter === tab.key ? "bg-[#A3078F]/10 text-[#A3078F]" : "bg-[#F5F5F3] text-[#9B9B99]"
                   )}>
                     {tab.count ?? 0}
                   </span>
@@ -369,13 +369,13 @@ const UsersManagement = () => {
                 placeholder="Search by name or email…"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-10 pr-4 py-2 border border-[#E8E7E5] rounded-lg text-sm text-[#111110] placeholder:text-[#9B9B99] focus:outline-none focus:ring-2 focus:ring-[#D4755B]/15 focus:border-[#D4755B] transition-all"
+                className="w-full pl-10 pr-4 py-2 border border-[#E8E7E5] rounded-lg text-sm text-[#0F0C11] placeholder:text-[#9B9B99] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/15 focus:border-[#A3078F] transition-all"
               />
             </div>
             <select
               value={sortBy}
               onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 border border-[#E8E7E5] rounded-lg bg-white text-sm text-[#6B6B6A] focus:outline-none focus:border-[#D4755B] transition-all"
+              className="px-3 py-2 border border-[#E8E7E5] rounded-lg bg-white text-sm text-[#6B6B6A] focus:outline-none focus:border-[#A3078F] transition-all"
             >
               <option value="createdAt">Date Joined</option>
               <option value="lastActive">Last Active</option>
@@ -402,7 +402,7 @@ const UsersManagement = () => {
                       type="checkbox"
                       checked={selectedUsers.size === users.length && users.length > 0}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-[#D0CFCE] accent-[#D4755B] cursor-pointer"
+                      className="w-4 h-4 rounded border-[#D0CFCE] accent-[#A3078F] cursor-pointer"
                     />
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[#9B9B99] uppercase tracking-wider">User</th>
@@ -426,7 +426,7 @@ const UsersManagement = () => {
                         type="checkbox"
                         checked={selectedUsers.has(user._id)}
                         onChange={() => handleSelectUser(user._id)}
-                        className="w-4 h-4 rounded border-[#D0CFCE] accent-[#D4755B] cursor-pointer"
+                        className="w-4 h-4 rounded border-[#D0CFCE] accent-[#A3078F] cursor-pointer"
                       />
                     </td>
 
@@ -440,7 +440,7 @@ const UsersManagement = () => {
                           {getInitials(user.name)}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[#111110] truncate">{user.name}</p>
+                          <p className="text-sm font-semibold text-[#0F0C11] truncate">{user.name}</p>
                           <p className="text-xs text-[#9B9B99] truncate">{user.email}</p>
                         </div>
                       </div>
@@ -463,7 +463,7 @@ const UsersManagement = () => {
 
                     {/* Properties */}
                     <td className="px-4 py-3.5">
-                      <span className="font-space-mono text-sm text-[#111110] tabular-nums">
+                      <span className="font-space-mono text-sm text-[#0F0C11] tabular-nums">
                         {user.propertyCount || 0}
                       </span>
                     </td>
@@ -508,7 +508,7 @@ const UsersManagement = () => {
                         )}
                         <button
                           onClick={() => navigate(`/users/${user._id}`)}
-                          className="p-1.5 text-[#9B9B99] hover:text-[#111110] hover:bg-[#F5F5F3] rounded-lg transition-colors"
+                          className="p-1.5 text-[#9B9B99] hover:text-[#0F0C11] hover:bg-[#F5F5F3] rounded-lg transition-colors"
                           title="View profile"
                         >
                           <Eye className="w-4 h-4" />

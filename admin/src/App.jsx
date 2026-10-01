@@ -11,6 +11,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 // Components
 import Sidebar from "./components/Sidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SuperAdminRoute from "./components/SuperAdminRoute";
 import ErrorFallback from "./components/ErrorFallback";
 
 // Pages
@@ -21,10 +22,13 @@ import Add from "./pages/Add";
 import Update from "./pages/Update";
 import Appointments from "./pages/Appointments";
 import PendingListings from "./pages/PendingListings";
+import Districts from "./pages/Districts";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
 import ActivityLogs from "./pages/ActivityLogs";
 import AIModels from "./pages/AIModels";
+import Blog from "./pages/Blog";
+import Careers from "./pages/Careers";
 
 // Page transition variants
 const pageVariants = {
@@ -43,7 +47,7 @@ const AppLayout = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4] flex">
+    <div className="min-h-screen bg-[#FAF8FB] flex">
       {/* Sidebar */}
       {!isLoginPage && (
         <Sidebar
@@ -78,16 +82,24 @@ const AppLayout = () => {
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/list" element={<PropertyListings />} />
-                <Route path="/add" element={<Add />} />
-                <Route path="/update/:id" element={<Update />} />
-                <Route path="/appointments" element={<Appointments />} />
+                {/* Super admin and district admins */}
                 <Route path="/pending-listings" element={<PendingListings />} />
-                <Route path="/users" element={<Users />} />
-                <Route path="/users/:id" element={<UserDetails />} />
-                <Route path="/activity-logs" element={<ActivityLogs />} />
-                <Route path="/ai-models" element={<AIModels />} />
+
+                {/* Super admin only */}
+                <Route element={<SuperAdminRoute />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/list" element={<PropertyListings />} />
+                  <Route path="/add" element={<Add />} />
+                  <Route path="/update/:id" element={<Update />} />
+                  <Route path="/appointments" element={<Appointments />} />
+                  <Route path="/districts" element={<Districts />} />
+                  <Route path="/users" element={<Users />} />
+                  <Route path="/users/:id" element={<UserDetails />} />
+                  <Route path="/activity-logs" element={<ActivityLogs />} />
+                  <Route path="/ai-models" element={<AIModels />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/careers" element={<Careers />} />
+                </Route>
               </Route>
 
               {/* 404 Route */}

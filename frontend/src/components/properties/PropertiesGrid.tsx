@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, type Variants } from 'framer-motion';
 import PropertyCard from './PropertyCard';
 import type { Property } from '../../pages/PropertiesPage';
-import { formatPrice } from '../../utils/formatPrice';
+import { propertyPriceLabel, propertySpecs } from '../../utils/propertyDisplay';
 import { Link } from 'react-router-dom';
 import { MapPin, Bed, Bath, Maximize2 } from 'lucide-react';
 
@@ -38,7 +38,7 @@ const PropertyRow: React.FC<{ property: Property; index: number }> = ({ property
     : property.availability?.toUpperCase();
 
   return (
-    <Link to={`/property/${property._id}`} className="group block outline-none focus-visible:ring-2 focus-visible:ring-[#D4755B] rounded-2xl">
+    <Link to={`/property/${property._id}`} className="group block outline-none focus-visible:ring-2 focus-visible:ring-[#A3078F] rounded-2xl">
       <div className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.09)] transition-shadow duration-300 flex gap-0">
         {/* Thumbnail */}
         <div className="relative w-52 shrink-0 overflow-hidden">
@@ -61,23 +61,38 @@ const PropertyRow: React.FC<{ property: Property; index: number }> = ({ property
         {/* Content */}
         <div className="flex-1 px-6 py-5 flex flex-col justify-between">
           <div>
-            <h3 className="font-fraunces text-lg font-semibold text-[#221410] mb-1 leading-snug">{property.title}</h3>
+            <h3 className="font-fraunces text-lg font-semibold text-[#1A0A1E] mb-1 leading-snug">{property.title}</h3>
             <div className="flex items-center gap-1 mb-3">
-              <MapPin className="w-3.5 h-3.5 text-[#D4755B] shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-[#A3078F] shrink-0" />
               <span className="font-manrope text-sm text-[#6B7280]">{property.location}</span>
             </div>
-            <div className="flex items-center gap-4 font-manrope text-sm text-[#6B7280]">
-              <span className="flex items-center gap-1.5"><Bed className="w-4 h-4" />{property.beds} Beds</span>
-              <span className="flex items-center gap-1.5"><Bath className="w-4 h-4" />{property.baths} Baths</span>
-              <span className="flex items-center gap-1.5"><Maximize2 className="w-4 h-4" />{property.sqft.toLocaleString()} sqft</span>
-            </div>
+            {property.source === 'app' ? (
+              <div className="flex flex-wrap items-center gap-4 font-manrope text-sm text-[#6B7280]">
+                {propertySpecs(property).map((spec, i) => (
+                  <span key={spec} className="flex items-center gap-1.5">
+                    {i === 0 && <Maximize2 className="w-4 h-4" />}{spec}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-4 font-manrope text-sm text-[#6B7280]">
+                <span className="flex items-center gap-1.5"><Bed className="w-4 h-4" />{property.beds ?? 0} Beds</span>
+                <span className="flex items-center gap-1.5"><Bath className="w-4 h-4" />{property.baths ?? 0} Baths</span>
+                <span className="flex items-center gap-1.5"><Maximize2 className="w-4 h-4" />{property.sqft.toLocaleString()} sqft</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between mt-4">
-            <p className="font-fraunces text-2xl font-bold text-[#D4755B] tabular-nums">
-              {formatPrice(property.price)}
-            </p>
+            <div>
+              <p className="font-fraunces text-2xl font-bold text-[#A3078F] tabular-nums">
+                {propertyPriceLabel(property)}
+              </p>
+              {property.unitPriceLabel && (
+                <p className="font-manrope text-xs text-[#6B7280] tabular-nums">{property.unitPriceLabel}</p>
+              )}
+            </div>
             {property.type && (
-              <span className="font-manrope text-xs uppercase tracking-wider text-[#9CA3AF] border border-[#E6E0DA] rounded px-2 py-0.5">
+              <span className="font-manrope text-xs uppercase tracking-wider text-[#9CA3AF] border border-[#E8E1EA] rounded px-2 py-0.5">
                 {property.type}
               </span>
             )}
@@ -104,11 +119,10 @@ const PropertiesGrid: React.FC<PropertiesGridProps> = ({ properties, viewMode = 
                 id={property._id}
                 image={property.image?.[0] || fallbackImages[index % fallbackImages.length]}
                 name={property.title}
-                price={formatPrice(property.price)}
+                price={propertyPriceLabel(property)}
+                subPrice={property.unitPriceLabel}
                 location={property.location}
-                beds={property.beds}
-                baths={property.baths}
-                sqft={property.sqft}
+                specs={propertySpecs(property)}
                 badge={
                   property.availability === 'sold' ? 'SOLD' :
                   property.availability === 'rent' ? 'FOR RENT' :

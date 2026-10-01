@@ -35,28 +35,28 @@ const AIAnalysisPanel: React.FC<Props> = ({ analysis, loading, error, city }) =>
   /* ── Loading skeleton ──────────────────────────────── */
   if (loading) {
     return (
-      <div className="bg-white border border-[#E6E0DA] rounded-2xl p-6 space-y-5 animate-pulse">
+      <div className="bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5 animate-pulse">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-[#E6E0DA]/60 rounded-full shrink-0" />
+          <div className="w-9 h-9 bg-[#E8E1EA]/60 rounded-full shrink-0" />
           <div className="space-y-1.5 flex-1">
-            <div className="h-5 bg-[#E6E0DA]/60 rounded w-3/4" />
-            <div className="h-3.5 bg-[#E6E0DA]/40 rounded w-full" />
+            <div className="h-5 bg-[#E8E1EA]/60 rounded w-3/4" />
+            <div className="h-3.5 bg-[#E8E1EA]/40 rounded w-full" />
           </div>
         </div>
         {/* Verdict pills */}
         <div className="flex gap-2">
-          <div className="h-6 w-24 bg-[#E6E0DA]/40 rounded-full" />
-          <div className="h-6 w-20 bg-[#E6E0DA]/40 rounded-full" />
+          <div className="h-6 w-24 bg-[#E8E1EA]/40 rounded-full" />
+          <div className="h-6 w-20 bg-[#E8E1EA]/40 rounded-full" />
         </div>
         {/* Best value block */}
-        <div className="h-28 bg-[#E6E0DA]/30 rounded-xl" />
+        <div className="h-28 bg-[#E8E1EA]/30 rounded-xl" />
         {/* Recs */}
         <div className="space-y-2">
           {[1, 2, 3].map(i => (
             <div key={i} className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-[#E6E0DA]/50 rounded-full shrink-0" />
-              <div className="h-4 bg-[#E6E0DA]/40 rounded flex-1" />
+              <div className="w-5 h-5 bg-[#E8E1EA]/50 rounded-full shrink-0" />
+              <div className="h-4 bg-[#E8E1EA]/40 rounded flex-1" />
             </div>
           ))}
         </div>
@@ -67,14 +67,14 @@ const AIAnalysisPanel: React.FC<Props> = ({ analysis, loading, error, city }) =>
   if (error || !analysis) return null;
 
   return (
-    <div className="bg-white border border-[#E6E0DA] rounded-2xl p-6 space-y-5 mt-15">
+    <div className="bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5 mt-15">
       {/* ── Header ───────────────────────────────────── */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 bg-[#D4755B]/10 border border-[#D4755B]/20 rounded-full flex items-center justify-center shrink-0">
-          <Brain className="w-4 h-4 text-[#D4755B]" />
+        <div className="w-9 h-9 bg-[#A3078F]/10 border border-[#A3078F]/20 rounded-full flex items-center justify-center shrink-0">
+          <Brain className="w-4 h-4 text-[#A3078F]" />
         </div>
         <div>
-          <h2 className="font-syne text-base font-bold text-[#221410] leading-tight">
+          <h2 className="font-syne text-base font-bold text-[#1A0A1E] leading-tight">
             AI Market Analysis
           </h2>
           <p className="font-manrope text-[12px] text-[#9CA3AF] leading-tight mt-0.5">
@@ -114,15 +114,15 @@ const AIAnalysisPanel: React.FC<Props> = ({ analysis, loading, error, city }) =>
 
       {/* ── Best value pick ───────────────────────────── */}
       {analysis.best_value && (
-        <div className="relative bg-gradient-to-br from-[#221410] via-[#3d2519] to-[#221410] overflow-hidden rounded-xl p-5 flex flex-col gap-3 shadow-lg">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4755B]/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative bg-gradient-to-br from-[#1A0A1E] via-[#3e024b] to-[#1A0A1E] overflow-hidden rounded-xl p-5 flex flex-col gap-3 shadow-lg">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#A3078F]/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="flex items-center gap-2.5 relative z-10">
             <div className="w-8 h-8 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center shrink-0">
-              <Trophy className="w-4 h-4 text-[#D4755B]" />
+              <Trophy className="w-4 h-4 text-[#A3078F]" />
             </div>
-            <span className="font-space-mono text-[10px] text-[#D4755B] uppercase tracking-widest font-bold flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D4755B] animate-pulse inline-block" />
+            <span className="font-space-mono text-[10px] text-[#A3078F] uppercase tracking-widest font-bold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#A3078F] animate-pulse inline-block" />
               Best Value Pick
             </span>
           </div>
@@ -140,9 +140,9 @@ const AIAnalysisPanel: React.FC<Props> = ({ analysis, loading, error, city }) =>
 
       {/* ── Recommendations ──────────────────────────── */}
       {analysis.recommendations?.length > 0 && (
-        <div className="bg-[#FAF8F4] border border-[#E6E0DA] rounded-xl p-5">
-          <h3 className="font-syne text-sm font-bold text-[#221410] mb-3 flex items-center gap-2 pb-3 border-b border-[#E6E0DA]/60">
-            <Lightbulb className="w-4 h-4 text-[#D4755B] shrink-0" />
+        <div className="bg-[#FAF8FB] border border-[#E8E1EA] rounded-xl p-5">
+          <h3 className="font-syne text-sm font-bold text-[#1A0A1E] mb-3 flex items-center gap-2 pb-3 border-b border-[#E8E1EA]/60">
+            <Lightbulb className="w-4 h-4 text-[#A3078F] shrink-0" />
             Strategic Recommendations
           </h3>
 
@@ -150,10 +150,10 @@ const AIAnalysisPanel: React.FC<Props> = ({ analysis, loading, error, city }) =>
             {analysis.recommendations.map((rec, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2.5 bg-white border border-[#E6E0DA]/50 rounded-lg p-3"
+                className="flex items-start gap-2.5 bg-white border border-[#E8E1EA]/50 rounded-lg p-3"
               >
-                <div className="mt-0.5 bg-[#FAF8F4] p-1 rounded-full border border-[#E6E0DA] shrink-0">
-                  <ChevronRight className="w-3 h-3 text-[#D4755B]" />
+                <div className="mt-0.5 bg-[#FAF8FB] p-1 rounded-full border border-[#E8E1EA] shrink-0">
+                  <ChevronRight className="w-3 h-3 text-[#A3078F]" />
                 </div>
                 <span className="font-manrope text-[13px] font-medium text-[#4B5563] leading-relaxed">
                   {rec}

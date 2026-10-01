@@ -1,10 +1,10 @@
-# BuildEstate — AI-Powered Real Estate Platform
+# Bhumi Bazar — AI-Powered Real Estate Platform
 
-> BuildEstate helps users find residential and commercial properties across India using GPT-4 powered search, live market scraping from 99acres, MagicBricks, and Housing.com, and location trend analysis.
+> Bhumi Bazar helps users find residential and commercial properties across India using GPT-4 powered search, live market scraping from 99acres, MagicBricks, and Housing.com, and location trend analysis.
 
-## What BuildEstate Is
+## What Bhumi Bazar Is
 
-BuildEstate is an AI-powered real estate platform serving homebuyers, sellers, and renters across India. Users search for flats, villas, apartments, and houses using natural language; the platform scrapes live listings from major Indian property portals and ranks results using GPT-4.1.
+Bhumi Bazar is an AI-powered real estate platform serving homebuyers, sellers, and renters across India. Users search for flats, villas, apartments, and houses using natural language; the platform scrapes live listings from major Indian property portals and ranks results using GPT-4.1.
 
 ## Core Features
 

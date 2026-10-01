@@ -21,13 +21,23 @@ const adminActivityLogSchema = new mongoose.Schema({
       'unban_user',
       'delete_user',
       'bulk_suspend_users',
-      'bulk_ban_users'
+      'bulk_ban_users',
+      'approve_listing',
+      'reject_listing',
+      'assign_district',
+      'create_district',
+      'update_district',
+      'delete_district',
+      'create_district_admin',
+      'update_district_admin',
+      'delete_district_admin'
     ]
   },
+  // property = website listing, listing = mobile app listing
   targetType: {
     type: String,
     required: true,
-    enum: ['property', 'user', 'appointment']
+    enum: ['property', 'listing', 'user', 'appointment', 'district', 'admin']
   },
   targetId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -43,7 +53,8 @@ const adminActivityLogSchema = new mongoose.Schema({
     affectedIds: [mongoose.Schema.Types.ObjectId],
     previousStatus: String,
     newStatus: String,
-    days: Number
+    days: Number,
+    district: String
   },
   ipAddress: {
     type: String,

@@ -5,20 +5,21 @@ import apiClient from '../services/apiClient';
 import { Upload, X, Plus, Home, MapPin, Phone, DollarSign, BedDouble, Bath, Maximize, Link as LinkIcon, CheckSquare, Square } from 'lucide-react';
 import { AMENITIES_LIST } from '../constants/amenities';
 import { cn } from '../lib/utils';
+import DistrictSelect from '../components/DistrictSelect';
 
 const PROPERTY_TYPES = ['House', 'Apartment', 'Office', 'Villa'];
 const AVAILABILITY_TYPES = ['rent', 'buy'];
 
-const inputClass = "w-full px-4 py-3 bg-white border border-[#E6D5C3] rounded-xl text-[#1C1B1A] placeholder-[#9CA3AF] text-sm transition-all duration-200 outline-none focus:border-[#D4755B] focus:ring-2 focus:ring-[#D4755B]/15";
-const labelClass = "block text-sm font-semibold text-[#1C1B1A] mb-2";
+const inputClass = "w-full px-4 py-3 bg-white border border-[#E6D6E8] rounded-xl text-[#17131A] placeholder-[#9CA3AF] text-sm transition-all duration-200 outline-none focus:border-[#A3078F] focus:ring-2 focus:ring-[#A3078F]/15";
+const labelClass = "block text-sm font-semibold text-[#17131A] mb-2";
 
 const SectionHeader = ({ icon: Icon, title, subtitle }) => (
   <div className="flex items-center gap-3 mb-5">
-    <div className="w-9 h-9 bg-[#D4755B]/10 rounded-xl flex items-center justify-center">
-      <Icon className="w-4.5 h-4.5 text-[#D4755B]" />
+    <div className="w-9 h-9 bg-[#A3078F]/10 rounded-xl flex items-center justify-center">
+      <Icon className="w-4.5 h-4.5 text-[#A3078F]" />
     </div>
     <div>
-      <h3 className="text-base font-bold text-[#1C1B1A]">{title}</h3>
+      <h3 className="text-base font-bold text-[#17131A]">{title}</h3>
       {subtitle && <p className="text-xs text-[#9CA3AF]">{subtitle}</p>}
     </div>
   </div>
@@ -38,6 +39,7 @@ const PropertyForm = () => {
     availability: '',
     amenities: [],
     googleMapLink: '',
+    district: '',
     images: [],
   });
 
@@ -107,7 +109,7 @@ const PropertyForm = () => {
         setFormData({
           title: '', type: '', price: '', location: '', description: '',
           beds: '', baths: '', sqft: '', phone: '', availability: '',
-          amenities: [], googleMapLink: '', images: [],
+          amenities: [], googleMapLink: '', district: '', images: [],
         });
         setPreviewUrls([]);
       } else {
@@ -122,7 +124,7 @@ const PropertyForm = () => {
   };
 
   return (
-    <div className="min-h-screen pt-8 pb-12 px-4 bg-[#FAF8F4]">
+    <div className="min-h-screen pt-8 pb-12 px-4 bg-[#FAF8FB]">
       <div className="max-w-3xl mx-auto">
         {/* Page Header */}
         <motion.div
@@ -130,8 +132,8 @@ const PropertyForm = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-[#1C1B1A] mb-1">Add New Property</h1>
-          <p className="text-[#5A5856]">Fill in the details to list a new property on BuildEstate</p>
+          <h1 className="text-3xl font-bold text-[#17131A] mb-1">Add New Property</h1>
+          <p className="text-[#5A5856]">Fill in the details to list a new property on Bhumi Bazar</p>
         </motion.div>
 
         <motion.form
@@ -142,7 +144,7 @@ const PropertyForm = () => {
           className="space-y-6"
         >
           {/* Basic Information */}
-          <div className="bg-white rounded-2xl p-6 border border-[#E6D5C3] shadow-card">
+          <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
             <SectionHeader icon={Home} title="Basic Information" subtitle="Core property details" />
             <div className="space-y-4">
               <div>
@@ -186,7 +188,7 @@ const PropertyForm = () => {
           </div>
 
           {/* Location & Pricing */}
-          <div className="bg-white rounded-2xl p-6 border border-[#E6D5C3] shadow-card">
+          <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
             <SectionHeader icon={MapPin} title="Location & Pricing" />
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -206,6 +208,11 @@ const PropertyForm = () => {
                     value={formData.location} onChange={handleInputChange}
                     placeholder="e.g. Bandra West, Mumbai" className={cn(inputClass, 'pl-10')} />
                 </div>
+              </div>
+              <div>
+                <label htmlFor="district" className={labelClass}>District</label>
+                <DistrictSelect id="district" name="district" value={formData.district}
+                  onChange={handleInputChange} className={inputClass} />
               </div>
               <div>
                 <label htmlFor="phone" className={labelClass}>Contact Phone</label>
@@ -231,7 +238,7 @@ const PropertyForm = () => {
           </div>
 
           {/* Property Details */}
-          <div className="bg-white rounded-2xl p-6 border border-[#E6D5C3] shadow-card">
+          <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
             <SectionHeader icon={Maximize} title="Property Details" subtitle="Size and specifications" />
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -265,7 +272,7 @@ const PropertyForm = () => {
           </div>
 
           {/* Amenities */}
-          <div className="bg-white rounded-2xl p-6 border border-[#E6D5C3] shadow-card">
+          <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
             <SectionHeader icon={CheckSquare} title="Amenities" subtitle="Select all that apply" />
             <div className="flex flex-wrap gap-2 mb-4">
               {AMENITIES_LIST.map((amenity) => {
@@ -275,8 +282,8 @@ const PropertyForm = () => {
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200',
                       selected
-                        ? 'bg-[#D4755B] text-white shadow-sm'
-                        : 'bg-[#FAF8F4] text-[#5A5856] border border-[#E6D5C3] hover:border-[#D4755B] hover:text-[#D4755B]'
+                        ? 'bg-[#A3078F] text-white shadow-sm'
+                        : 'bg-[#FAF8FB] text-[#5A5856] border border-[#E6D6E8] hover:border-[#A3078F] hover:text-[#A3078F]'
                     )}
                   >
                     {selected ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
@@ -293,7 +300,7 @@ const PropertyForm = () => {
                 placeholder="Add custom amenity..."
                 className={cn(inputClass, 'flex-1')} />
               <button type="button" onClick={handleAddAmenity}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-[#1C1B1A] text-white rounded-xl text-sm font-medium hover:bg-[#D4755B] transition-colors">
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-[#17131A] text-white rounded-xl text-sm font-medium hover:bg-[#A3078F] transition-colors">
                 <Plus className="w-4 h-4" />
                 Add
               </button>
@@ -304,10 +311,10 @@ const PropertyForm = () => {
               <div className="mt-3 flex flex-wrap gap-2">
                 {formData.amenities.filter((a) => !AMENITIES_LIST.includes(a)).map((amenity) => (
                   <span key={amenity}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#D4755B]/10 text-[#D4755B] rounded-full text-sm font-medium">
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#A3078F]/10 text-[#A3078F] rounded-full text-sm font-medium">
                     {amenity}
                     <button type="button" onClick={() => handleAmenityToggle(amenity)}
-                      className="hover:text-[#C05E44] transition-colors">
+                      className="hover:text-[#7A0A74] transition-colors">
                       <X size={13} />
                     </button>
                   </span>
@@ -317,7 +324,7 @@ const PropertyForm = () => {
           </div>
 
           {/* Image Upload */}
-          <div className="bg-white rounded-2xl p-6 border border-[#E6D5C3] shadow-card">
+          <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
             <SectionHeader icon={Upload} title="Property Images" subtitle={`${previewUrls.length}/4 images uploaded`} />
 
             {previewUrls.length > 0 && (
@@ -341,9 +348,9 @@ const PropertyForm = () => {
 
             {previewUrls.length < 4 && (
               <label htmlFor="images"
-                className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-[#E6D5C3] rounded-xl cursor-pointer bg-[#FAF8F4] hover:border-[#D4755B] hover:bg-[#D4755B]/5 transition-all duration-200 group">
-                <Upload className="w-8 h-8 text-[#9CA3AF] group-hover:text-[#D4755B] mb-2 transition-colors" />
-                <span className="text-sm font-medium text-[#5A5856] group-hover:text-[#D4755B] transition-colors">
+                className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-[#E6D6E8] rounded-xl cursor-pointer bg-[#FAF8FB] hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-all duration-200 group">
+                <Upload className="w-8 h-8 text-[#9CA3AF] group-hover:text-[#A3078F] mb-2 transition-colors" />
+                <span className="text-sm font-medium text-[#5A5856] group-hover:text-[#A3078F] transition-colors">
                   Click to upload images
                 </span>
                 <span className="text-xs text-[#9CA3AF] mt-1">PNG, JPG up to 10MB each</span>
@@ -359,7 +366,7 @@ const PropertyForm = () => {
             disabled={loading}
             whileHover={{ scale: loading ? 1 : 1.01 }}
             whileTap={{ scale: loading ? 1 : 0.99 }}
-            className="w-full py-4 bg-[#1C1B1A] hover:bg-[#D4755B] text-[#FAF8F4] rounded-xl font-semibold text-base transition-all duration-300 shadow-lg hover:shadow-terracotta disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-[#17131A] hover:bg-[#A3078F] text-[#FAF8FB] rounded-xl font-semibold text-base transition-all duration-300 shadow-lg hover:shadow-terracotta disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? 'Adding Property...' : 'Add Property'}
           </motion.button>

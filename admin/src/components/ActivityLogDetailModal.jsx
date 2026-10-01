@@ -47,9 +47,9 @@ const ActivityLogDetailModal = ({
   };
 
   const DetailRow = ({ label, value, icon: Icon }) => (
-    <div className="flex items-start gap-3 py-3 border-b border-[#F5F1E8] last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-[#F5F0F6] last:border-0">
       {Icon && (
-        <div className="w-8 h-8 bg-[#F5F1E8] rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+        <div className="w-8 h-8 bg-[#F5F0F6] rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
           <Icon className="w-4 h-4 text-[#5A5856]" />
         </div>
       )}
@@ -57,7 +57,7 @@ const ActivityLogDetailModal = ({
         <dt className="text-xs font-medium text-[#5A5856] uppercase tracking-wider mb-1">
           {label}
         </dt>
-        <dd className="text-sm text-[#1C1B1A] break-words">
+        <dd className="text-sm text-[#17131A] break-words">
           {value || 'N/A'}
         </dd>
       </div>
@@ -76,19 +76,19 @@ const ActivityLogDetailModal = ({
           className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-[#E6E0DA]">
+          <div className="flex items-center justify-between p-6 border-b border-[#E8E1EA]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#D4755B]/10 rounded-xl flex items-center justify-center">
-                <Info className="w-5 h-5 text-[#D4755B]" />
+              <div className="w-10 h-10 bg-[#A3078F]/10 rounded-xl flex items-center justify-center">
+                <Info className="w-5 h-5 text-[#A3078F]" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-[#1C1B1A]">Activity Details</h3>
+                <h3 className="text-lg font-bold text-[#17131A]">Activity Details</h3>
                 <p className="text-sm text-[#5A5856]">Complete log information</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-[#F5F1E8] rounded-lg transition-colors"
+              className="p-2 hover:bg-[#F5F0F6] rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -136,12 +136,12 @@ const ActivityLogDetailModal = ({
 
             {/* Metadata Section */}
             {log.metadata && Object.keys(log.metadata).length > 0 && (
-              <div className="border border-[#E6E0DA] rounded-xl p-4">
+              <div className="border border-[#E8E1EA] rounded-xl p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-bold text-[#1C1B1A]">Additional Details</h4>
+                  <h4 className="text-sm font-bold text-[#17131A]">Additional Details</h4>
                   <button
                     onClick={handleCopyMetadata}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs border border-[#E6E0DA] rounded-lg hover:bg-[#F5F1E8] transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs border border-[#E8E1EA] rounded-lg hover:bg-[#F5F0F6] transition-colors"
                   >
                     {copied ? (
                       <>
@@ -163,11 +163,11 @@ const ActivityLogDetailModal = ({
                       <dt className="text-xs font-medium text-[#5A5856] uppercase tracking-wider mb-1">
                         {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
                       </dt>
-                      <dd className="text-sm text-[#1C1B1A]">
+                      <dd className="text-sm text-[#17131A]">
                         {Array.isArray(value) ? (
                           <div className="space-y-1">
                             {value.slice(0, 10).map((item, index) => (
-                              <div key={index} className="text-xs font-mono bg-[#F5F1E8] px-2 py-1 rounded">
+                              <div key={index} className="text-xs font-mono bg-[#F5F0F6] px-2 py-1 rounded">
                                 {String(item)}
                               </div>
                             ))}
@@ -178,7 +178,7 @@ const ActivityLogDetailModal = ({
                             )}
                           </div>
                         ) : typeof value === 'object' ? (
-                          <pre className="text-xs font-mono bg-[#F5F1E8] p-2 rounded overflow-x-auto">
+                          <pre className="text-xs font-mono bg-[#F5F0F6] p-2 rounded overflow-x-auto">
                             {JSON.stringify(value, null, 2)}
                           </pre>
                         ) : (
@@ -193,10 +193,10 @@ const ActivityLogDetailModal = ({
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-[#E6E0DA] bg-[#FAF8F4]">
+          <div className="p-6 border-t border-[#E8E1EA] bg-[#FAF8FB]">
             <button
               onClick={onClose}
-              className="w-full px-4 py-3 bg-[#D4755B] text-white rounded-xl font-semibold text-sm hover:bg-[#C05E44] transition-colors"
+              className="w-full px-4 py-3 bg-[#A3078F] text-white rounded-xl font-semibold text-sm hover:bg-[#7A0A74] transition-colors"
             >
               Close
             </button>

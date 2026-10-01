@@ -12,12 +12,12 @@ const PropertyBreadcrumb: React.FC<PropertyBreadcrumbProps> = ({
   propertyName = '',
 }) => {
   return (
-    <div className="bg-[#FAF8F4] border-b border-[#E6E0DA]">
+    <div className="bg-[#FAF8FB] border-b border-[#E8E1EA]">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-8 py-3">
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 font-manrope text-xs text-[#9CA3AF]">
           <Link
             to="/"
-            className="flex items-center gap-1 hover:text-[#D4755B] transition-colors duration-150"
+            className="flex items-center gap-1 hover:text-[#A3078F] transition-colors duration-150"
             aria-label="Home"
           >
             <Home className="w-3.5 h-3.5" />
@@ -27,7 +27,7 @@ const PropertyBreadcrumb: React.FC<PropertyBreadcrumbProps> = ({
 
           <Link
             to="/properties"
-            className="hover:text-[#D4755B] transition-colors duration-150"
+            className="hover:text-[#A3078F] transition-colors duration-150"
           >
             Properties
           </Link>
@@ -37,7 +37,7 @@ const PropertyBreadcrumb: React.FC<PropertyBreadcrumbProps> = ({
               <ChevronRight className="w-3 h-3 shrink-0" aria-hidden />
               <Link
                 to={`/properties?location=${encodeURIComponent(city)}`}
-                className="hover:text-[#D4755B] transition-colors duration-150"
+                className="hover:text-[#A3078F] transition-colors duration-150"
               >
                 {city}
               </Link>
@@ -47,7 +47,7 @@ const PropertyBreadcrumb: React.FC<PropertyBreadcrumbProps> = ({
           {propertyName && (
             <>
               <ChevronRight className="w-3 h-3 shrink-0" aria-hidden />
-              <span className="text-[#221410] font-medium truncate max-w-[240px]" aria-current="page">
+              <span className="text-[#1A0A1E] font-medium truncate max-w-[240px]" aria-current="page">
                 {propertyName}
               </span>
             </>

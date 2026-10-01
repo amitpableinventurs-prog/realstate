@@ -13,24 +13,56 @@ import ScheduleViewingCard from '../components/property-details/ScheduleViewingC
 import { propertiesAPI } from '../services/api';
 import { useSEO } from '../hooks/useSEO';
 import StructuredData from '../components/common/StructuredData';
-import { formatPrice } from '../utils/formatPrice';
+import { propertyPriceLabel } from '../utils/propertyDisplay';
+import type { Property } from './PropertiesPage';
 
-interface PropertyData {
-  _id: string;
-  title: string;
-  location: string;
-  price: number;
-  image: string[];
-  beds: number;
-  baths: number;
-  sqft: number;
-  type: string;
-  availability: string;
-  description: string;
-  amenities: string[];
-  phone: string;
-  googleMapLink?: string;
-}
+type PropertyData = Property;
+
+// Approved mobile-app listings are land: show their land-record details
+const LandDetails: React.FC<{ property: PropertyData }> = ({ property }) => {
+  const rows = [
+    ['Listing for', property.availability],
+    ['Property type', property.type],
+    ['Area', property.areaLabel],
+    ['Khata No.', property.khataNo],
+    ['Khasra No.', property.khasraNo],
+    ['Rate', property.unitPriceLabel],
+    ['Total price', propertyPriceLabel(property)],
+  ].filter(([, value]) => value) as [string, string][];
+
+  return (
+    <div className="mb-8">
+      <h2 className="font-fraunces text-2xl font-semibold text-[#1A0A1E] mb-4">Land details</h2>
+      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 font-manrope text-sm">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-4 border-b border-[#F2EFF3] pb-2">
+            <dt className="text-[#6B7280]">{label}</dt>
+            <dd className="font-semibold text-[#1A0A1E] text-right tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="font-manrope text-xs text-[#9CA3AF] mt-3">
+        Land record details are provided by the owner. Verify them with the official records before any payment.
+      </p>
+    </div>
+  );
+};
+
+// App listings are contacted through the app (the owner's number is only shown to signed-in app users)
+const AppContactCard: React.FC<{ property: PropertyData }> = ({ property }) => (
+  <div className="bg-white border border-[#E8E1EA] rounded-2xl p-6 shadow-sm lg:sticky lg:top-24">
+    <p className="font-fraunces text-3xl font-bold text-[#A3078F] tabular-nums">{propertyPriceLabel(property)}</p>
+    {property.unitPriceLabel && (
+      <p className="font-manrope text-sm text-[#6B7280] mt-1 tabular-nums">{property.unitPriceLabel}</p>
+    )}
+    <div className="border-t border-[#E8E1EA] mt-5 pt-5">
+      <p className="font-manrope font-semibold text-[#1A0A1E] mb-1">Interested in this property?</p>
+      <p className="font-manrope text-sm text-[#6B7280] leading-relaxed">
+        Open this listing in the Bhumi Bazar mobile app to see the owner's number and send an enquiry.
+      </p>
+    </div>
+  </div>
+);
 
 const PropertyDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,8 +74,10 @@ const PropertyDetailsPage: React.FC = () => {
   useSEO({
     title: property ? `${property.title} - ${property.location}` : 'Property Details',
     description: property
-      ? `${property.title} in ${property.location}. ${property.beds} beds, ${property.baths} baths, ${property.sqft} sqft. ${property.type}.`
-      : 'View property details on BuildEstate.',
+      ? property.source === 'app'
+        ? `${property.title} in ${property.location}. ${property.areaLabel ?? ''} ${property.type} ${property.availability?.toLowerCase() ?? ''}. ${propertyPriceLabel(property)}.`
+        : `${property.title} in ${property.location}. ${property.beds} beds, ${property.baths} baths, ${property.sqft} sqft. ${property.type}.`
+      : 'View property details on Bhumi Bazar.',
     image: property?.image?.[0] || undefined,
     url: property ? `https://buildestate.vercel.app/property/${property._id}` : undefined,
     type: 'article',
@@ -97,11 +131,11 @@ const PropertyDetailsPage: React.FC = () => {
         <Navbar />
         <div className="flex items-center justify-center py-32">
           <div className="text-center">
-            <span className="material-icons text-5xl text-[#D4755B] mb-4">error_outline</span>
+            <span className="material-icons text-5xl text-[#A3078F] mb-4">error_outline</span>
             <p className="font-manrope text-xl text-[#374151] mb-4">{error || 'Property not found'}</p>
             <Link
               to="/properties"
-              className="bg-[#D4755B] text-white font-manrope font-bold px-8 py-3 rounded-lg hover:bg-[#B86851] transition-all inline-block"
+              className="bg-[#A3078F] text-white font-manrope font-bold px-8 py-3 rounded-lg hover:bg-[#8E0A82] transition-all inline-block"
             >
               Back to Properties
             </Link>
@@ -111,6 +145,8 @@ const PropertyDetailsPage: React.FC = () => {
       </div>
     );
   }
+
+  const isAppListing = property.source === 'app';
 
   // Extract city from location string (e.g. "Satellite, Ahmedabad, Gujarat" → "Ahmedabad")
   // Indian addresses typically end with state, so use second-to-last part as city
@@ -135,7 +171,7 @@ const PropertyDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#FAF8F4] min-h-screen">
+    <div className="bg-[#FAF8FB] min-h-screen">
       {/* Property Structured Data for SEO */}
       <StructuredData
         type="property"
@@ -144,10 +180,10 @@ const PropertyDetailsPage: React.FC = () => {
           description: property.description,
           location: city,
           region: cityParts[cityParts.length - 1] || '',
-          price: property.price,
+          price: property.price ?? undefined,
           sqft: property.sqft,
-          beds: property.beds,
-          baths: property.baths,
+          beds: property.beds ?? undefined,
+          baths: property.baths ?? undefined,
           image: property.image?.[0],
         }}
       />
@@ -181,19 +217,26 @@ const PropertyDetailsPage: React.FC = () => {
         refNumber={`#${property._id.slice(-8).toUpperCase()}`}
         name={property.title}
         location={property.location}
-        price={formatPrice(property.price)}
-        beds={property.beds}
-        baths={property.baths}
+        price={propertyPriceLabel(property)}
+        beds={property.beds ?? 0}
+        baths={property.baths ?? 0}
         sqft={property.sqft}
+        specs={isAppListing ? [
+          { label: 'Area', value: property.areaLabel ?? `${property.sqft.toLocaleString()} sqft` },
+          ...(property.khataNo ? [{ label: 'Khata', value: property.khataNo }] : []),
+          ...(property.khasraNo ? [{ label: 'Khasra', value: property.khasraNo }] : []),
+        ] : undefined}
       />
 
       {/* Main Content Area */}
-      <div className="bg-[#F2EFE9] py-12">
+      <div className="bg-[#F2EFF3] py-12">
         <div className="max-w-[1280px] mx-auto px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2">
-              <div className="bg-white border border-[#E6E0DA] rounded-2xl p-8 shadow-sm">
+              <div className="bg-white border border-[#E8E1EA] rounded-2xl p-8 shadow-sm">
+                {isAppListing && <LandDetails property={property} />}
+
                 {/* About Section */}
                 <PropertyAbout description={property.description} />
 
@@ -213,10 +256,15 @@ const PropertyDetailsPage: React.FC = () => {
 
             {/* Right Column - Schedule Viewing Sidebar */}
             <div className="lg:col-span-1">
-              <ScheduleViewingCard
-                property={{ name: property.title, id: property._id }}
-                price={formatPrice(property.price)}
-              />
+              {/* Site visits are booked against website properties only */}
+              {isAppListing ? (
+                <AppContactCard property={property} />
+              ) : (
+                <ScheduleViewingCard
+                  property={{ name: property.title, id: property._id }}
+                  price={propertyPriceLabel(property)}
+                />
+              )}
             </div>
           </div>
         </div>

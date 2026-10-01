@@ -9,7 +9,7 @@ interface ScheduleViewingCardProps {
   price?: string;
 }
 
-const INPUT = "w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 font-manrope text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[#D4755B] transition-[border-color]";
+const INPUT = "w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 font-manrope text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[#A3078F] transition-[border-color]";
 const LABEL = "block font-manrope text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5";
 
 const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, price }) => {
@@ -48,12 +48,12 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
   };
 
   return (
-    <div className="sticky top-24 bg-[#221410] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
+    <div className="sticky top-24 bg-[#1A0A1E] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
       {/* Price header */}
       <div className="px-6 pt-6 pb-5 border-b border-white/10">
         <p className="font-manrope text-xs text-white/50 uppercase tracking-wider mb-1">Listed Price</p>
         {price && (
-          <p className="font-fraunces text-3xl font-bold text-[#D4755B] tabular-nums leading-none">
+          <p className="font-fraunces text-3xl font-bold text-[#A3078F] tabular-nums leading-none">
             {price}
           </p>
         )}
@@ -76,7 +76,7 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
               </p>
               <button
                 onClick={() => setSuccess(false)}
-                className="font-manrope text-sm text-[#D4755B] hover:text-[#E8917A] transition-colors"
+                className="font-manrope text-sm text-[#A3078F] hover:text-[#D65FCB] transition-colors"
               >
                 Schedule another visit
               </button>
@@ -84,7 +84,7 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
           ) : (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="flex items-center gap-2 mb-5">
-                <Calendar className="w-4 h-4 text-[#D4755B]" />
+                <Calendar className="w-4 h-4 text-[#A3078F]" />
                 <h3 className="font-manrope font-semibold text-sm text-white">Schedule a Viewing</h3>
               </div>
 
@@ -124,9 +124,9 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
                       name="timeSlot" value={form.timeSlot} onChange={handleChange}
                       className={INPUT + ' appearance-none cursor-pointer'} required
                     >
-                      <option value="" className="bg-[#221410]">Pick time</option>
+                      <option value="" className="bg-[#1A0A1E]">Pick time</option>
                       {['09:00','10:00','11:00','14:00','15:00','16:00'].map(t => (
-                        <option key={t} value={t} className="bg-[#221410]">
+                        <option key={t} value={t} className="bg-[#1A0A1E]">
                           {t.replace('09:','9:')}
                           {+t.split(':')[0] < 12 ? ' AM' : ' PM'}
                         </option>
@@ -142,7 +142,7 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full mt-2 bg-[#D4755B] hover:bg-[#C05621] disabled:opacity-50 text-white font-manrope font-bold text-sm py-3.5 rounded-xl transition-all active:scale-[0.98] shadow-lg"
+                  className="w-full mt-2 bg-[#A3078F] hover:bg-[#7A0A74] disabled:opacity-50 text-white font-manrope font-bold text-sm py-3.5 rounded-xl transition-all active:scale-[0.98] shadow-lg"
                 >
                   {submitting ? 'Scheduling…' : 'Schedule Visit'}
                 </button>

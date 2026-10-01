@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "BuildEstate admin dashboard for property management",
+  "description": "Bhumi Bazar admin dashboard for property management",
   "author": "Aayush Vaghela",
   "license": "MIT",
   "repository": {

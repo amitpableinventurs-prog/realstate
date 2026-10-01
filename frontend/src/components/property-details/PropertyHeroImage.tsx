@@ -99,7 +99,7 @@ const Lightbox: React.FC<{
               key={i}
               onClick={e => { e.stopPropagation(); setCurrent(i); }}
               className={`w-12 h-8 rounded-md overflow-hidden transition-all ${
-                i === current ? 'ring-2 ring-[#D4755B] opacity-100' : 'opacity-40 hover:opacity-70'
+                i === current ? 'ring-2 ring-[#A3078F] opacity-100' : 'opacity-40 hover:opacity-70'
               }`}
             >
               <img src={img} alt="" className="w-full h-full object-cover" />
@@ -131,7 +131,7 @@ const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], imag
   if (imgs.length === 1) {
     return (
       <>
-        <div className="relative w-full h-[65vh] min-h-[420px] overflow-hidden bg-[#1C1B1A] cursor-pointer" onClick={() => open(0)}>
+        <div className="relative w-full h-[65vh] min-h-[420px] overflow-hidden bg-[#17131A] cursor-pointer" onClick={() => open(0)}>
           <img
             src={imgs[0]}
             alt={propertyName || 'Property'}
@@ -151,7 +151,7 @@ const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], imag
   if (imgs.length <= 4) {
     return (
       <>
-        <div className="flex gap-1 h-[62vh] min-h-[400px] bg-[#1C1B1A] overflow-hidden">
+        <div className="flex gap-1 h-[62vh] min-h-[400px] bg-[#17131A] overflow-hidden">
           {/* Main */}
           <div
             className="relative flex-[2] overflow-hidden cursor-pointer group"
@@ -196,7 +196,7 @@ const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], imag
   const gridImgs = imgs.slice(0, 5);
   return (
     <>
-      <div className="relative h-[60vh] min-h-[380px] bg-[#1C1B1A] overflow-hidden">
+      <div className="relative h-[60vh] min-h-[380px] bg-[#17131A] overflow-hidden">
         <div className="grid grid-cols-4 grid-rows-2 gap-1 h-full">
           {/* Hero — spans 2 cols × 2 rows */}
           <div
@@ -241,7 +241,7 @@ const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], imag
         {/* "Show all photos" button */}
         <button
           onClick={() => open(0)}
-          className="absolute bottom-4 right-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#221410] font-manrope font-semibold text-sm px-4 py-2 rounded-xl shadow-md transition-all active:scale-[0.96]"
+          className="absolute bottom-4 right-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A0A1E] font-manrope font-semibold text-sm px-4 py-2 rounded-xl shadow-md transition-all active:scale-[0.96]"
         >
           <Images className="w-4 h-4" />
           Show all {imgs.length} photos

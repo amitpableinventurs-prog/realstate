@@ -1,8 +1,8 @@
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:F97316,100:FB923C&height=220&section=header&text=BuildEstate&fontSize=80&fontColor=ffffff&fontAlignY=35&animation=fadeIn&desc=AI-Powered+Real+Estate+Platform&descAlignY=58&descSize=24" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:F97316,100:FB923C&height=220&section=header&text=Bhumi Bazar&fontSize=80&fontColor=ffffff&fontAlignY=35&animation=fadeIn&desc=AI-Powered+Real+Estate+Platform&descAlignY=58&descSize=24" width="100%"/>
 
 <div align="center">
 
-  <img src="./frontend/Assets/Logo.svg" alt="BuildEstate Logo" height="80" />
+  <img src="./frontend/Assets/Logo.svg" alt="Bhumi Bazar Logo" height="80" />
 
 <br/><br/>
 
@@ -41,9 +41,9 @@
 
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
-## 🏠 What is BuildEstate?
+## 🏠 What is Bhumi Bazar?
 
-**BuildEstate is a complete real-estate website for India** — think of a mini 99acres/MagicBricks with an AI twist. In plain words, here is what you can do on it:
+**Bhumi Bazar is a complete real-estate website for India** — think of a mini 99acres/MagicBricks with an AI twist. In plain words, here is what you can do on it:
 
 - **Browse properties** listed on the platform, filter them, view photo galleries, and **book a property viewing** (works even without an account)
 - **List your own property** for sale or rent from your user dashboard — an admin reviews it before it goes live
@@ -59,7 +59,7 @@ This repo contains all three apps: the **user website** (`frontend/`), the **adm
 ## 📸 Platform Preview
 
 <div align="center">
-  <img src="./Image/Home_page.png" alt="BuildEstate Homepage" width="100%" />
+  <img src="./Image/Home_page.png" alt="Bhumi Bazar Homepage" width="100%" />
 </div>
 
 <br/>
@@ -72,7 +72,7 @@ This repo contains all three apps: the **user website** (`frontend/`), the **adm
 
 |     | Section                                          |
 | :-: | :----------------------------------------------- |
-| 🧠  | [Why BuildEstate?](#-why-buildestate)            |
+| 🧠  | [Why Bhumi Bazar?](#-why-buildestate)            |
 | 🤖  | [AI Property Hub](#-ai-property-hub)             |
 | 🌟  | [Features](#-features)                           |
 | 🏗️  | [Architecture](#%EF%B8%8F-architecture)          |
@@ -91,11 +91,11 @@ This repo contains all three apps: the **user website** (`frontend/`), the **adm
 
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
-## 🧠 Why BuildEstate?
+## 🧠 Why Bhumi Bazar?
 
-Most real-estate aggregators show you generic listings. BuildEstate is different:
+Most real-estate aggregators show you generic listings. Bhumi Bazar is different:
 
-| Problem | BuildEstate Solution |
+| Problem | Bhumi Bazar Solution |
 |---|---|
 | Generic search results with mixed content | **Multi-source search** — 99acres, MagicBricks, Housing.com results deduplicated & ranked |
 | No AI intelligence in traditional portals | **Multi-model AI analysis** — best-value picks, investment insights, red-flag detection, with a user-selectable model (GLM, Nemotron & more) |

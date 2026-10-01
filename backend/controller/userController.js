@@ -9,6 +9,9 @@ import userModel from "../models/userModel.js";
 import { Admin } from "../models/userModel.js";
 import emailService from "../services/emailService.js";
 import { validateEmail, isDisposableEmail } from "../utils/emailValidation.js";
+import { isSuperAdminEmail } from "../middleware/authMiddleware.js";
+import { normalizePhone } from "./appAuthController.js";
+import { findActiveDistrict } from "../utils/districts.js";
 
 const backendurl = process.env.BACKEND_URL;
 
@@ -143,9 +146,18 @@ const login = async (req, res) => {
     }
 
     const token = await issueUserSession(res, Registeruser, rememberMe);
+    await Registeruser.populate("district", "name");
     return res.json({
       token,
-      user: { name: Registeruser.name, email: Registeruser.email },
+      user: {
+        name: Registeruser.name,
+        email: Registeruser.email,
+        phone: Registeruser.phone || null,
+        state: Registeruser.state || null,
+        district: Registeruser.district
+          ? { id: Registeruser.district._id, name: Registeruser.district.name }
+          : null,
+      },
       success: true,
     });
   } catch (error) {
@@ -156,11 +168,34 @@ const login = async (req, res) => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+
+    if (name.length < 2 || name.length > 80) {
+      return res.json({ message: "Name must be 2-80 characters", success: false });
+    }
 
     // Validate email format
-    if (!validator.isEmail(email)) {
+    if (typeof email !== "string" || !validator.isEmail(email)) {
       return res.json({ message: "Invalid email format", success: false });
+    }
+
+    if (typeof password !== "string" || password.length < 8) {
+      return res.json({ message: "Password must be at least 8 characters", success: false });
+    }
+
+    // Mobile number, state and district — same rules as the app sign-up
+    const phone = normalizePhone(req.body.phone, req.body.countryCode);
+    if (!phone) {
+      return res.json({ message: "Enter a valid 10-digit mobile number", success: false });
+    }
+    const district = await findActiveDistrict(req.body.district);
+    const state = typeof req.body.state === "string" ? req.body.state.trim() : "";
+    if (!district) {
+      return res.json({ message: "Please choose your district", success: false });
+    }
+    if (state && state.toLowerCase() !== district.state.toLowerCase()) {
+      return res.json({ message: `${district.name} is not in ${state}`, success: false });
     }
 
     // Validate against disposable/fake emails
@@ -186,6 +221,9 @@ const register = async (req, res) => {
     const newUser = new userModel({
       name,
       email,
+      phone,
+      state: district.state,
+      district: district._id,
       password: hashedPassword,
       isEmailVerified: false,
       emailVerificationToken: hashedVerificationToken,
@@ -300,6 +338,24 @@ const refreshCookieOptions = () => ({
   path: '/api/users/admin',
 });
 
+// Only the super admin and active district admins may hold an admin session
+const canUseAdminPanel = (admin) =>
+  isSuperAdminEmail(admin.email) ||
+  (admin.role === 'district_admin' && admin.isActive !== false && Boolean(admin.district));
+
+// Role/district in the token are for the admin UI only — the API re-checks
+// them from the database on every request (see reviewerProtect).
+const adminTokenPayload = async (admin) => {
+  if (isSuperAdminEmail(admin.email)) return { email: admin.email, role: 'superadmin' };
+  await admin.populate('district', 'name');
+  return {
+    email: admin.email,
+    role: 'district_admin',
+    name: admin.name || '',
+    district: admin.district ? { id: admin.district._id, name: admin.district.name } : null,
+  };
+};
+
 const issueAdminSession = async (res, admin) => {
   const refreshToken = crypto.randomBytes(48).toString('hex');
   admin.refreshTokenHash = sha256(refreshToken);
@@ -311,7 +367,7 @@ const issueAdminSession = async (res, admin) => {
     maxAge: REFRESH_TTL_MS,
   });
 
-  return jwt.sign({ email: admin.email }, process.env.JWT_SECRET, { expiresIn: '2h' });
+  return jwt.sign(await adminTokenPayload(admin), process.env.JWT_SECRET, { expiresIn: '2h' });
 };
 
 const adminlogin = async (req, res) => {
@@ -331,6 +387,10 @@ const adminlogin = async (req, res) => {
     if (!isMatch) {
       await registerFailedAttempt(admin);
       return res.status(401).json({ message: "Invalid credentials", success: false });
+    }
+
+    if (!canUseAdminPanel(admin)) {
+      return res.status(403).json({ message: "This admin account is disabled. Contact the super admin.", success: false });
     }
 
     admin.failedLoginAttempts = 0;
@@ -357,7 +417,7 @@ const adminRefresh = async (req, res) => {
       refreshTokenExpiry: { $gt: new Date() },
     });
 
-    if (!admin) {
+    if (!admin || !canUseAdminPanel(admin)) {
       res.clearCookie(ADMIN_REFRESH_COOKIE, refreshCookieOptions());
       return res.status(401).json({ message: "Session expired. Please login again.", success: false });
     }

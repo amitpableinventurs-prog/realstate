@@ -85,6 +85,24 @@ const propertySchema = new mongoose.Schema(
       default: "",
     },
 
+    // District (city) the listing belongs to — decides which district admin
+    // reviews it. null = unassigned (older listings); only the super admin sees those.
+    district: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "District",
+      default: null,
+    },
+
+    // Last approve/reject decision (admin email + time)
+    reviewedBy: {
+      type: String,
+      default: "",
+    },
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
+
     // When the listing should automatically expire (null = never, for admin entries)
     expiresAt: {
       type: Date,
@@ -104,6 +122,7 @@ propertySchema.index({ postedBy: 1 }); // User's own listings
 propertySchema.index({ status: 1, createdAt: -1 }); // Compound: status + sort
 propertySchema.index({ postedBy: 1, createdAt: -1 }); // Compound: user listings + sort
 propertySchema.index({ expiresAt: 1 }); // Expiry cleanup queries
+propertySchema.index({ district: 1, status: 1, createdAt: 1 }); // District review queue
 propertySchema.index({ location: "text", title: "text", description: "text" }); // Text search
 propertySchema.index({ price: 1, beds: 1, type: 1, location: 1 }); // Property filters
 

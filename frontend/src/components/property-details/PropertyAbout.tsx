@@ -13,7 +13,7 @@ The master suite is a sanctuary retreat with a spacious walk-in closet and an en
     <div className="mb-12">
       {/* Section Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-6 bg-[#D4755B] rounded-full" />
+        <div className="w-1 h-6 bg-[#A3078F] rounded-full" />
         <h2 className="font-syne text-2xl text-[#0F172A]">
           About The Property
         </h2>

@@ -5,6 +5,7 @@ import { resolveModelsByProvider } from './aiModelController.js';
 import { validateAndFixPropertyAnalysis, validateAndFixLocationAnalysis } from '../utils/validateAIResponse.js';
 import imagekit from '../config/imagekit.js';
 import Property from '../models/propertyModel.js';
+import { findActiveDistrict } from '../utils/districts.js';
 import SearchCache from '../models/searchCacheModel.js';
 import TrendsCache from '../models/trendsCacheModel.js';
 import { coalesce, getInFlightCount } from '../utils/requestCoalescer.js';
@@ -685,6 +686,12 @@ export const createUserListing = async (req, res) => {
             return res.status(400).json({ success: false, message: 'At least one image is required' });
         }
 
+        // Decides which district admin reviews the listing
+        const district = await findActiveDistrict(req.body.district);
+        if (!district) {
+            return res.status(400).json({ success: false, message: 'Please select a district' });
+        }
+
         const imageUrls = await uploadImages(files);
 
         const expiresAt = new Date(Date.now() + EXPIRY_DAYS * 24 * 60 * 60 * 1000);
@@ -703,6 +710,7 @@ export const createUserListing = async (req, res) => {
             image: imageUrls,
             phone,
             googleMapLink: googleMapLink || '',
+            district: district._id,
             status: 'pending',
             postedBy: req.user._id,
             expiresAt,
@@ -731,6 +739,7 @@ export const getUserListings = async (req, res) => {
 
         // Get properties with pagination
         const properties = await Property.find(query)
+            .populate('district', 'name')
             .sort({ createdAt: -1 })
             .limit(limit)
             .skip(skip);
@@ -768,6 +777,14 @@ export const updateUserListing = async (req, res) => {
 
         const { title, location, price, beds, baths, sqft, type, availability, description, phone, googleMapLink } = req.body;
 
+        let district = null;
+        if (req.body.district) {
+            district = await findActiveDistrict(req.body.district);
+            if (!district) {
+                return res.status(400).json({ success: false, message: 'Please select a valid district' });
+            }
+        }
+
         let amenities = property.amenities;
         if (req.body.amenities) {
             try {
@@ -795,6 +812,7 @@ export const updateUserListing = async (req, res) => {
             ...(availability && { availability }),
             ...(description && { description }),
             ...(phone && { phone }),
+            ...(district && { district: district._id }),
             googleMapLink: googleMapLink ?? property.googleMapLink,
             amenities,
             image: imageUrls,

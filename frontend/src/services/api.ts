@@ -84,12 +84,25 @@ export const newsAPI = {
 
 // User Authentication
 // Backend register expects { name, email, password }
+// Sign-up fields — same details the app collects ("Tell us about you") plus a password
+export interface SignUpData {
+  fullName: string;
+  email: string;
+  phone: string;     // 10-digit Indian mobile; the backend adds +91
+  state: string;
+  district: string;  // District id from districtsAPI.list({ state })
+  password: string;
+}
+
 // We transform fullName → name here so the UI can keep using fullName
 export const userAPI = {
-  register: (data: { fullName: string; email: string; phone: string; password: string }) =>
+  register: (data: SignUpData) =>
     apiClient.post('/users/register', {
       name: data.fullName,
       email: data.email,
+      phone: data.phone,
+      state: data.state,
+      district: data.district,
       password: data.password,
     }),
 
@@ -122,6 +135,123 @@ export const propertiesAPI = {
 
   getById: (id: string) =>
     apiClient.get(`/products/single/${id}`),
+
+  // Server-side filtered search over approved listings (Search page)
+  search: (params: PropertySearchParams) =>
+    apiClient.get('/products/list', { params }),
+};
+
+export interface PropertySearchParams {
+  q?: string;
+  state?: string;
+  district?: string;
+  type?: string;
+  availability?: 'buy' | 'rent' | 'lease';
+  maxPrice?: number;
+  beds?: number;
+  sort?: 'newest' | 'price_asc' | 'price_desc';
+  page?: number;
+  limit?: number;
+}
+
+// Blog (admin-managed articles)
+export interface BlogPostSummary {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  coverImage: string | null;
+  category: string;
+  tags: string[];
+  authorName: string;
+  publishedAt: string;
+  readMinutes: number;
+  isFeatured: boolean;
+}
+
+export interface BlogPost extends BlogPostSummary {
+  content: string;
+}
+
+export const blogAPI = {
+  list: (params: { category?: string; q?: string; page?: number; limit?: number } = {}) =>
+    apiClient.get<{
+      success: boolean;
+      posts: BlogPostSummary[];
+      categories: { name: string; count: number }[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    }>('/blog/posts', { params }),
+
+  getBySlug: (slug: string) =>
+    apiClient.get<{ success: boolean; post: BlogPost; related: BlogPostSummary[] }>(`/blog/posts/${slug}`),
+};
+
+// Careers (admin-managed job openings + public applications)
+export type EmploymentType = 'full_time' | 'part_time' | 'contract' | 'internship';
+export type WorkMode = 'onsite' | 'hybrid' | 'remote';
+
+export interface JobSummary {
+  id: string;
+  title: string;
+  slug: string;
+  department: string;
+  location: string;
+  employmentType: EmploymentType;
+  workMode: WorkMode;
+  experience: string | null;
+  salaryRange: string | null;
+  summary: string;
+  isOpen: boolean;
+  postedAt: string;
+}
+
+export interface Job extends JobSummary {
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+}
+
+export interface JobApplicationInput {
+  name: string;
+  email: string;
+  phone: string;
+  resumeLink: string;
+  linkedinUrl?: string;
+  experienceYears?: number;
+  coverLetter?: string;
+}
+
+export const careersAPI = {
+  listJobs: (params: { department?: string; workMode?: WorkMode; q?: string } = {}) =>
+    apiClient.get<{
+      success: boolean;
+      jobs: JobSummary[];
+      departments: { name: string; count: number }[];
+    }>('/careers/jobs', { params }),
+
+  getJob: (slug: string) =>
+    apiClient.get<{ success: boolean; job: Job }>(`/careers/jobs/${slug}`),
+
+  apply: (slug: string, data: JobApplicationInput) =>
+    apiClient.post<{ success: boolean; message: string }>(`/careers/jobs/${slug}/apply`, data),
+};
+
+// Districts (cities) a listing can belong to — decides who reviews it
+export interface District {
+  id: string;
+  name: string;
+  state: string;
+}
+
+export interface IndianState {
+  name: string;
+  districtCount: number;
+}
+
+export const districtsAPI = {
+  list: (params: { state?: string; q?: string } = {}) =>
+    apiClient.get<{ success: boolean; districts: District[] }>('/districts', { params }),
+  states: () => apiClient.get<{ success: boolean; states: IndianState[] }>('/districts/states'),
 };
 
 // User-submitted property listings (require auth)

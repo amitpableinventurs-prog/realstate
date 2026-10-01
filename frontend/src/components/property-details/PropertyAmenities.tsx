@@ -85,7 +85,7 @@ const PropertyAmenities: React.FC<PropertyAmenitiesProps> = ({ amenities = [] })
     <div className="mb-12">
       {/* Section Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-6 bg-[#D4755B] rounded-full" />
+        <div className="w-1 h-6 bg-[#A3078F] rounded-full" />
         <h2 className="font-syne text-2xl text-[#0F172A]">
           Key Amenities
         </h2>
@@ -98,10 +98,10 @@ const PropertyAmenities: React.FC<PropertyAmenitiesProps> = ({ amenities = [] })
           return (
             <div
               key={index}
-              className="flex items-center gap-3 bg-[#FAF8F4] border border-[#E6E0DA] rounded-xl px-4 py-3 transition-all hover:border-[#D4755B]/30 hover:shadow-sm"
+              className="flex items-center gap-3 bg-[#FAF8FB] border border-[#E8E1EA] rounded-xl px-4 py-3 transition-all hover:border-[#A3078F]/30 hover:shadow-sm"
             >
-              <div className="w-9 h-9 bg-[rgba(212,117,91,0.1)] rounded-lg flex items-center justify-center shrink-0">
-                <Icon className="w-[18px] h-[18px] text-[#D4755B]" />
+              <div className="w-9 h-9 bg-[rgba(163,7,143,0.1)] rounded-lg flex items-center justify-center shrink-0">
+                <Icon className="w-[18px] h-[18px] text-[#A3078F]" />
               </div>
               <span className="font-manrope text-sm text-[#0F172A]">
                 {amenity}

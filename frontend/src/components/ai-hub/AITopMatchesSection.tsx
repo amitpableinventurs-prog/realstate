@@ -44,24 +44,24 @@ const AITopMatchesSection: React.FC = () => {
   ];
 
   return (
-    <section className="bg-[#F2EFE9] py-24">
+    <section className="bg-[#F2EFF3] py-24">
       <div className="max-w-[1280px] mx-auto px-8">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-baseline gap-4">
-            <h2 className="font-syne text-4xl text-[#221410]">
+            <h2 className="font-syne text-4xl text-[#1A0A1E]">
               Top Matches
             </h2>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#D4755B] rounded-full animate-pulse" />
-              <span className="font-space-mono font-bold text-2xl text-[#D4755B]">
+              <div className="w-2 h-2 bg-[#A3078F] rounded-full animate-pulse" />
+              <span className="font-space-mono font-bold text-2xl text-[#A3078F]">
                 97%
               </span>
               <span className="font-space-mono text-sm text-[#6b7280]">Average Match Rate</span>
             </div>
           </div>
 
-          <button className="font-space-mono text-sm text-[#221410] border-b border-[#221410] hover:text-[#D4755B] hover:border-[#D4755B] transition-[color,border-color] pb-1">
+          <button className="font-space-mono text-sm text-[#1A0A1E] border-b border-[#1A0A1E] hover:text-[#A3078F] hover:border-[#A3078F] transition-[color,border-color] pb-1">
             View All → See more
           </button>
         </div>
@@ -71,7 +71,7 @@ const AITopMatchesSection: React.FC = () => {
           {properties.map((property) => (
             <div 
               key={property.id}
-              className="bg-white border border-[#E6E0DA] rounded-xl overflow-hidden hover:shadow-2xl transition-all group cursor-pointer"
+              className="bg-white border border-[#E8E1EA] rounded-xl overflow-hidden hover:shadow-2xl transition-all group cursor-pointer"
             >
               {/* Image */}
               <div className="relative aspect-[382/286.5] overflow-hidden">
@@ -86,15 +86,15 @@ const AITopMatchesSection: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent h-12" />
                 
                 {/* Badge */}
-                <div className="absolute top-4 left-4 bg-[#D4755B] text-white font-space-mono text-xs px-3 py-1.5 rounded-full shadow-lg">
+                <div className="absolute top-4 left-4 bg-[#A3078F] text-white font-space-mono text-xs px-3 py-1.5 rounded-full shadow-lg">
                   {property.badge}
                 </div>
 
                 {/* Match Score Badge */}
-                <div className="absolute bottom-4 left-4 backdrop-blur-md bg-white/90 border border-[#E6E0DA] rounded px-3 py-2 shadow-lg">
+                <div className="absolute bottom-4 left-4 backdrop-blur-md bg-white/90 border border-[#E8E1EA] rounded px-3 py-2 shadow-lg">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-[#10b981] rounded-full" />
-                    <span className="font-space-mono text-xs text-[#221410] font-bold">
+                    <span className="font-space-mono text-xs text-[#1A0A1E] font-bold">
                       {property.matchScore}% Match
                     </span>
                   </div>
@@ -104,36 +104,36 @@ const AITopMatchesSection: React.FC = () => {
               {/* Content */}
               <div className="p-6">
                 {/* Name and Price */}
-                <h3 className="font-syne text-xl text-[#221410] mb-2">
+                <h3 className="font-syne text-xl text-[#1A0A1E] mb-2">
                   {property.name}
                 </h3>
-                <p className="font-space-mono font-bold text-lg text-[#D4755B] mb-4">
+                <p className="font-space-mono font-bold text-lg text-[#A3078F] mb-4">
                   {property.price}
                 </p>
 
                 {/* Specs */}
-                <div className="flex items-center divide-x divide-[rgba(230,224,218,0.5)] border-t border-[rgba(230,224,218,0.5)] pt-4">
+                <div className="flex items-center divide-x divide-[rgba(232,225,234,0.5)] border-t border-[rgba(232,225,234,0.5)] pt-4">
                   <div className="flex-1 text-center">
-                    <div className="font-syne text-base text-[#221410] mb-1">
+                    <div className="font-syne text-base text-[#1A0A1E] mb-1">
                       {property.beds}
                     </div>
-                    <div className="font-manrope font-extralight text-xs text-[rgba(34,20,16,0.5)] uppercase tracking-wide">
+                    <div className="font-manrope font-extralight text-xs text-[rgba(26,10,30,0.5)] uppercase tracking-wide">
                       Beds
                     </div>
                   </div>
                   <div className="flex-1 text-center">
-                    <div className="font-syne text-base text-[#221410] mb-1">
+                    <div className="font-syne text-base text-[#1A0A1E] mb-1">
                       {property.baths}
                     </div>
-                    <div className="font-manrope font-extralight text-xs text-[rgba(34,20,16,0.5)] uppercase tracking-wide">
+                    <div className="font-manrope font-extralight text-xs text-[rgba(26,10,30,0.5)] uppercase tracking-wide">
                       Baths
                     </div>
                   </div>
                   <div className="flex-1 text-center">
-                    <div className="font-syne text-base text-[#221410] mb-1">
+                    <div className="font-syne text-base text-[#1A0A1E] mb-1">
                       {property.sqft}
                     </div>
-                    <div className="font-manrope font-extralight text-xs text-[rgba(34,20,16,0.5)] uppercase tracking-wide">
+                    <div className="font-manrope font-extralight text-xs text-[rgba(26,10,30,0.5)] uppercase tracking-wide">
                       Sqft
                     </div>
                   </div>

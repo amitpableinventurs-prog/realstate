@@ -1,8 +1,8 @@
 <div align="center">
 
-# BuildEstate — Admin Panel 📊
+# Bhumi Bazar — Admin Panel 📊
 
-_The control room of BuildEstate — review listings, manage users & appointments, and monitor the platform._
+_The control room of Bhumi Bazar — review listings, manage users & appointments, and monitor the platform._
 
 [![React](https://img.shields.io/badge/React-18.0-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)

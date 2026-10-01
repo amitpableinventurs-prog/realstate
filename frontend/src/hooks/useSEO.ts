@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 const SITE_URL = 'https://buildestate.vercel.app';
-const DEFAULT_TITLE = 'BuildEstate - AI-Powered Luxury Real Estate | Find Your Dream Home';
+const DEFAULT_TITLE = 'Bhumi Bazar - AI-Powered Luxury Real Estate | Find Your Dream Home';
 const DEFAULT_DESCRIPTION = 'Find your perfect property with AI-powered insights, market analysis, and personalized recommendations across India.';
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
@@ -45,7 +45,7 @@ function setCanonical(url: string) {
 
 export function useSEO({ title, description, image, url, type = 'website' }: SEOProps) {
   useEffect(() => {
-    const fullTitle = title ? `${title} | BuildEstate` : DEFAULT_TITLE;
+    const fullTitle = title ? `${title} | Bhumi Bazar` : DEFAULT_TITLE;
     const desc = description || DEFAULT_DESCRIPTION;
     const ogImage = image || DEFAULT_IMAGE;
     const canonical = url || window.location.href;
@@ -74,12 +74,12 @@ export function useSEO({ title, description, image, url, type = 'website' }: SEO
     return () => {
       document.title = DEFAULT_TITLE;
       setMeta('meta[name="description"]', 'name', 'description', DEFAULT_DESCRIPTION);
-      setOG('og:title', 'BuildEstate - AI-Powered Luxury Real Estate');
+      setOG('og:title', 'Bhumi Bazar - AI-Powered Luxury Real Estate');
       setOG('og:description', DEFAULT_DESCRIPTION);
       setOG('og:image', DEFAULT_IMAGE);
       setOG('og:url', SITE_URL);
       setOG('og:type', 'website');
-      setTwitter('twitter:title', 'BuildEstate - AI-Powered Luxury Real Estate');
+      setTwitter('twitter:title', 'Bhumi Bazar - AI-Powered Luxury Real Estate');
       setTwitter('twitter:description', DEFAULT_DESCRIPTION);
       setTwitter('twitter:image', DEFAULT_IMAGE);
       setCanonical(SITE_URL);

@@ -32,13 +32,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       <div className="relative h-64">
         <img src={image} alt={title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         {featured && (
-          <div className="absolute top-4 left-4 bg-[#D4755B] text-white px-3 py-1 rounded-lg font-manrope font-bold text-xs">
+          <div className="absolute top-4 left-4 bg-[#A3078F] text-white px-3 py-1 rounded-lg font-manrope font-bold text-xs">
             FEATURED
           </div>
         )}
         {aiMatch && (
-          <div className="absolute top-4 right-4 bg-[rgba(212,117,91,0.1)] px-2 py-1 rounded">
-            <span className="font-manrope font-bold text-xs text-[#D4755B]">AI MATCH: {aiMatch}%</span>
+          <div className="absolute top-4 right-4 bg-[rgba(163,7,143,0.1)] px-2 py-1 rounded">
+            <span className="font-manrope font-bold text-xs text-[#A3078F]">AI MATCH: {aiMatch}%</span>
           </div>
         )}
       </div>

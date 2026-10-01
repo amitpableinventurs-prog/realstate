@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-**BuildEstate** is a full-stack real estate platform (monorepo) with three apps:
+**Bhumi Bazar** is a full-stack real estate platform (monorepo) with three apps:
 - `frontend/` — User-facing website (React 18 + TypeScript + Vite, port 5173)
 - `admin/` — Admin dashboard (React + JavaScript + Vite, port 5174)
 - `backend/` — REST API (Node.js + Express, port 4000)

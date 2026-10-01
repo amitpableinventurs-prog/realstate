@@ -1,8 +1,8 @@
 <div align="center">
 
-# BuildEstate — Frontend 🌐
+# Bhumi Bazar — Frontend 🌐
 
-_The user-facing website of BuildEstate — browse & list properties, book viewings, and search live listings with AI._
+_The user-facing website of Bhumi Bazar — browse & list properties, book viewings, and search live listings with AI._
 
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -19,7 +19,7 @@ _The user-facing website of BuildEstate — browse & list properties, book viewi
 ## 📸 Preview
 
 <div align="center">
-  <img src="../Image/Home_page.png" alt="BuildEstate homepage" width="100%" />
+  <img src="../Image/Home_page.png" alt="Bhumi Bazar homepage" width="100%" />
   <br/><br/>
   <img src="../Image/Ai_hub_property_result.png" alt="AI Property Hub results" width="48%" />
   &nbsp;&nbsp;

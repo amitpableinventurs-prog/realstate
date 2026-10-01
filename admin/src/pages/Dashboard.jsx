@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   RefreshCw, AlertTriangle, ArrowRight, AlertCircle,
-  Building2, Users, Calendar, DollarSign, Activity,
+  Building2, Users, Calendar, Activity,
   CheckCircle2, XCircle, Clock, TrendingUp,
 } from "lucide-react";
 import {
@@ -33,7 +33,7 @@ const today = new Date().toLocaleDateString("en-IN", {
 const ChartTooltip = ({ active, payload, label, unit = "" }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#111110] rounded-lg px-3 py-2 shadow-xl border border-white/10">
+    <div className="bg-[#0F0C11] rounded-lg px-3 py-2 shadow-xl border border-white/10">
       <p className="text-[10px] text-white/40 font-manrope mb-0.5">{label}</p>
       <p className="text-sm font-bold text-white tabular-nums">
         {payload[0].value}{unit}
@@ -50,16 +50,16 @@ const KPICard = ({ label, value, sub, icon: Icon, accent, index }) => (
     transition={{ delay: index * 0.06, duration: 0.3 }}
     className={cn(
       "bg-white rounded-xl p-5 border transition-shadow duration-200 hover:shadow-sm",
-      accent ? "border-[#D4755B]/25 shadow-[inset_0_0_0_1px_rgba(212,117,91,0.15)]" : "border-[#E8E7E5]"
+      accent ? "border-[#A3078F]/25 shadow-[inset_0_0_0_1px_rgba(163,7,143,0.15)]" : "border-[#E8E7E5]"
     )}
   >
     <div className="flex items-start justify-between mb-3">
       <p className="text-xs font-medium text-[#9B9B99] uppercase tracking-wider">{label}</p>
-      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", accent ? "bg-[#D4755B]/10" : "bg-[#F5F5F3]")}>
-        <Icon className={cn("w-3.5 h-3.5", accent ? "text-[#D4755B]" : "text-[#9B9B99]")} />
+      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", accent ? "bg-[#A3078F]/10" : "bg-[#F5F5F3]")}>
+        <Icon className={cn("w-3.5 h-3.5", accent ? "text-[#A3078F]" : "text-[#9B9B99]")} />
       </div>
     </div>
-    <p className="font-space-mono text-3xl font-bold text-[#111110] tabular-nums leading-none mb-1.5">
+    <p className="font-space-mono text-3xl font-bold text-[#0F0C11] tabular-nums leading-none mb-1.5">
       {value ?? <span className="text-[#CCCCC9] text-xl">—</span>}
     </p>
     {sub && <p className="text-xs text-[#9B9B99]">{sub}</p>}
@@ -73,14 +73,14 @@ const activityConfig = (item) => {
   if (a.includes("reject")) return { color: "#EF4444", Icon: XCircle, label: "Rejected" };
   if (a.includes("suspend") || a.includes("ban")) return { color: "#F59E0B", Icon: AlertTriangle, label: "Suspended" };
   if (a.includes("user")) return { color: "#3B82F6", Icon: Users, label: "User" };
-  return { color: "#D4755B", Icon: Activity, label: "Action" };
+  return { color: "#A3078F", Icon: Activity, label: "Action" };
 };
 
 const ActivityTimeline = ({ items }) => {
   if (!items?.length) {
     return (
       <div className="flex flex-col items-center justify-center py-10 text-center">
-        <Activity className="w-8 h-8 text-[#D0CEC9] mb-2" />
+        <Activity className="w-8 h-8 text-[#D1CDD4] mb-2" />
         <p className="text-sm text-[#9B9B99]">No recent activity</p>
       </div>
     );
@@ -104,12 +104,12 @@ const ActivityTimeline = ({ items }) => {
                 <Icon className="w-3 h-3" style={{ color }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#111110] leading-snug line-clamp-2">{desc}</p>
+                <p className="text-sm text-[#0F0C11] leading-snug line-clamp-2">{desc}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-[#9B9B99]">{timeAgo(item.createdAt || item.timestamp)}</span>
                   {item.adminEmail && (
                     <>
-                      <span className="text-[#D0CEC9] text-xs">·</span>
+                      <span className="text-[#D1CDD4] text-xs">·</span>
                       <span className="text-xs text-[#9B9B99] truncate max-w-[120px]">{item.adminEmail}</span>
                     </>
                   )}
@@ -130,7 +130,7 @@ const StatBar = ({ label, value, total, color }) => {
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs text-[#6B6B6A]">{label}</span>
-        <span className="font-space-mono text-xs tabular-nums text-[#111110] font-semibold">{value ?? 0}</span>
+        <span className="font-space-mono text-xs tabular-nums text-[#0F0C11] font-semibold">{value ?? 0}</span>
       </div>
       <div className="h-1.5 bg-[#F0EFED] rounded-full overflow-hidden">
         <motion.div
@@ -156,7 +156,7 @@ const ReviewBar = ({ label, value, total, color, Icon }) => {
       <div className="flex-1 min-w-0">
         <div className="flex justify-between mb-1">
           <span className="text-xs text-[#6B6B6A]">{label}</span>
-          <span className="font-space-mono text-xs tabular-nums text-[#111110] font-semibold">{value}</span>
+          <span className="font-space-mono text-xs tabular-nums text-[#0F0C11] font-semibold">{value}</span>
         </div>
         <div className="h-1.5 bg-[#F0EFED] rounded-full overflow-hidden">
           <motion.div
@@ -276,15 +276,6 @@ const Dashboard = () => {
       icon: Calendar,
       accent: (stats?.pendingAppointments ?? 0) > 0,
     },
-    {
-      label: "Avg Property Price",
-      value: stats?.avgPropertyPrice
-        ? `₹${(stats.avgPropertyPrice / 100000).toFixed(1)}L`
-        : null,
-      sub: "Average listing price",
-      icon: DollarSign,
-      accent: false,
-    },
   ];
 
   // ── Loading ──
@@ -299,8 +290,8 @@ const Dashboard = () => {
             </div>
             <Skeleton className="h-9 w-24" />
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
           </div>
           <Skeleton className="h-72 rounded-xl mb-6" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -319,11 +310,11 @@ const Dashboard = () => {
           <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-7 h-7 text-red-500" />
           </div>
-          <h3 className="text-base font-semibold text-[#111110] mb-1">Failed to load</h3>
+          <h3 className="text-base font-semibold text-[#0F0C11] mb-1">Failed to load</h3>
           <p className="text-sm text-[#9B9B99] mb-5">{error}</p>
           <button
             onClick={() => fetchStats()}
-            className="px-5 py-2.5 bg-[#D4755B] text-white rounded-lg text-sm font-medium hover:bg-[#C05E44] active:scale-[0.98] transition-all"
+            className="px-5 py-2.5 bg-[#A3078F] text-white rounded-lg text-sm font-medium hover:bg-[#7A0A74] active:scale-[0.98] transition-all"
           >
             Try Again
           </button>
@@ -343,13 +334,13 @@ const Dashboard = () => {
           className="flex items-start justify-between mb-6"
         >
           <div>
-            <h1 className="text-2xl font-bold text-[#111110] tracking-tight">Overview</h1>
+            <h1 className="text-2xl font-bold text-[#0F0C11] tracking-tight">Overview</h1>
             <p className="text-sm text-[#9B9B99] mt-0.5">{today}</p>
           </div>
           <button
             onClick={() => fetchStats(true)}
             disabled={refreshing || inFlight}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E8E7E5] text-[#6B6B6A] rounded-lg text-sm font-medium hover:border-[#D4755B] hover:text-[#D4755B] active:scale-[0.97] transition-all duration-150 disabled:opacity-50 shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-[#E8E7E5] text-[#6B6B6A] rounded-lg text-sm font-medium hover:border-[#A3078F] hover:text-[#A3078F] active:scale-[0.97] transition-all duration-150 disabled:opacity-50 shadow-sm"
           >
             <RefreshCw className={cn("w-3.5 h-3.5", (refreshing || inFlight) && "animate-spin")} />
             {refreshing || inFlight ? "Refreshing…" : "Refresh"}
@@ -392,7 +383,7 @@ const Dashboard = () => {
         </AnimatePresence>
 
         {/* ── KPI Cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           {kpis.map((kpi, i) => (
             <KPICard key={kpi.label} {...kpi} index={i} />
           ))}
@@ -407,10 +398,10 @@ const Dashboard = () => {
         >
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-base font-semibold text-[#111110]">Property Views</h2>
+              <h2 className="text-base font-semibold text-[#0F0C11]">Property Views</h2>
               <p className="text-xs text-[#9B9B99] mt-0.5">Daily view activity</p>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-medium text-[#D4755B]">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-[#A3078F]">
               <TrendingUp className="w-3.5 h-3.5" />
               Last 30 days
             </div>
@@ -422,8 +413,8 @@ const Dashboard = () => {
                 <AreaChart data={viewsData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
                   <defs>
                     <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#D4755B" stopOpacity={0.14} />
-                      <stop offset="100%" stopColor="#D4755B" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#A3078F" stopOpacity={0.14} />
+                      <stop offset="100%" stopColor="#A3078F" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="4 4" stroke="#F0EFED" vertical={false} />
@@ -441,10 +432,10 @@ const Dashboard = () => {
                   <Tooltip content={<ChartTooltip unit=" views" />} cursor={{ stroke: "#E8E7E5", strokeWidth: 1 }} />
                   <Area
                     type="monotone" dataKey="views"
-                    stroke="#D4755B" strokeWidth={1.5}
+                    stroke="#A3078F" strokeWidth={1.5}
                     fill="url(#viewsGradient)"
                     dot={false}
-                    activeDot={{ r: 3.5, fill: "#D4755B", strokeWidth: 0 }}
+                    activeDot={{ r: 3.5, fill: "#A3078F", strokeWidth: 0 }}
                     animationDuration={900}
                   />
                 </AreaChart>
@@ -467,7 +458,7 @@ const Dashboard = () => {
             transition={{ delay: 0.33 }}
             className="bg-white rounded-xl border border-[#E8E7E5] p-6"
           >
-            <h2 className="text-base font-semibold text-[#111110] mb-0.5">New Users</h2>
+            <h2 className="text-base font-semibold text-[#0F0C11] mb-0.5">New Users</h2>
             <p className="text-xs text-[#9B9B99] mb-5">Last 30 days</p>
 
             <div className="h-36">
@@ -528,7 +519,7 @@ const Dashboard = () => {
           >
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h2 className="text-base font-semibold text-[#111110] mb-0.5">Listing Review</h2>
+                <h2 className="text-base font-semibold text-[#0F0C11] mb-0.5">Listing Review</h2>
                 <p className="text-xs text-[#9B9B99]">Property submission outcomes</p>
               </div>
               {propertyStats?.approvalRate != null && (
@@ -567,7 +558,7 @@ const Dashboard = () => {
               <p className="text-xs font-medium text-[#9B9B99] uppercase tracking-wider mb-3">Portfolio</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-[#F8F7F5] rounded-lg p-3">
-                  <p className="font-space-mono text-xl font-bold text-[#111110] tabular-nums">
+                  <p className="font-space-mono text-xl font-bold text-[#0F0C11] tabular-nums">
                     {stats?.totalProperties ?? "—"}
                   </p>
                   <p className="text-xs text-[#9B9B99] mt-0.5">Total</p>
@@ -591,12 +582,12 @@ const Dashboard = () => {
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-base font-semibold text-[#111110] mb-0.5">Recent Activity</h2>
+                <h2 className="text-base font-semibold text-[#0F0C11] mb-0.5">Recent Activity</h2>
                 <p className="text-xs text-[#9B9B99]">Admin actions</p>
               </div>
               <Link
                 to="/activity-logs"
-                className="text-xs text-[#D4755B] hover:text-[#C05E44] font-medium transition-colors flex items-center gap-1"
+                className="text-xs text-[#A3078F] hover:text-[#7A0A74] font-medium transition-colors flex items-center gap-1"
               >
                 View all <ArrowRight className="w-3 h-3" />
               </Link>

@@ -1,14 +1,14 @@
 {
-  "name": "BuildEstate - AI-Powered Real Estate",
-  "short_name": "BuildEstate",
+  "name": "Bhumi Bazar - AI-Powered Real Estate",
+  "short_name": "Bhumi Bazar",
   "description": "AI-powered luxury real estate platform connecting you with your dream home",
   "dir": "auto",
   "lang": "en-US",
   "display": "standalone",
   "orientation": "any",
   "start_url": "/",
-  "background_color": "#FAF8F4",
-  "theme_color": "#D4755B",
+  "background_color": "#FAF8FB",
+  "theme_color": "#A3078F",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

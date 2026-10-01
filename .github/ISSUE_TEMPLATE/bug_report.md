@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help improve BuildEstate
+about: Create a report to help improve Bhumi Bazar
 title: "[BUG] "
 labels: bug
 assignees: ''
@@ -26,7 +26,7 @@ If applicable, add screenshots to help explain your problem.
 - Device: [e.g., Desktop, iPhone 12]
 - OS: [e.g., Windows 10, iOS 16]
 - Browser: [e.g., Chrome 112, Safari 16]
-- BuildEstate Version: [e.g., 1.0.0]
+- Bhumi Bazar Version: [e.g., 1.0.0]
 
 **Additional context**
 Add any other context about the problem here.

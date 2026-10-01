@@ -1,8 +1,8 @@
-# Contributing to BuildEstate
+# Contributing to Bhumi Bazar
 
 
 
-Thank you for considering contributing to BuildEstate! This document outlines the process for contributing to this project.
+Thank you for considering contributing to Bhumi Bazar! This document outlines the process for contributing to this project.
 
 ## Code of Conduct
 
@@ -10,7 +10,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ## How to Contribute
 
-There are several ways you can contribute to the BuildEstate project:
+There are several ways you can contribute to the Bhumi Bazar project:
 
 1. **Reporting Bugs**: Open an issue describing the bug, how to reproduce it, and any potential solutions.
 2. **Suggesting Features**: Open an issue describing your feature idea and how it would benefit the project.
@@ -102,4 +102,4 @@ There are several ways you can contribute to the BuildEstate project:
 
 Feel free to [open an issue](https://github.com/AAYUSH412/Real-Estate-Website/issues) or reach out at **aayushvaghela12@gmail.com**.
 
-Thank you for contributing to BuildEstate!
+Thank you for contributing to Bhumi Bazar!

@@ -26,11 +26,11 @@ const AIInsightsSection: React.FC = () => {
         {/* Section Header */}
         <div className="text-center mb-16">
           {/* Icon */}
-          <div className="w-16 h-16 bg-[rgba(236,70,19,0.1)] rounded-full flex items-center justify-center mx-auto mb-6">
-            <Brain className="w-8 h-8 text-[#D4755B]" strokeWidth={1.5} />
+          <div className="w-16 h-16 bg-[rgba(203,2,185,0.1)] rounded-full flex items-center justify-center mx-auto mb-6">
+            <Brain className="w-8 h-8 text-[#A3078F]" strokeWidth={1.5} />
           </div>
 
-          <h2 className="font-syne text-4xl text-[#221410] mb-4">
+          <h2 className="font-syne text-4xl text-[#1A0A1E] mb-4">
             Intelligent Insights
           </h2>
           <p className="font-manrope font-extralight text-lg text-[#4b5563] max-w-[700px] mx-auto">
@@ -43,15 +43,15 @@ const AIInsightsSection: React.FC = () => {
           {insights.map((insight, index) => (
             <div 
               key={index}
-              className="bg-[#F8F6F6] border border-[#E6E0DA] rounded-xl p-8 hover:shadow-xl transition-all group"
+              className="bg-[#F8F6F9] border border-[#E8E1EA] rounded-xl p-8 hover:shadow-xl transition-all group"
             >
               {/* Icon */}
-              <div className="w-12 h-12 bg-[rgba(236,70,19,0.1)] rounded-full flex items-center justify-center mb-6 group-hover:bg-[rgba(236,70,19,0.15)] transition-[background-color]">
-                <insight.icon className="w-6 h-6 text-[#D4755B]" strokeWidth={1.5} />
+              <div className="w-12 h-12 bg-[rgba(203,2,185,0.1)] rounded-full flex items-center justify-center mb-6 group-hover:bg-[rgba(203,2,185,0.15)] transition-[background-color]">
+                <insight.icon className="w-6 h-6 text-[#A3078F]" strokeWidth={1.5} />
               </div>
 
               {/* Title */}
-              <h3 className="font-syne text-xl text-[#221410] mb-4">
+              <h3 className="font-syne text-xl text-[#1A0A1E] mb-4">
                 {insight.title}
               </h3>
 

@@ -8,9 +8,10 @@ interface PropertyCardProps {
   name: string;
   price: string;
   location: string;
-  beds: number;
-  baths: number;
-  sqft: number;
+  /** Spec line, e.g. ["3 Beds", "2 Baths", "1,200 sqft"] or ["2.34 Dismil", "Khata KH-1"] */
+  specs: string[];
+  /** Secondary price, e.g. "₹1.50 Lakhs / Kattha" */
+  subPrice?: string | null;
   badge?: string;
   tags?: string[];
 }
@@ -18,20 +19,20 @@ interface PropertyCardProps {
 const badgeColor: Record<string, string> = {
   'FOR RENT': 'bg-blue-500',
   'SOLD': 'bg-[#6B7280]',
-  'HOT': 'bg-[#D4755B]',
+  'HOT': 'bg-[#A3078F]',
 };
 
 const PropertyCard: React.FC<PropertyCardProps> = ({
-  id, image, name, price, location, beds, baths, sqft, badge, tags = []
+  id, image, name, price, location, specs, subPrice, badge, tags = []
 }) => {
   const [favorited, setFavorited] = useState(false);
 
   return (
-    <Link to={`/property/${id}`} className="group block outline-none focus-visible:ring-2 focus-visible:ring-[#D4755B] rounded-2xl">
+    <Link to={`/property/${id}`} className="group block outline-none focus-visible:ring-2 focus-visible:ring-[#A3078F] rounded-2xl">
       <article className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] transition-shadow duration-300">
 
         {/* ── Image ──────────────────────────────────────── */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-[#E6E0DA]">
+        <div className="relative aspect-[4/3] overflow-hidden bg-[#E8E1EA]">
           <img
             src={image}
             alt={name}
@@ -58,7 +59,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors duration-200 active:scale-[0.96]"
           >
             <Heart
-              className={`w-4 h-4 transition-colors duration-200 ${favorited ? 'text-[#D4755B] fill-[#D4755B]' : 'text-white'}`}
+              className={`w-4 h-4 transition-colors duration-200 ${favorited ? 'text-[#A3078F] fill-[#A3078F]' : 'text-white'}`}
             />
           </button>
 
@@ -67,35 +68,39 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             <p className="font-fraunces text-2xl font-bold text-white leading-none tabular-nums">
               {price}
             </p>
+            {subPrice && (
+              <p className="font-manrope text-xs text-white/85 mt-1 tabular-nums">{subPrice}</p>
+            )}
           </div>
         </div>
 
         {/* ── Content ────────────────────────────────────── */}
         <div className="px-4 py-4">
           {/* Name */}
-          <h3 className="font-fraunces text-base font-semibold text-[#221410] leading-snug mb-1.5 text-wrap-balance line-clamp-2">
+          <h3 className="font-fraunces text-base font-semibold text-[#1A0A1E] leading-snug mb-1.5 text-wrap-balance line-clamp-2">
             {name}
           </h3>
 
           {/* Location */}
           <div className="flex items-center gap-1 mb-3">
-            <MapPin className="w-3.5 h-3.5 text-[#D4755B] shrink-0" aria-hidden />
+            <MapPin className="w-3.5 h-3.5 text-[#A3078F] shrink-0" aria-hidden />
             <span className="font-manrope text-xs text-[#6B7280] truncate">{location}</span>
           </div>
 
           {/* Specs — dot-separated, no icons */}
-          <div className="flex items-center gap-1.5 font-manrope text-xs text-[#6B7280] tabular-nums">
-            <span>{beds} {beds === 1 ? 'Bed' : 'Beds'}</span>
-            <span className="text-[#D4C4BC]">·</span>
-            <span>{baths} {baths === 1 ? 'Bath' : 'Baths'}</span>
-            <span className="text-[#D4C4BC]">·</span>
-            <span>{sqft.toLocaleString()} sqft</span>
+          <div className="flex flex-wrap items-center gap-1.5 font-manrope text-xs text-[#6B7280] tabular-nums">
+            {specs.map((spec, i) => (
+              <React.Fragment key={spec}>
+                {i > 0 && <span className="text-[#D6C8DA]">·</span>}
+                <span>{spec}</span>
+              </React.Fragment>
+            ))}
           </div>
 
           {/* Type tag — only first tag, subtle */}
           {tags[0] && (
             <div className="mt-3">
-              <span className="inline-block font-manrope text-[10px] uppercase tracking-wider text-[#9CA3AF] border border-[#E6E0DA] rounded px-2 py-0.5">
+              <span className="inline-block font-manrope text-[10px] uppercase tracking-wider text-[#9CA3AF] border border-[#E8E1EA] rounded px-2 py-0.5">
                 {tags[0]}
               </span>
             </div>

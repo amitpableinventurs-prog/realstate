@@ -75,7 +75,7 @@ class EmailService {
    * Send welcome email to new users
    */
   async sendWelcomeEmail(userEmail, userName) {
-    const subject = 'Welcome to BuildEstate - Your Account is Ready!';
+    const subject = 'Welcome to Bhumi Bazar - Your Account is Ready!';
     const htmlContent = getWelcomeTemplate(userName);
 
     return await this.sendEmail(userEmail, subject, htmlContent);
@@ -85,7 +85,7 @@ class EmailService {
    * Send email verification link to new users
    */
   async sendEmailVerification(userEmail, userName, verificationUrl) {
-    const subject = 'Verify Your BuildEstate Email Address';
+    const subject = 'Verify Your Bhumi Bazar Email Address';
     const htmlContent = getEmailVerificationTemplate(userName, verificationUrl);
 
     return await this.sendEmail(userEmail, subject, htmlContent);
@@ -95,7 +95,7 @@ class EmailService {
    * Send password reset email
    */
   async sendPasswordResetEmail(userEmail, resetUrl) {
-    const subject = 'Reset Your BuildEstate Password';
+    const subject = 'Reset Your Bhumi Bazar Password';
     const htmlContent = getPasswordResetTemplate(resetUrl);
 
     return await this.sendEmail(userEmail, subject, htmlContent);
@@ -105,7 +105,7 @@ class EmailService {
    * Send newsletter subscription confirmation email
    */
   async sendNewsletterWelcome(userEmail) {
-    const subject = 'Welcome to BuildEstate Newsletter';
+    const subject = 'Welcome to Bhumi Bazar Newsletter';
     const siteUrl = process.env.WEBSITE_URL || 'https://buildestate.vercel.app';
     const unsubscribeUrl = `${siteUrl}/unsubscribe?email=${encodeURIComponent(userEmail)}`;
     const htmlContent = getNewsletterTemplate(userEmail, unsubscribeUrl);
@@ -200,7 +200,7 @@ class EmailService {
    * Send user suspended notification email
    */
   async sendUserSuspended(userEmail, userName, days, reason, suspendedUntil) {
-    const subject = `BuildEstate Account Suspended - ${days} Day${days > 1 ? 's' : ''}`;
+    const subject = `Bhumi Bazar Account Suspended - ${days} Day${days > 1 ? 's' : ''}`;
     const htmlContent = getUserSuspendedTemplate(userName, days, reason, suspendedUntil);
 
     return await this.sendEmail(userEmail, subject, htmlContent);
@@ -210,7 +210,7 @@ class EmailService {
    * Send user banned notification email
    */
   async sendUserBanned(userEmail, userName, reason) {
-    const subject = 'BuildEstate Account Permanently Banned';
+    const subject = 'Bhumi Bazar Account Permanently Banned';
     const htmlContent = getUserBannedTemplate(userName, reason);
 
     return await this.sendEmail(userEmail, subject, htmlContent);
@@ -220,7 +220,7 @@ class EmailService {
    * Send user reactivated notification email
    */
   async sendUserReactivated(userEmail, userName) {
-    const subject = 'BuildEstate Account Reactivated - Welcome Back!';
+    const subject = 'Bhumi Bazar Account Reactivated - Welcome Back!';
     const htmlContent = getUserReactivatedTemplate(userName);
 
     return await this.sendEmail(userEmail, subject, htmlContent);

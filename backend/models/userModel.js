@@ -5,6 +5,12 @@ const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+
+    // Collected at sign-up, same as the app's "Tell us about you"
+    phone: { type: String, trim: true },  // E.164, e.g. +919876543210
+    state: { type: String, trim: true },  // copied from the district
+    district: { type: mongoose.Schema.Types.ObjectId, ref: 'District' },
+
     resetToken: { type: String },
     resetTokenExpire: { type: Date },
 
@@ -46,11 +52,17 @@ UserSchema.index({ email: 'text', name: 'text' });    // Text search
 
 const User = mongoose.model('User', UserSchema);
 
-// Admin model with password hashing
+// Admin model with password hashing.
+// The account whose email is ADMIN_EMAIL is the super admin (full access).
+// 'district_admin' accounts are created by the super admin and can only
+// review (approve/reject) listings in their assigned district.
 const AdminSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { type: String, default: 'admin' },
+    role: { type: String, enum: ['admin', 'district_admin'], default: 'admin' },
+    name: { type: String, trim: true, default: '' },
+    district: { type: mongoose.Schema.Types.ObjectId, ref: 'District', default: null },
+    isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
 
     // Brute-force protection

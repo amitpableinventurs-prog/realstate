@@ -1,21 +1,28 @@
 @custom-variant dark (&:is(.dark *));
 
-/* BuildEstate Luxury Design System */
+/* Bhumi Bazar Luxury Design System */
 :root {
-  /* Luxury Color Palette */
-  --canvas-cream: #FAF8F4;
+  /* Brand palette — taken from the BhoomiBazaar logo (magenta → plum → deep purple + black) */
+  --brand-magenta: #CB02B9;
+  --brand-primary: #A3078F;
+  --brand-plum: #7A0A74;
+  --brand-deep: #3E024B;
+  --brand-black: #0A080B;
+
+  /* Luxury Color Palette (legacy names, brand values) */
+  --canvas-cream: #FAF8FB;
   --pearl-white: #FFFFFF;
-  --terracotta-clay: #D4755B;
-  --terracotta-primary: #EC4613; /* Figma uses this brighter version */
-  --charcoal-ink: #1C1B1A;
+  --terracotta-clay: #A3078F;
+  --terracotta-primary: #CB02B9; /* bright logo magenta */
+  --charcoal-ink: #17131A;
   --slate-gray: #5A5856;
-  --warm-linen: #F5F1E8;
-  --warm-sand: #E6D5C3;
+  --warm-linen: #F5F0F6;
+  --warm-sand: #E6D6E8;
   
   /* Extended palette from Figma */
-  --warm-bg-1: #F8F6F6;
-  --warm-bg-2: #F9F7F2;
-  --warm-bg-3: #F0EBE5;
+  --warm-bg-1: #F8F6F9;
+  --warm-bg-2: #F9F7FA;
+  --warm-bg-3: #F0EBF2;
   
   /* Neutral colors from Figma */
   --gray-50: #f9fafb;
@@ -173,7 +180,7 @@
   }
 
   /**
-  * BuildEstate Typography System
+  * Bhumi Bazar Typography System
   * Headings use Fraunces (elegant serif)
   * Subheadings use Syne (geometric sans)
   * Body text uses Red Hat Display (humanist sans)

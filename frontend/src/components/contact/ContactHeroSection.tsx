@@ -2,18 +2,18 @@ import React from 'react';
 
 const ContactHeroSection: React.FC = () => {
   return (
-    <section className="bg-[#F9F7F2] border-b border-[rgba(230,224,218,0.5)] py-20">
+    <section className="bg-[#F9F7FA] border-b border-[rgba(232,225,234,0.5)] py-20">
       <div className="max-w-[1280px] mx-auto px-8">
         <div className="text-center">
           {/* Label */}
           <div className="flex justify-center mb-4">
-            <span className="font-space-mono text-xs text-[#D4755B] uppercase tracking-widest">
+            <span className="font-space-mono text-xs text-[#A3078F] uppercase tracking-widest">
               Contact & Support
             </span>
           </div>
 
           {/* Main Heading */}
-          <h1 className="font-fraunces text-6xl text-[#221410] mb-6">
+          <h1 className="font-fraunces text-6xl text-[#1A0A1E] mb-6">
             We'd Love to Hear From You
           </h1>
 

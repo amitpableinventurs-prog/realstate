@@ -9,7 +9,7 @@
 
 ## Reporting a Vulnerability
 
-We take the security of BuildEstate seriously. If you believe you've found a security vulnerability, please follow these steps:
+We take the security of Bhumi Bazar seriously. If you believe you've found a security vulnerability, please follow these steps:
 
 1. **Do not disclose the vulnerability publicly**
 2. **Email the details to aayushvaghela12@gmail.com**
@@ -24,4 +24,4 @@ We take the security of BuildEstate seriously. If you believe you've found a sec
 - We will keep you informed about our progress in addressing the issue
 - After the issue is resolved, we may publicly acknowledge your responsible disclosure
 
-Thank you for helping keep BuildEstate and our users safe!
+Thank you for helping keep Bhumi Bazar and our users safe!

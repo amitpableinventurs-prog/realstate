@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { APP_CONSTANTS } from '../config/constants';
+import { getAdminSession } from '../lib/adminSession';
 
 const AuthContext = createContext();
 
@@ -24,12 +25,14 @@ export const AuthProvider = ({ children }) => {
       if (token && isAdmin === 'true') {
         // Presence check only — an expired access token is refreshed
         // silently by the apiClient interceptor via the httpOnly cookie
-        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        const session = getAdminSession();
+        if (!session) throw new Error('Unreadable admin token');
         setIsAuthenticated(true);
         setUser({
-          email: tokenData.email || 'Admin',
-          role: 'admin',
-          id: tokenData.id
+          email: session.email || 'Admin',
+          name: session.name,
+          role: session.isSuperAdmin ? 'superadmin' : 'district_admin',
+          district: session.district,
         });
       }
     } catch (error) {

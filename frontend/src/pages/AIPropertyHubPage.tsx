@@ -134,19 +134,19 @@ const AIHubProductionPage: React.FC = () => {
   ];
 
   return (
-    <div className="bg-[#FAF8F4]">
+    <div className="bg-[#FAF8FB]">
       {/* Hero Section */}
-      <section className="relative bg-[#221410] overflow-hidden">
+      <section className="relative bg-[#1A0A1E] overflow-hidden">
         {/* Decorative blurs */}
-        <div className="absolute top-20 right-20 w-80 h-80 bg-[rgba(212,117,91,0.15)] rounded-full blur-[80px]" />
-        <div className="absolute bottom-10 left-10 w-60 h-60 bg-[rgba(212,117,91,0.1)] rounded-full blur-[60px]" />
+        <div className="absolute top-20 right-20 w-80 h-80 bg-[rgba(163,7,143,0.15)] rounded-full blur-[80px]" />
+        <div className="absolute bottom-10 left-10 w-60 h-60 bg-[rgba(163,7,143,0.1)] rounded-full blur-[60px]" />
 
         <div className="max-w-[1280px] mx-auto px-8 pt-32 pb-20 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
             {/* Badge */}
-            <div className="inline-flex items-center gap-3 bg-[rgba(212,117,91,0.15)] border border-[rgba(212,117,91,0.3)] rounded-full px-5 py-2.5 mb-8">
-              <span className="font-material-icons text-[#D4755B] text-lg" aria-hidden="true">smart_toy</span>
-              <span className="font-manrope font-bold text-sm text-[#D4755B] uppercase tracking-wider">
+            <div className="inline-flex items-center gap-3 bg-[rgba(163,7,143,0.15)] border border-[rgba(163,7,143,0.3)] rounded-full px-5 py-2.5 mb-8">
+              <span className="font-material-icons text-[#A3078F] text-lg" aria-hidden="true">smart_toy</span>
+              <span className="font-manrope font-bold text-sm text-[#A3078F] uppercase tracking-wider">
                 AI-Powered Feature
               </span>
             </div>
@@ -155,7 +155,7 @@ const AIHubProductionPage: React.FC = () => {
               AI Property Hub
             </h1>
             <p data-speakable className="font-manrope text-lg text-[#9ca3af] leading-relaxed mb-10 max-w-2xl mx-auto">
-              Search for flats, villas, and apartments across India using AI. BuildEstate's AI Property Hub
+              Search for flats, villas, and apartments across India using AI. Bhumi Bazar's AI Property Hub
               scrapes live listings from 99acres, MagicBricks, and Housing.com using Firecrawl, then ranks
               results with GPT-4 based on your requirements. Available when running the project locally.
             </p>
@@ -166,14 +166,14 @@ const AIHubProductionPage: React.FC = () => {
                 href={GITHUB_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#D4755B] text-white font-manrope font-bold text-lg px-8 py-4 rounded-xl shadow-lg hover:bg-[#B86851] transition-all hover:shadow-xl inline-flex items-center gap-3"
+                className="bg-[#A3078F] text-white font-manrope font-bold text-lg px-8 py-4 rounded-xl shadow-lg hover:bg-[#8E0A82] transition-all hover:shadow-xl inline-flex items-center gap-3"
               >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
                 View on GitHub
               </a>
               <Link
                 to="/properties"
-                className="border-2 border-[rgba(255,255,255,0.2)] text-white font-manrope font-bold text-lg px-8 py-4 rounded-xl hover:border-[#D4755B] hover:text-[#D4755B] transition-all inline-flex items-center gap-2"
+                className="border-2 border-[rgba(255,255,255,0.2)] text-white font-manrope font-bold text-lg px-8 py-4 rounded-xl hover:border-[#A3078F] hover:text-[#A3078F] transition-all inline-flex items-center gap-2"
               >
                 Browse Properties
                 <span className="font-material-icons text-sm" aria-hidden="true">arrow_forward</span>
@@ -181,10 +181,10 @@ const AIHubProductionPage: React.FC = () => {
             </div>
 
             {/* Info Banner */}
-            <div className="bg-[rgba(212,117,91,0.1)] border border-[rgba(212,117,91,0.25)] rounded-2xl p-6 max-w-xl mx-auto">
+            <div className="bg-[rgba(163,7,143,0.1)] border border-[rgba(163,7,143,0.25)] rounded-2xl p-6 max-w-xl mx-auto">
               <div className="flex items-start gap-3">
-                <span className="font-material-icons text-[#D4755B] text-xl mt-0.5" aria-hidden="true">info</span>
-                <p className="font-manrope text-sm text-[#d1c4b7] text-left leading-relaxed">
+                <span className="font-material-icons text-[#A3078F] text-xl mt-0.5" aria-hidden="true">info</span>
+                <p className="font-manrope text-sm text-[#d3c6d8] text-left leading-relaxed">
                   The AI Property Hub requires API credits to operate. To save deployment costs, this feature is
                   disabled on the live site. Clone the repo and run it locally to experience the full AI capabilities.
                 </p>
@@ -209,10 +209,10 @@ const AIHubProductionPage: React.FC = () => {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="bg-white border border-[#E6D5C3] rounded-2xl p-6 hover:shadow-lg hover:border-[#D4755B]/30 transition-all group"
+              className="bg-white border border-[#E6D6E8] rounded-2xl p-6 hover:shadow-lg hover:border-[#A3078F]/30 transition-all group"
             >
-              <div className="w-12 h-12 bg-[rgba(212,117,91,0.1)] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[#D4755B] transition-[background-color]">
-                <span className="font-material-icons text-[#D4755B] group-hover:text-white transition-[color]" aria-hidden="true">
+              <div className="w-12 h-12 bg-[rgba(163,7,143,0.1)] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[#A3078F] transition-[background-color]">
+                <span className="font-material-icons text-[#A3078F] group-hover:text-white transition-[color]" aria-hidden="true">
                   {feature.icon}
                 </span>
               </div>
@@ -224,7 +224,7 @@ const AIHubProductionPage: React.FC = () => {
       </section>
 
       {/* Setup Steps */}
-      <section className="bg-[#F5F1E8] py-20">
+      <section className="bg-[#F5F0F6] py-20">
         <div className="max-w-[1280px] mx-auto px-8">
           <div className="text-center mb-14">
             <h2 className="font-fraunces text-3xl lg:text-4xl font-bold text-[#111827] mb-4">
@@ -237,12 +237,12 @@ const AIHubProductionPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((item) => (
-              <div key={item.step} className="bg-white rounded-2xl p-6 border border-[#E6D5C3]">
-                <span className="font-space-mono text-4xl font-bold text-[#D4755B]/20 block mb-3">
+              <div key={item.step} className="bg-white rounded-2xl p-6 border border-[#E6D6E8]">
+                <span className="font-space-mono text-4xl font-bold text-[#A3078F]/20 block mb-3">
                   {item.step}
                 </span>
                 <h3 className="font-syne font-bold text-lg text-[#111827] mb-3">{item.title}</h3>
-                <code className="block bg-[#221410] text-[#D4755B] font-space-mono text-xs rounded-lg p-3 overflow-x-auto">
+                <code className="block bg-[#1A0A1E] text-[#A3078F] font-space-mono text-xs rounded-lg p-3 overflow-x-auto">
                   {item.command}
                 </code>
               </div>
@@ -255,7 +255,7 @@ const AIHubProductionPage: React.FC = () => {
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-[#221410] text-white font-manrope font-bold px-8 py-4 rounded-xl hover:bg-[#3a2419] transition-all shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-3 bg-[#1A0A1E] text-white font-manrope font-bold px-8 py-4 rounded-xl hover:bg-[#3a0f44] transition-all shadow-lg hover:shadow-xl"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
               Download from GitHub
@@ -272,14 +272,14 @@ const AIHubProductionPage: React.FC = () => {
 const AIPropertyHubPage: React.FC = () => {
   useSEO({
     title: 'AI Property Hub — Search Flats & Houses in India with GPT-4',
-    description: 'Search for flats, villas, and apartments across India using AI. BuildEstate scrapes live listings from 99acres, MagicBricks, and Housing.com, then ranks results with GPT-4.',
+    description: 'Search for flats, villas, and apartments across India using AI. Bhumi Bazar scrapes live listings from 99acres, MagicBricks, and Housing.com, then ranks results with GPT-4.',
     url: 'https://buildestate.vercel.app/ai-hub',
   });
 
   /* ── AI Hub disabled → show "download & run locally" page ── */
   if (!AI_HUB_ENABLED) {
     return (
-      <div className="bg-[#FAF8F4] min-h-screen">
+      <div className="bg-[#FAF8FB] min-h-screen">
         <StructuredData type="speakable" data={{ cssSelector: ['h1', '[data-speakable]'] }} />
         <Navbar />
         <AIHubProductionPage />
@@ -478,12 +478,12 @@ const AIHubDevPage: React.FC = () => {
   /* ── Render ──────────────────────────────────────────── */
 
   return (
-    <div className="bg-[#FAF8F4] min-h-screen">
+    <div className="bg-[#FAF8FB] min-h-screen">
       <Navbar />
 
       {/* Hero — search form */}
       {AIHeroSection && (
-        <React.Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-12 h-12 border-4 border-[#D4755B] border-t-transparent rounded-full animate-spin" /></div>}>
+        <React.Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-12 h-12 border-4 border-[#A3078F] border-t-transparent rounded-full animate-spin" /></div>}>
           <AIHeroSection
             onSearch={handleSearch}
             loading={searchLoading}
@@ -504,7 +504,7 @@ const AIHubDevPage: React.FC = () => {
               transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
             >
               <React.Suspense fallback={null}>
-                <section className="bg-[#FAF8F4] py-14 border-t border-[#E6E0DA]/50">
+                <section className="bg-[#FAF8FB] py-14 border-t border-[#E8E1EA]/50">
                   <div className="max-w-7xl mx-auto px-6">
                     <div className="flex flex-col lg:flex-row gap-8 items-start">
                       {/* Left col: property cards */}
@@ -542,14 +542,14 @@ const AIHubDevPage: React.FC = () => {
       {hasSearched && !searchLoading && !analysisLoading && properties.length > 0 && AILocationTrends && (
         <React.Suspense fallback={null}>
           {!hasLoadedTrends ? (
-            <section className="bg-[#FAF8F4] py-10 border-t border-[#E6E0DA]">
+            <section className="bg-[#FAF8FB] py-10 border-t border-[#E8E1EA]">
               <div className="max-w-[1200px] mx-auto px-6 text-center">
                 <p className="font-manrope text-sm text-[#6b7280] mb-4">
                   Want to see price trends and rental yields for {searchParams.city}?
                 </p>
                 <button
                   onClick={() => fetchTrends(searchParams.city)}
-                  className="inline-flex items-center gap-2 bg-[#D4755B] hover:bg-[#C05621] text-white font-manrope font-semibold text-sm px-6 py-3 rounded-xl transition-all shadow-md shadow-[#D4755B]/20"
+                  className="inline-flex items-center gap-2 bg-[#A3078F] hover:bg-[#7A0A74] text-white font-manrope font-semibold text-sm px-6 py-3 rounded-xl transition-all shadow-md shadow-[#A3078F]/20"
                 >
                   <span className="text-base">&#x1F4C8;</span>
                   Load Location Trends

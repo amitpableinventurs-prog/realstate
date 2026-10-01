@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import userModel from "../models/userModel.js";
+import userModel, { Admin } from "../models/userModel.js";
 
 export const protect = async (req, res, next) => {
   try {
@@ -33,35 +33,81 @@ export const protect = async (req, res, next) => {
   }
 };
 
-export const adminProtect = async (req, res, next) => {
+export const isSuperAdminEmail = (email) =>
+  Boolean(email) && email === process.env.ADMIN_EMAIL;
+
+// Shared by the admin guards: sends 401 and returns null when the token is
+// missing or invalid (401 lets the admin panel refresh its access token).
+const decodeAdminToken = (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    res.status(401).json({
+      success: false,
+      message: "Admin access denied - no token provided",
+    });
+    return null;
+  }
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Admin access denied - no token provided",
-      });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Verify this is an admin token (has email field matching admin email)
-    if (!decoded.email || decoded.email !== process.env.ADMIN_EMAIL) {
-      return res.status(403).json({
-        success: false,
-        message: "Admin access denied - invalid admin token",
-      });
-    }
-
-    req.admin = { email: decoded.email };
-    next();
+    return jwt.verify(token, process.env.JWT_SECRET);
   } catch (error) {
     console.error("Admin auth error:", error);
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       message: "Admin access denied - invalid token",
     });
+    return null;
+  }
+};
+
+const deny = (res) =>
+  res.status(403).json({
+    success: false,
+    message: "Admin access denied - invalid admin token",
+  });
+
+/** Super admin only (the ADMIN_EMAIL account). Guards everything except listing review. */
+export const adminProtect = async (req, res, next) => {
+  const decoded = decodeAdminToken(req, res);
+  if (!decoded) return;
+
+  if (!isSuperAdminEmail(decoded.email)) return deny(res);
+
+  req.admin = { email: decoded.email, role: "superadmin", district: null };
+  next();
+};
+
+/**
+ * Listing review: the super admin, or an active district admin. District
+ * admins get req.admin.district set; controllers must scope queries to it.
+ */
+export const reviewerProtect = async (req, res, next) => {
+  const decoded = decodeAdminToken(req, res);
+  if (!decoded) return;
+
+  if (isSuperAdminEmail(decoded.email)) {
+    req.admin = { email: decoded.email, role: "superadmin", district: null };
+    return next();
+  }
+  if (!decoded.email) return deny(res);
+
+  try {
+    // Checked on every request so disabling an account or moving it to
+    // another district takes effect immediately, not when the token expires
+    const admin = await Admin.findOne({ email: decoded.email, role: "district_admin", isActive: true })
+      .select("email district")
+      .populate("district", "name");
+    if (!admin?.district) return deny(res);
+
+    req.admin = {
+      email: admin.email,
+      role: "district_admin",
+      district: admin.district._id,
+      districtName: admin.district.name,
+    };
+    next();
+  } catch (error) {
+    console.error("Reviewer auth error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

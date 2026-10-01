@@ -20,16 +20,16 @@ const SignInPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4] flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-[#FAF8FB] flex items-center justify-center py-12 px-4">
       <div className="max-w-[480px] w-full">
         {/* Logo */}
         <AuthHeader />
 
         {/* Sign In Card */}
-        <div className="bg-white border border-[#E6E0DA] rounded-2xl p-8 shadow-xl">
+        <div className="bg-white border border-[#E8E1EA] rounded-2xl p-8 shadow-xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="font-syne font-bold text-3xl text-[#221410] mb-2">
+            <h1 className="font-syne font-bold text-3xl text-[#1A0A1E] mb-2">
               Welcome Back
             </h1>
             <p className="font-manrope font-extralight text-sm text-[#4B5563]">
@@ -52,7 +52,7 @@ const SignInPage: React.FC = () => {
             Don't have an account?{' '}
             <Link
               to="/signup"
-              className="font-semibold text-[#D4755B] hover:text-[#C05621] transition-[color]"
+              className="font-semibold text-[#A3078F] hover:text-[#7A0A74] transition-[color]"
             >
               Sign Up
             </Link>
@@ -63,7 +63,7 @@ const SignInPage: React.FC = () => {
         <div className="text-center mt-6">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 font-manrope font-medium text-sm text-[#64748B] hover:text-[#D4755B] transition-[color]"
+            className="inline-flex items-center gap-2 font-manrope font-medium text-sm text-[#64748B] hover:text-[#A3078F] transition-[color]"
           >
             <span className="material-icons text-base">arrow_back</span>
             <span>Back to Home</span>

@@ -10,6 +10,8 @@ interface PropertyHeaderProps {
   beds?: number;
   baths?: number;
   sqft?: number;
+  /** Replaces beds/baths/sqft, e.g. land: [{ value: '2.34 Dismil', label: 'Area' }] */
+  specs?: { value: string; label: string }[];
 }
 
 const statusDot: Record<string, string> = {
@@ -31,6 +33,7 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
   beds = 0,
   baths = 0,
   sqft = 0,
+  specs,
 }) => {
   return (
     <div className="max-w-[1280px] mx-auto px-6 lg:px-8 pt-8 pb-0">
@@ -44,31 +47,42 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
         </div>
         {refNumber && (
           <>
-            <span className="text-[#D4C4BC]">·</span>
+            <span className="text-[#D6C8DA]">·</span>
             <span className="font-space-mono text-xs text-[#9CA3AF]">{refNumber}</span>
           </>
         )}
       </div>
 
       {/* Name */}
-      <h1 className="font-fraunces text-3xl md:text-4xl font-semibold text-[#221410] leading-tight mb-2 text-wrap-balance">
+      <h1 className="font-fraunces text-3xl md:text-4xl font-semibold text-[#1A0A1E] leading-tight mb-2 text-wrap-balance">
         {name}
       </h1>
 
       {/* Location */}
       <div className="flex items-center gap-1.5 mb-5">
-        <MapPin className="w-4 h-4 text-[#D4755B] shrink-0" aria-hidden />
+        <MapPin className="w-4 h-4 text-[#A3078F] shrink-0" aria-hidden />
         <span className="font-manrope text-sm text-[#6B7280]">{location}</span>
       </div>
 
       {/* Specs — dot-separated inline */}
-      <div className="flex items-center gap-2 font-manrope text-sm text-[#374151] border-b border-[#E6E0DA] pb-6">
-        <span><strong className="font-semibold tabular-nums">{beds}</strong> {beds === 1 ? 'Bedroom' : 'Bedrooms'}</span>
-        <span className="text-[#D4C4BC]">·</span>
-        <span><strong className="font-semibold tabular-nums">{baths}</strong> {baths === 1 ? 'Bathroom' : 'Bathrooms'}</span>
-        <span className="text-[#D4C4BC]">·</span>
-        <span><strong className="font-semibold tabular-nums">{sqft.toLocaleString()}</strong> sqft</span>
-      </div>
+      {specs ? (
+        <div className="flex flex-wrap items-center gap-2 font-manrope text-sm text-[#374151] border-b border-[#E8E1EA] pb-6">
+          {specs.map((s, i) => (
+            <React.Fragment key={s.label}>
+              {i > 0 && <span className="text-[#D6C8DA]">·</span>}
+              <span>{s.label} <strong className="font-semibold tabular-nums">{s.value}</strong></span>
+            </React.Fragment>
+          ))}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 font-manrope text-sm text-[#374151] border-b border-[#E8E1EA] pb-6">
+          <span><strong className="font-semibold tabular-nums">{beds}</strong> {beds === 1 ? 'Bedroom' : 'Bedrooms'}</span>
+          <span className="text-[#D6C8DA]">·</span>
+          <span><strong className="font-semibold tabular-nums">{baths}</strong> {baths === 1 ? 'Bathroom' : 'Bathrooms'}</span>
+          <span className="text-[#D6C8DA]">·</span>
+          <span><strong className="font-semibold tabular-nums">{sqft.toLocaleString()}</strong> sqft</span>
+        </div>
+      )}
     </div>
   );
 };

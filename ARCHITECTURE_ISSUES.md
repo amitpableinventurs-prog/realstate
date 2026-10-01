@@ -1,6 +1,6 @@
-# BuildEstate - Architecture Issues Document
+# Bhumi Bazar - Architecture Issues Document
 
-> **Project:** Real Estate Website (BuildEstate)
+> **Project:** Real Estate Website (Bhumi Bazar)
 > **GitHub:** [github.com/AAYUSH412/Real-Estate-Website](https://github.com/AAYUSH412/Real-Estate-Website)
 > **Type:** Open-source project
 > **Structure:** Monorepo with 3 apps - `admin/`, `backend/`, `frontend/`

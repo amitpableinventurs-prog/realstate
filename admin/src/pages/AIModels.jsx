@@ -149,29 +149,29 @@ const AIModels = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4] p-6">
+    <div className="min-h-screen bg-[#FAF8FB] p-6">
       {/* Header */}
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-[#D4755B] rounded-xl flex items-center justify-center">
+            <div className="h-10 w-10 bg-[#A3078F] rounded-xl flex items-center justify-center">
               <Cpu className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1C1B1A]">AI Models</h1>
+              <h1 className="text-2xl font-bold text-[#17131A]">AI Models</h1>
               <p className="text-sm text-[#6B7280]">Manage NVIDIA NIM models available to users</p>
             </div>
           </div>
           <div className="flex gap-2">
             <button
               onClick={fetchModels}
-              className="p-2 text-[#6B7280] hover:text-[#1C1B1A] hover:bg-white rounded-lg transition-colors"
+              className="p-2 text-[#6B7280] hover:text-[#17131A] hover:bg-white rounded-lg transition-colors"
             >
               <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
             </button>
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 bg-[#D4755B] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#C05E44] transition-colors"
+              className="flex items-center gap-2 bg-[#A3078F] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#7A0A74] transition-colors"
             >
               <Plus className="h-4 w-4" />
               Add Model
@@ -197,7 +197,7 @@ const AIModels = () => {
         ) : (
           <div className="space-y-3">
             {models.map(model => (
-              <div key={model._id} className="bg-white rounded-xl border border-[#E5E0D8] overflow-hidden">
+              <div key={model._id} className="bg-white rounded-xl border border-[#E6E0E9] overflow-hidden">
                 <div className="flex items-center gap-4 p-4">
                   {/* Status indicator */}
                   <div className={cn(
@@ -208,14 +208,14 @@ const AIModels = () => {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-[#1C1B1A]">{model.name}</span>
+                      <span className="font-semibold text-[#17131A]">{model.name}</span>
                       {model.isDefault && (
-                        <span className="inline-flex items-center gap-1 text-xs bg-[#D4755B]/10 text-[#D4755B] px-2 py-0.5 rounded-full font-medium">
+                        <span className="inline-flex items-center gap-1 text-xs bg-[#A3078F]/10 text-[#A3078F] px-2 py-0.5 rounded-full font-medium">
                           <Star className="h-3 w-3" /> Default
                         </span>
                       )}
                       {model.badge && (
-                        <span className="text-xs bg-[#F3F0EB] text-[#6B7280] px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-[#F3F0F4] text-[#6B7280] px-2 py-0.5 rounded-full">
                           {model.badge}
                         </span>
                       )}
@@ -230,7 +230,7 @@ const AIModels = () => {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => setExpandedConfig(expandedConfig === model._id ? null : model._id)}
-                      className="p-2 text-[#9CA3AF] hover:text-[#1C1B1A] hover:bg-[#F3F0EB] rounded-lg transition-colors"
+                      className="p-2 text-[#9CA3AF] hover:text-[#17131A] hover:bg-[#F3F0F4] rounded-lg transition-colors"
                       title="Toggle config"
                     >
                       {expandedConfig === model._id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -238,7 +238,7 @@ const AIModels = () => {
                     {!model.isDefault && (
                       <button
                         onClick={() => setDefault(model)}
-                        className="p-2 text-[#9CA3AF] hover:text-[#D4755B] hover:bg-[#D4755B]/10 rounded-lg transition-colors"
+                        className="p-2 text-[#9CA3AF] hover:text-[#A3078F] hover:bg-[#A3078F]/10 rounded-lg transition-colors"
                         title="Set as default"
                       >
                         <Star className="h-4 w-4" />
@@ -250,7 +250,7 @@ const AIModels = () => {
                         'p-2 rounded-lg transition-colors',
                         model.isActive
                           ? 'text-green-600 hover:bg-green-50'
-                          : 'text-[#9CA3AF] hover:bg-[#F3F0EB]'
+                          : 'text-[#9CA3AF] hover:bg-[#F3F0F4]'
                       )}
                       title={model.isActive ? 'Deactivate' : 'Activate'}
                     >
@@ -258,7 +258,7 @@ const AIModels = () => {
                     </button>
                     <button
                       onClick={() => openEdit(model)}
-                      className="p-2 text-[#9CA3AF] hover:text-[#1C1B1A] hover:bg-[#F3F0EB] rounded-lg transition-colors"
+                      className="p-2 text-[#9CA3AF] hover:text-[#17131A] hover:bg-[#F3F0F4] rounded-lg transition-colors"
                       title="Edit"
                     >
                       <Pencil className="h-4 w-4" />
@@ -282,7 +282,7 @@ const AIModels = () => {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="border-t border-[#E5E0D8] px-4 py-3 bg-[#FAF8F4] grid grid-cols-3 gap-3 text-xs">
+                      <div className="border-t border-[#E6E0E9] px-4 py-3 bg-[#FAF8FB] grid grid-cols-3 gap-3 text-xs">
                         {[
                           ['maxTokens', model.config?.maxTokens],
                           ['timeoutMs', model.config?.timeoutMs],
@@ -293,7 +293,7 @@ const AIModels = () => {
                         ].map(([k, v]) => (
                           <div key={k}>
                             <div className="text-[#9CA3AF] uppercase tracking-wide font-medium">{k}</div>
-                            <div className="font-mono text-[#1C1B1A] mt-0.5">{String(v)}</div>
+                            <div className="font-mono text-[#17131A] mt-0.5">{String(v)}</div>
                           </div>
                         ))}
                       </div>
@@ -315,7 +315,7 @@ const AIModels = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => setDeleteConfirm(null)}
-                            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1C1B1A] px-3 py-1.5 rounded-lg hover:bg-white transition-colors"
+                            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#17131A] px-3 py-1.5 rounded-lg hover:bg-white transition-colors"
                           >
                             <X className="h-3.5 w-3.5" /> Cancel
                           </button>
@@ -357,11 +357,11 @@ const AIModels = () => {
                 exit={{ scale: 0.95, opacity: 0 }}
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
               >
-                <div className="flex items-center justify-between p-5 border-b border-[#E5E0D8]">
-                  <h2 className="font-bold text-lg text-[#1C1B1A]">
+                <div className="flex items-center justify-between p-5 border-b border-[#E6E0E9]">
+                  <h2 className="font-bold text-lg text-[#17131A]">
                     {editingId ? 'Edit Model' : 'Add AI Model'}
                   </h2>
-                  <button onClick={closeForm} className="p-1.5 text-[#9CA3AF] hover:text-[#1C1B1A] rounded-lg hover:bg-[#F3F0EB] transition-colors">
+                  <button onClick={closeForm} className="p-1.5 text-[#9CA3AF] hover:text-[#17131A] rounded-lg hover:bg-[#F3F0F4] transition-colors">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
@@ -376,9 +376,9 @@ const AIModels = () => {
                     { label: 'Description', field: 'description', placeholder: 'Short description shown to users' },
                   ].map(({ label, field, placeholder }) => (
                     <div key={field}>
-                      <label className="block text-sm font-semibold text-[#1C1B1A] mb-1">{label}</label>
+                      <label className="block text-sm font-semibold text-[#17131A] mb-1">{label}</label>
                       <input
-                        className="w-full border border-[#E5E0D8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4755B]/30 focus:border-[#D4755B]"
+                        className="w-full border border-[#E6E0E9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#A3078F]/30 focus:border-[#A3078F]"
                         value={form[field]}
                         onChange={e => setField(field, e.target.value)}
                         placeholder={placeholder}
@@ -388,10 +388,10 @@ const AIModels = () => {
 
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <label className="block text-sm font-semibold text-[#1C1B1A] mb-1">Order</label>
+                      <label className="block text-sm font-semibold text-[#17131A] mb-1">Order</label>
                       <input
                         type="number"
-                        className="w-full border border-[#E5E0D8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4755B]/30 focus:border-[#D4755B]"
+                        className="w-full border border-[#E6E0E9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#A3078F]/30 focus:border-[#A3078F]"
                         value={form.order}
                         onChange={e => setField('order', Number(e.target.value))}
                       />
@@ -399,18 +399,18 @@ const AIModels = () => {
                     <div className="flex-1 flex flex-col justify-end gap-2">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input type="checkbox" checked={form.isActive} onChange={e => setField('isActive', e.target.checked)} className="rounded" />
-                        <span className="text-sm font-semibold text-[#1C1B1A]">Active</span>
+                        <span className="text-sm font-semibold text-[#17131A]">Active</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input type="checkbox" checked={form.isDefault} onChange={e => setField('isDefault', e.target.checked)} className="rounded" />
-                        <span className="text-sm font-semibold text-[#1C1B1A]">Default model</span>
+                        <span className="text-sm font-semibold text-[#17131A]">Default model</span>
                       </label>
                     </div>
                   </div>
 
                   {/* Config section */}
-                  <div className="border-t border-[#E5E0D8] pt-4">
-                    <h3 className="text-sm font-bold text-[#1C1B1A] mb-3">Model Config</h3>
+                  <div className="border-t border-[#E6E0E9] pt-4">
+                    <h3 className="text-sm font-bold text-[#17131A] mb-3">Model Config</h3>
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         { label: 'Max Tokens', field: 'config.maxTokens', type: 'number' },
@@ -424,7 +424,7 @@ const AIModels = () => {
                           <input
                             type={type}
                             step={step}
-                            className="w-full border border-[#E5E0D8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4755B]/30 focus:border-[#D4755B]"
+                            className="w-full border border-[#E6E0E9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#A3078F]/30 focus:border-[#A3078F]"
                             value={form.config[field.split('.')[1]] ?? ''}
                             onChange={e => {
                               const raw = e.target.value;
@@ -449,17 +449,17 @@ const AIModels = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 px-5 py-4 border-t border-[#E5E0D8]">
+                <div className="flex justify-end gap-3 px-5 py-4 border-t border-[#E6E0E9]">
                   <button
                     onClick={closeForm}
-                    className="px-4 py-2 text-sm text-[#6B7280] hover:text-[#1C1B1A] rounded-lg hover:bg-[#F3F0EB] transition-colors"
+                    className="px-4 py-2 text-sm text-[#6B7280] hover:text-[#17131A] rounded-lg hover:bg-[#F3F0F4] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-4 py-2 text-sm font-semibold text-white bg-[#D4755B] hover:bg-[#C05E44] rounded-lg transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-semibold text-white bg-[#A3078F] hover:bg-[#7A0A74] rounded-lg transition-colors disabled:opacity-50"
                   >
                     {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Create Model'}
                   </button>

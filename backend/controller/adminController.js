@@ -6,6 +6,7 @@ import AdminActivityLog from "../models/adminActivityLogModel.js";
 import emailService from "../services/emailService.js";
 import { getEmailTemplate, getListingApprovedTemplate, getListingRejectedTemplate } from "../email.js";
 import { logAdminActivity } from "../utils/activityLogger.js";
+import { reviewScope, canReviewDistrict } from "../utils/districts.js";
 import createCsvWriter from 'csv-writer';
 import fs from 'fs';
 import mongoose from 'mongoose';
@@ -227,16 +228,27 @@ export const updateAppointmentStatus = async (req, res) => {
 };
 
 // ── Admin listing review ──────────────────────────────────────────────────────
+// Super admin reviews every district; district admins only their own
+// (req.admin.district, set by reviewerProtect).
 
-/** GET /api/admin/properties/pending — FIFO queue of user-submitted listings */
+const REVIEW_STATUSES = ["pending", "active", "rejected"];
+// Statuses each decision may be applied to — lets an admin reverse a decision
+const APPROVABLE_STATUSES = ["pending", "rejected"];
+const REJECTABLE_STATUSES = ["pending", "active"];
+
+/**
+ * GET /api/admin/properties/pending?status=pending|active|rejected&district=<id>|unassigned
+ * Pending is a FIFO queue; approved/rejected are most recently reviewed first.
+ */
 export const getPendingListings = async (req, res) => {
   try {
     // Pagination parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 15; // Default 15 per page for admin review
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 15); // Default 15 per page for admin review
     const skip = (page - 1) * limit;
 
-    const query = { status: "pending" };
+    const status = REVIEW_STATUSES.includes(req.query.status) ? req.query.status : "pending";
+    const query = { status, ...reviewScope(req.admin, req.query.district) };
 
     // Get total count for pagination metadata
     const totalProperties = await Property.countDocuments(query);
@@ -245,7 +257,8 @@ export const getPendingListings = async (req, res) => {
     // Get properties with pagination
     const properties = await Property.find(query)
       .populate("postedBy", "name email")
-      .sort({ createdAt: 1 }) // oldest first (FIFO)
+      .populate("district", "name")
+      .sort(status === "pending" ? { createdAt: 1 } : { reviewedAt: -1, updatedAt: -1 })
       .limit(limit)
       .skip(skip);
 
@@ -267,18 +280,100 @@ export const getPendingListings = async (req, res) => {
   }
 };
 
-/** PUT /api/admin/properties/:id/approve — approve a pending listing */
+/**
+ * GET /api/admin/properties?status=all|pending|active|rejected|expired
+ * Every website property with its review status, for the admin "All Properties"
+ * page (super admin). Legacy admin-added docs without a status count as active.
+ */
+export const listAllProperties = async (req, res) => {
+  try {
+    const status = req.query.status;
+    const query = status === "active"
+      ? { $or: [{ status: "active" }, { status: { $exists: false } }] }
+      : ["pending", "rejected", "expired"].includes(status) ? { status } : {};
+
+    const [properties, counts] = await Promise.all([
+      Property.find(query)
+        .populate("postedBy", "name email")
+        .populate("district", "name state")
+        .sort({ createdAt: -1 })
+        .limit(500),
+      Property.aggregate([{ $group: { _id: { $ifNull: ["$status", "active"] }, n: { $sum: 1 } } }]),
+    ]);
+
+    const byStatus = Object.fromEntries(counts.map((c) => [c._id, c.n]));
+    res.json({
+      success: true,
+      properties,
+      counts: {
+        all: counts.reduce((sum, c) => sum + c.n, 0),
+        active: byStatus.active || 0,
+        pending: byStatus.pending || 0,
+        rejected: byStatus.rejected || 0,
+        expired: byStatus.expired || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error listing properties:", error);
+    res.status(500).json({ success: false, message: "Error fetching properties" });
+  }
+};
+
+/** GET /api/admin/properties/:id — any status (the public endpoint hides pending/rejected) */
+export const getPropertyForAdmin = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: "Property not found" });
+    }
+    const property = await Property.findById(req.params.id);
+    if (!property) return res.status(404).json({ success: false, message: "Property not found" });
+    res.json({ success: true, property });
+  } catch (error) {
+    console.error("Error fetching property:", error);
+    res.status(500).json({ success: false, message: "Error fetching property" });
+  }
+};
+
+// Loads a listing for a review decision, or sends the error response and returns null
+const loadForReview = async (req, res, allowedStatuses, action) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(404).json({ success: false, message: "Listing not found" });
+    return null;
+  }
+  const property = await Property.findById(req.params.id)
+    .populate("postedBy", "name email")
+    .populate("district", "name");
+
+  if (!property) {
+    res.status(404).json({ success: false, message: "Listing not found" });
+    return null;
+  }
+  if (!canReviewDistrict(req.admin, property.district?._id)) {
+    res.status(403).json({ success: false, message: "This listing belongs to another district" });
+    return null;
+  }
+  if (!allowedStatuses.includes(property.status)) {
+    res.status(400).json({ success: false, message: `Cannot ${action} a listing that is ${property.status}` });
+    return null;
+  }
+  return property;
+};
+
+/** PUT /api/admin/properties/:id/approve — approve a pending or rejected listing */
 export const approveListing = async (req, res) => {
   try {
-    const property = await Property.findById(req.params.id).populate("postedBy", "name email");
+    const property = await loadForReview(req, res, APPROVABLE_STATUSES, "approve");
+    if (!property) return;
 
-    if (!property) {
-      return res.status(404).json({ success: false, message: "Listing not found" });
-    }
-
+    const previousStatus = property.status;
     property.status = "active";
     property.rejectionReason = "";
+    property.reviewedBy = req.admin.email;
+    property.reviewedAt = new Date();
     await property.save();
+
+    await logAdminActivity(req.admin.email, "approve_property", "property", property._id, property.title,
+      { previousStatus, newStatus: "active", district: property.district?.name }, req);
 
     // Email the submitter
     if (property.postedBy?.email) {
@@ -300,24 +395,27 @@ export const approveListing = async (req, res) => {
   }
 };
 
-/** PUT /api/admin/properties/:id/reject — reject a pending listing */
+/** PUT /api/admin/properties/:id/reject — reject a pending or approved listing */
 export const rejectListing = async (req, res) => {
   try {
     const { reason } = req.body;
 
-    if (!reason || !reason.trim()) {
+    if (typeof reason !== "string" || !reason.trim()) {
       return res.status(400).json({ success: false, message: "Rejection reason is required" });
     }
 
-    const property = await Property.findById(req.params.id).populate("postedBy", "name email");
+    const property = await loadForReview(req, res, REJECTABLE_STATUSES, "reject");
+    if (!property) return;
 
-    if (!property) {
-      return res.status(404).json({ success: false, message: "Listing not found" });
-    }
-
+    const previousStatus = property.status;
     property.status = "rejected";
     property.rejectionReason = reason.trim();
+    property.reviewedBy = req.admin.email;
+    property.reviewedAt = new Date();
     await property.save();
+
+    await logAdminActivity(req.admin.email, "reject_property", "property", property._id, property.title,
+      { reason: reason.trim(), previousStatus, newStatus: "rejected", district: property.district?.name }, req);
 
     // Email the submitter
     if (property.postedBy?.email) {
@@ -908,6 +1006,16 @@ export const bulkBanUsers = async (req, res) => {
   }
 };
 
+// Listings among `ids` that this admin may review and that are in one of `statuses`
+const findBulkReviewTargets = (req, ids, statuses) =>
+  Property.find({
+    _id: { $in: ids.filter((id) => mongoose.isValidObjectId(id)) },
+    status: { $in: statuses },
+    ...reviewScope(req.admin),
+  })
+    .populate('postedBy', 'name email')
+    .select('title postedBy _id');
+
 /**
  * POST /api/admin/properties/bulk-approve
  * Approve multiple properties at once
@@ -932,18 +1040,14 @@ export const bulkApproveProperties = async (req, res) => {
       });
     }
 
-    // Bulk update properties
+    // Only listings this admin may review, in a status that can be approved
+    const properties = await findBulkReviewTargets(req, propertyIds, APPROVABLE_STATUSES);
     const result = await Property.updateMany(
-      { _id: { $in: propertyIds } },
+      { _id: { $in: properties.map((p) => p._id) } },
       {
-        $set: { status: 'active', rejectionReason: '' }
+        $set: { status: 'active', rejectionReason: '', reviewedBy: req.admin.email, reviewedAt: new Date() }
       }
     );
-
-    // Get affected properties with owner info for emails
-    const properties = await Property.find({ _id: { $in: propertyIds } })
-      .populate('postedBy', 'name email')
-      .select('title postedBy _id');
 
     // Log activity
     await logAdminActivity(
@@ -954,7 +1058,7 @@ export const bulkApproveProperties = async (req, res) => {
       `${result.modifiedCount} properties`,
       {
         count: result.modifiedCount,
-        affectedIds: propertyIds
+        affectedIds: properties.map((p) => p._id)
       },
       req
     );
@@ -1018,21 +1122,19 @@ export const bulkRejectProperties = async (req, res) => {
       });
     }
 
-    // Bulk update properties
+    // Only listings this admin may review, in a status that can be rejected
+    const properties = await findBulkReviewTargets(req, propertyIds, REJECTABLE_STATUSES);
     const result = await Property.updateMany(
-      { _id: { $in: propertyIds } },
+      { _id: { $in: properties.map((p) => p._id) } },
       {
         $set: {
           status: 'rejected',
-          rejectionReason: reason.trim()
+          rejectionReason: reason.trim(),
+          reviewedBy: req.admin.email,
+          reviewedAt: new Date()
         }
       }
     );
-
-    // Get affected properties with owner info
-    const properties = await Property.find({ _id: { $in: propertyIds } })
-      .populate('postedBy', 'name email')
-      .select('title postedBy');
 
     // Log activity
     await logAdminActivity(
@@ -1044,7 +1146,7 @@ export const bulkRejectProperties = async (req, res) => {
       {
         reason: reason.trim(),
         count: result.modifiedCount,
-        affectedIds: propertyIds
+        affectedIds: properties.map((p) => p._id)
       },
       req
     );

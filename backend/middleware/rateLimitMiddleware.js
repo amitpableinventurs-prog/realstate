@@ -121,3 +121,56 @@ export const apiLimiter = rateLimit({
     return req.ip || req.connection.remoteAddress;
   },
 });
+
+/**
+ * OTP send limiter (mobile app)
+ * Limits: 10 OTP requests per 15 minutes per IP — per-phone limits are enforced
+ * separately in appAuthController so one IP can't flood a single number
+ */
+export const otpSendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {
+    message: 'Too many OTP requests from this IP. Please try again later.',
+    success: false,
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip,
+});
+
+/**
+ * OTP verify limiter (mobile app)
+ * Limits: 20 verification attempts per 15 minutes per IP
+ */
+export const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: {
+    message: 'Too many verification attempts. Please try again later.',
+    success: false,
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip,
+});
+
+/**
+ * Job application limiter (careers page)
+ * Limits: 5 applications per hour per IP
+ */
+export const jobApplicationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: {
+    message: 'Too many applications from this IP. Please try again later.',
+    success: false,
+    retryAfter: '1 hour'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipFailedRequests: true, // validation errors don't use up the allowance
+  keyGenerator: (req) => req.ip,
+});
