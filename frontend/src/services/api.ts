@@ -254,7 +254,56 @@ export const districtsAPI = {
   states: () => apiClient.get<{ success: boolean; states: IndianState[] }>('/districts/states'),
 };
 
-// User-submitted property listings (require auth)
+// ── Property listings (same fields and API as the mobile "Register property" screen) ──
+
+export interface ListingOption { value: string; label: string }
+
+export interface ListingMeta {
+  listingTypes: ListingOption[];   // sell / rent / lease
+  propertyTypes: ListingOption[];  // land / house / apartment / commercial
+  areaUnits: (ListingOption & { sqft: number })[]; // Dismil, Bigha, Acre, Square ft
+  priceUnits: (ListingOption & { sqft: number | null })[]; // Total price, Per Dismil, Per Kattha, ... (sqft null = total)
+  defaultAreaUnit: string;
+  defaultPriceUnit: string;
+  leasePricePeriods: ListingOption[];
+  media: { maxPerUpload: number; maxImageMb: number; maxVideoMb: number };
+}
+
+/** A listing as returned by the listing API (website "My Listings") */
+export interface UserListing {
+  id: string;
+  title: string;
+  description: string;
+  listingType: 'sell' | 'rent' | 'lease';
+  propertyType: string;
+  typeLabel: string;
+  priceLabel: string;
+  unitPriceLabel: string | null;
+  area: { value: number; unit: string; label: string };
+  khataNo: string | null;
+  khasraNo: string | null;
+  coverImage: string | null;
+  address: string | null;
+  district: { id: string; name: string | null; state: string | null } | null;
+  status: 'pending' | 'active' | 'rejected' | 'inactive';
+  rejectionReason?: string | null;
+  createdAt: string;
+}
+
+export const listingsAPI = {
+  // Dropdown values shared with the mobile app
+  meta: () => apiClient.get<{ success: boolean; data: ListingMeta }>('/v1/app/meta'),
+  // multipart: khataNo, khasraNo, area, areaUnit, price, priceUnit, pricePeriod, listingType,
+  // propertyType, description, district, latitude, longitude, address, contactPhone, media[]
+  create: (formData: FormData) =>
+    apiClient.post<{ success: boolean; message: string; data: UserListing }>('/user/listings', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  mine: () => apiClient.get<{ success: boolean; data: UserListing[] }>('/user/listings'),
+  delete: (id: string) => apiClient.delete(`/user/listings/${id}`),
+};
+
+// User-submitted property listings (require auth) — older beds/baths form
 export const userListingsAPI = {
   create: (formData: FormData) =>
     apiClient.post('/user/properties', formData, {

@@ -36,7 +36,15 @@ export const FIELDS_BY_LISTING_TYPE = {
 };
 
 const ListingSchema = new mongoose.Schema({
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'AppUser', required: true },
+    // Posted from the app (AppUser), the website "List Your Property" form
+    // (website User) or the admin panel (admin email) — exactly one is set.
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AppUser',
+        required: function () { return !this.websiteOwner && !this.postedByAdmin; },
+    },
+    websiteOwner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    postedByAdmin: { type: String },
     // Snapshot of the owner's badge at posting time ("Owner" / company name)
     postedByType: { type: String, enum: ['owner', 'agent', 'builder'], default: 'owner' },
     postedByName: { type: String },
@@ -133,6 +141,7 @@ ListingSchema.index({ status: 1, listingType: 1, createdAt: -1 });
 ListingSchema.index({ status: 1, price: 1 });
 ListingSchema.index({ status: 1, areaSqft: 1 });
 ListingSchema.index({ owner: 1, createdAt: -1 });
+ListingSchema.index({ websiteOwner: 1, createdAt: -1 }, { sparse: true });
 ListingSchema.index({ district: 1, status: 1, createdAt: -1 });
 ListingSchema.index({ location: '2dsphere' });
 

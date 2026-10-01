@@ -2,10 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
-import { userListingsAPI } from '../services/api';
+import { listingsAPI, type UserListing } from '../services/api';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
-import { formatPrice } from '../utils/formatPrice';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,22 +18,8 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Listing {
-  _id: string;
-  title: string;
-  location: string;
-  price: number;
-  image: string[];
-  beds: number;
-  baths: number;
-  sqft: number;
-  type: string;
-  availability: string;
-  status: 'pending' | 'active' | 'rejected' | 'expired';
-  rejectionReason?: string;
-  expiresAt?: string;
-  createdAt: string;
-}
+// Listings posted with the "Register your property" form (same API as the mobile app)
+type Listing = UserListing;
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
@@ -57,8 +42,8 @@ const STATUS_CONFIG = {
     text: 'text-red-800',
     dot: 'bg-red-500',
   },
-  expired: {
-    label: 'Expired',
+  inactive: {
+    label: 'Hidden',
     bg: 'bg-gray-100',
     text: 'text-gray-600',
     dot: 'bg-gray-400',
@@ -73,11 +58,6 @@ function formatDate(dateStr: string): string {
     month: 'short',
     year: 'numeric',
   });
-}
-
-function daysUntilExpiry(expiresAt: string): number {
-  const diff = new Date(expiresAt).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -105,8 +85,8 @@ const MyListingsPage: React.FC = () => {
   const fetchListings = useCallback(async () => {
     setFetchLoading(true);
     try {
-      const res = await userListingsAPI.getMyListings();
-      setListings(res.data.properties ?? res.data ?? []);
+      const res = await listingsAPI.mine();
+      setListings(res.data.data ?? []);
     } catch {
       toast.error('Failed to load your listings. Please try again.');
     } finally {
@@ -124,8 +104,8 @@ const MyListingsPage: React.FC = () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await userListingsAPI.delete(deleteTarget._id);
-      setListings((prev) => prev.filter((l) => l._id !== deleteTarget._id));
+      await listingsAPI.delete(deleteTarget.id);
+      setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id));
       toast.success('Listing deleted successfully.');
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to delete listing.';
@@ -197,7 +177,7 @@ const MyListingsPage: React.FC = () => {
     active: listings.filter((l) => l.status === 'active').length,
     pending: listings.filter((l) => l.status === 'pending').length,
     rejected: listings.filter((l) => l.status === 'rejected').length,
-    expired: listings.filter((l) => l.status === 'expired').length,
+    inactive: listings.filter((l) => l.status === 'inactive').length,
   };
 
   return (
@@ -227,7 +207,7 @@ const MyListingsPage: React.FC = () => {
 
         {/* ── Stats bar ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-          {(['active', 'pending', 'rejected', 'expired'] as const).map((status) => {
+          {(['active', 'pending', 'rejected', 'inactive'] as const).map((status) => {
             const cfg = STATUS_CONFIG[status];
             return (
               <div key={status} className="bg-white border border-[#E8E1EA] rounded-xl p-4">
@@ -245,14 +225,12 @@ const MyListingsPage: React.FC = () => {
         <div className="space-y-4">
           {listings.map((listing) => {
             const cfg = STATUS_CONFIG[listing.status] ?? STATUS_CONFIG.pending;
-            const coverImage = listing.image?.[0] ?? null;
-            const expiresIn = listing.status === 'active' && listing.expiresAt
-              ? daysUntilExpiry(listing.expiresAt)
-              : null;
+            const coverImage = listing.coverImage;
+            const place = [listing.address, listing.district?.name, listing.district?.state].filter(Boolean).join(', ');
 
             return (
               <div
-                key={listing._id}
+                key={listing.id}
                 className="bg-white border border-[#E8E1EA] rounded-2xl overflow-hidden flex flex-col sm:flex-row"
               >
                 {/* Thumbnail */}
@@ -294,15 +272,18 @@ const MyListingsPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      {listing.location}
+                      {place || '—'}
                     </p>
 
-                    <div className="flex flex-wrap gap-3 font-manrope text-sm text-[#374151]">
-                      <span className="font-semibold text-[#A3078F]">{formatPrice(listing.price)}</span>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 font-manrope text-sm text-[#374151]">
+                      <span className="font-semibold text-[#A3078F]">{listing.priceLabel}</span>
+                      {listing.unitPriceLabel && <span className="text-[#6B7280]">({listing.unitPriceLabel})</span>}
                       <span>·</span>
-                      <span>{listing.beds} bed · {listing.baths} bath · {listing.sqft.toLocaleString()} sqft</span>
+                      <span>{listing.area.label}</span>
+                      {listing.khataNo && <><span>·</span><span>Khata {listing.khataNo}</span></>}
+                      {listing.khasraNo && <><span>·</span><span>Khasra {listing.khasraNo}</span></>}
                       <span>·</span>
-                      <span>{listing.type} · {listing.availability}</span>
+                      <span>{listing.typeLabel}</span>
                     </div>
                   </div>
 
@@ -319,34 +300,23 @@ const MyListingsPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Expiry warning */}
-                  {expiresIn !== null && expiresIn <= 7 && (
-                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="font-manrope text-xs text-amber-700">
-                        {expiresIn === 0
-                          ? 'Expires today'
-                          : `Expires in ${expiresIn} day${expiresIn > 1 ? 's' : ''}`}
-                      </p>
-                    </div>
+                  {listing.status === 'pending' && (
+                    <p className="font-manrope text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      Waiting for admin approval — it will appear on the website once approved.
+                    </p>
                   )}
 
                   {/* Footer: date + actions */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[#F3EDF4]">
                     <p className="font-manrope text-xs text-[#9CA3AF]">
                       Listed {formatDate(listing.createdAt)}
-                      {listing.status === 'active' && listing.expiresAt && (
-                        <> · Expires {formatDate(listing.expiresAt)}</>
-                      )}
                     </p>
 
                     <div className="flex items-center gap-2">
                       {/* View live listing (active only) */}
                       {listing.status === 'active' && (
                         <Link
-                          to={`/property/${listing._id}`}
+                          to={`/property/${listing.id}`}
                           className="font-manrope text-xs font-medium text-[#A3078F] hover:underline"
                           target="_blank"
                           rel="noopener noreferrer"
@@ -354,17 +324,6 @@ const MyListingsPage: React.FC = () => {
                           View Live
                         </Link>
                       )}
-
-                      {/* Edit */}
-                      <Link
-                        to={`/edit-property/${listing._id}`}
-                        className="flex items-center gap-1.5 font-manrope text-xs font-semibold text-[#374151] border border-[#E8E1EA] px-3 py-1.5 rounded-lg hover:border-[#A3078F] hover:text-[#A3078F] transition-[border-color,color]"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        Edit
-                      </Link>
 
                       {/* Delete */}
                       <button

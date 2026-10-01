@@ -2,45 +2,53 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
-import { userListingsAPI, districtsAPI, type District, type IndianState } from '../services/api';
+import {
+  listingsAPI, districtsAPI,
+  type District, type IndianState, type ListingMeta,
+} from '../services/api';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// Same fields and API as the mobile "Register your property" screen: the
+// listing goes to the admin Review Queue and is public once approved.
 
-const PROPERTY_TYPES = ['Flat', 'House', 'Villa', 'Plot', 'Penthouse', 'Studio', 'Commercial'];
-const AVAILABILITY_OPTIONS = ['For Sale', 'For Rent'];
-const AMENITIES_LIST = [
-  'Parking', 'Swimming Pool', 'Gym', 'Security', 'Power Backup',
-  'Lift', 'Garden', 'Club House', 'CCTV', 'Intercom',
-  'Rainwater Harvesting', 'Gated Community', 'Children Play Area',
-  'Jogging Track', 'Basketball Court',
-];
+const MAX_FILES = 10;
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+const inputClass =
+  'w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] bg-white focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] disabled:opacity-60';
+const labelClass = 'block font-manrope text-sm font-medium text-[#374151] mb-1';
+const sectionClass = 'bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5';
+
+const LISTING_TYPE_LABELS: Record<string, string> = { sell: 'For Sale', rent: 'For Rent', lease: 'For Lease' };
 
 interface FormState {
-  title: string;
-  type: string;
-  availability: string;
-  district: string;
-  location: string;
+  listingType: 'sell' | 'rent' | 'lease';
+  propertyType: string;
+  khataNo: string;
+  khasraNo: string;
+  area: string;
+  areaUnit: string;
   price: string;
-  beds: string;
-  baths: string;
-  sqft: string;
+  priceUnit: string;
+  pricePeriod: 'month' | 'year';
   description: string;
-  phone: string;
-  googleMapLink: string;
+  address: string;
+  contactPhone: string;
+  district: string;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+const Required = () => <span className="text-red-500">*</span>;
+
+const FieldError: React.FC<{ message?: string }> = ({ message }) =>
+  message ? <p role="alert" className="font-manrope text-xs text-red-600 mt-1">{message}</p> : null;
+
+const formatINR = (n: number) =>
+  n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(2)} Lakhs` : `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 const AddPropertyPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, token } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
-  // Redirect to sign-in if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast.error('Please sign in to add a property listing.');
@@ -48,42 +56,56 @@ const AddPropertyPage: React.FC = () => {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
+  const [meta, setMeta] = useState<ListingMeta | null>(null);
   const [form, setForm] = useState<FormState>({
-    title: '',
-    type: 'Flat',
-    availability: 'For Sale',
-    district: '',
-    location: '',
+    listingType: 'sell',
+    propertyType: 'land',
+    khataNo: '',
+    khasraNo: '',
+    area: '',
+    areaUnit: 'decimal',
     price: '',
-    beds: '',
-    baths: '',
-    sqft: '',
+    priceUnit: 'kattha',
+    pricePeriod: 'month',
     description: '',
-    phone: '',
-    googleMapLink: '',
+    address: '',
+    contactPhone: '',
+    district: '',
   });
-
-  const [amenities, setAmenities] = useState<string[]>([]);
-  const [images, setImages] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<{ url: string; isVideo: boolean }[]>([]);
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // State narrows the district list; the chosen district's team reviews the listing
+  // State narrows the district list; the chosen district's admin reviews the listing
   const [states, setStates] = useState<IndianState[] | null>(null);
   const [selectedState, setSelectedState] = useState('');
   const [districts, setDistricts] = useState<District[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
 
   useEffect(() => {
+    listingsAPI.meta()
+      .then((res) => {
+        const m = res.data.data;
+        setMeta(m);
+        setForm((prev) => ({ ...prev, areaUnit: m.defaultAreaUnit, priceUnit: m.defaultPriceUnit }));
+      })
+      .catch(() => toast.error('Could not load the form options. Please refresh the page.'));
     districtsAPI.states()
       .then((res) => setStates(res.data.states))
       .catch(() => setStates([]));
   }, []);
 
+  // Start with the state/district from the user's profile
   useEffect(() => {
-    setForm((prev) => ({ ...prev, district: '' }));
+    if (user?.state && !selectedState) setSelectedState(user.state);
+  }, [user?.state]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (!selectedState) {
       setDistricts([]);
       return;
@@ -91,75 +113,141 @@ const AddPropertyPage: React.FC = () => {
     let cancelled = false;
     setLoadingDistricts(true);
     districtsAPI.list({ state: selectedState })
-      .then((res) => { if (!cancelled) setDistricts(res.data.districts); })
+      .then((res) => {
+        if (cancelled) return;
+        setDistricts(res.data.districts);
+        // Keep the profile district when it is in this state
+        setForm((prev) => ({
+          ...prev,
+          district: res.data.districts.some((d) => d.id === (prev.district || user?.district?.id))
+            ? (prev.district || user?.district?.id || '')
+            : '',
+        }));
+      })
       .catch(() => { if (!cancelled) setDistricts([]); })
       .finally(() => { if (!cancelled) setLoadingDistricts(false); });
     return () => { cancelled = true; };
-  }, [selectedState]);
+  }, [selectedState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Release preview object URLs
+  useEffect(() => () => previews.forEach((p) => URL.revokeObjectURL(p.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handlers ──────────────────────────────────────────────
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
-  const toggleAmenity = (amenity: string) => {
-    setAmenities((prev) =>
-      prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]
-    );
-  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    set(e.target.name as keyof FormState, e.target.value as never);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const remaining = 4 - images.length;
-    if (remaining <= 0) {
-      toast.error('Maximum 4 images allowed.');
-      return;
-    }
-    const allowed = files.slice(0, remaining);
-    const newImages = [...images, ...allowed];
-    setImages(newImages);
-    const newPreviews = allowed.map((f) => URL.createObjectURL(f));
-    setPreviews((prev) => [...prev, ...newPreviews]);
-    // Reset input so the same file can be re-selected after removal
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files || []);
+    const room = MAX_FILES - files.length;
+    if (picked.length > room) toast.error(`You can add up to ${MAX_FILES} photos and videos.`);
+    const allowed = picked.slice(0, Math.max(0, room));
+    setFiles((prev) => [...prev, ...allowed]);
+    setPreviews((prev) => [
+      ...prev,
+      ...allowed.map((f) => ({ url: URL.createObjectURL(f), isVideo: f.type.startsWith('video/') })),
+    ]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const removeImage = (index: number) => {
-    URL.revokeObjectURL(previews[index]);
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  const removeFile = (index: number) => {
+    URL.revokeObjectURL(previews[index].url);
+    setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const getLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Location is not supported by this browser.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({
+          latitude: Number(pos.coords.latitude.toFixed(6)),
+          longitude: Number(pos.coords.longitude.toFixed(6)),
+        });
+        setLocating(false);
+      },
+      () => {
+        toast.error('Could not get your location. Please allow location access and try again.');
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
+
+  // Live total for a price quoted per unit, e.g. 2.5 Dismil at ₹1,50,000 per Kattha
+  const totalPreview = (() => {
+    if (!meta || form.priceUnit === 'total') return null;
+    const area = Number(form.area);
+    const price = Number(form.price);
+    const areaSqft = meta.areaUnits.find((u) => u.value === form.areaUnit)?.sqft;
+    const unitSqft = meta.priceUnits.find((u) => u.value === form.priceUnit)?.sqft;
+    if (!(area > 0) || !(price > 0) || !areaSqft || !unitSqft) return null;
+    return formatINR((price * area * areaSqft) / unitSqft);
+  })();
+
+  const isLand = form.propertyType === 'land';
+  const priceRequired = form.listingType !== 'sell';
+  const needsPhone = !user?.phone;
+  const periodSuffix = form.listingType === 'rent' ? ' / month' : form.listingType === 'lease' ? ` / ${form.pricePeriod}` : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (images.length === 0) {
-      toast.error('Please upload at least one image.');
-      return;
-    }
-
     const fd = new FormData();
-    Object.entries(form).forEach(([key, val]) => fd.append(key, val));
-    fd.append('amenities', JSON.stringify(amenities));
-    images.forEach((img) => fd.append('images', img));
+    fd.append('listingType', form.listingType);
+    fd.append('propertyType', form.propertyType);
+    if (form.khataNo.trim()) fd.append('khataNo', form.khataNo.trim());
+    if (form.khasraNo.trim()) fd.append('khasraNo', form.khasraNo.trim());
+    fd.append('area', form.area);
+    fd.append('areaUnit', form.areaUnit);
+    if (form.price) {
+      fd.append('price', form.price);
+      fd.append('priceUnit', form.priceUnit);
+    }
+    if (form.listingType === 'lease') fd.append('pricePeriod', form.pricePeriod);
+    fd.append('description', form.description.trim());
+    fd.append('district', form.district);
+    if (selectedState) fd.append('state', selectedState);
+    if (form.address.trim()) fd.append('address', form.address.trim());
+    if (coords) {
+      fd.append('latitude', String(coords.latitude));
+      fd.append('longitude', String(coords.longitude));
+    }
+    if (needsPhone) fd.append('contactPhone', form.contactPhone);
+    files.forEach((file) => fd.append('media', file));
 
     setSubmitting(true);
+    setErrors({});
     try {
-      await userListingsAPI.create(fd);
+      await listingsAPI.create(fd);
       setSubmitted(true);
-      toast.success('Listing submitted! It will go live once approved by our team.');
+      window.scrollTo(0, 0);
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to submit listing. Please try again.';
-      toast.error(msg);
+      const data = err.response?.data;
+      if (data?.errors) {
+        setErrors(data.errors);
+        toast.error(data.message || 'Please fix the highlighted fields.');
+      } else {
+        toast.error(data?.message || 'Failed to submit listing. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
   };
-
-  // ── Loading / not-auth guard ───────────────────────────────
 
   if (isLoading) {
     return (
@@ -177,14 +265,14 @@ const AddPropertyPage: React.FC = () => {
         <Navbar />
         <div className="max-w-xl mx-auto px-4 py-24 text-center">
           <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h2 className="font-fraunces text-3xl font-bold text-[#1A0A1E] mb-3">Listing Submitted!</h2>
           <p className="font-manrope text-[#6B7280] mb-8">
-            Your property listing is under review. Our team will approve it within 24–48 hours.
-            You'll receive an email once it goes live.
+            Your property is under review by the admin for your district. It will appear on Bhumi Bazar once
+            approved, and we'll email you the decision.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -206,368 +294,280 @@ const AddPropertyPage: React.FC = () => {
     );
   }
 
-  // ── Main form ──────────────────────────────────────────────
+  // ── Form ───────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-[#FAF8FB]">
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-        {/* Header */}
         <div className="mb-10">
-          <h1 className="font-fraunces text-4xl font-bold text-[#1A0A1E] mb-2">
-            List Your Property
-          </h1>
+          <p className="font-manrope text-sm text-[#A3078F] font-semibold mb-1">You're listing</p>
+          <h1 className="font-fraunces text-4xl font-bold text-[#1A0A1E] mb-2">Register your property</h1>
           <p className="font-manrope text-[#6B7280]">
-            Fill in the details below. Your listing will be reviewed by our team before going live.
+            Add land details so buyers can find and verify this listing. It goes live after the admin approves it.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8" noValidate={false}>
 
-          {/* ── Basic info ── */}
-          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5">
-            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Basic Information</h2>
+          {/* ── Type ── */}
+          <section className={sectionClass}>
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Listing type</h2>
 
-            <div>
-              <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                required
-                placeholder="e.g. Spacious 3 BHK Apartment in Bandra"
-                className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  Property Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="type"
-                  value={form.type}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] bg-white"
-                >
-                  {PROPERTY_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  Listing For <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="availability"
-                  value={form.availability}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] bg-white"
-                >
-                  {AVAILABILITY_OPTIONS.map((a) => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="state" className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  State <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="state"
-                  value={selectedState}
-                  onChange={(e) => setSelectedState(e.target.value)}
-                  required
-                  disabled={states === null}
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] bg-white disabled:opacity-60"
-                >
-                  <option value="">{states === null ? 'Loading states…' : 'Choose state'}</option>
-                  {states?.map((s) => (
-                    <option key={s.name} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
-                {states?.length === 0 && (
-                  <p className="font-manrope text-xs text-red-600 mt-1">
-                    No districts are open for listings yet. Please try again later.
-                  </p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="district" className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  District <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="district"
-                  name="district"
-                  value={form.district}
-                  onChange={handleChange}
-                  required
-                  disabled={!selectedState || loadingDistricts}
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] bg-white disabled:opacity-60"
-                >
-                  <option value="">
-                    {!selectedState ? 'Choose a state first' : loadingDistricts ? 'Loading districts…' : 'Choose district'}
-                  </option>
-                  {districts.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                Full Address / Location <span className="text-red-500">*</span>
-              </label>
-              <input
-                name="location"
-                value={form.location}
-                onChange={handleChange}
-                required
-                placeholder="e.g. 12, MG Road, Bandra West, Mumbai, Maharashtra"
-                className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
-              />
-            </div>
-          </section>
-
-          {/* ── Price & specs ── */}
-          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5">
-            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Price &amp; Details</h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  Price (₹) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="price"
-                  type="number"
-                  value={form.price}
-                  onChange={handleChange}
-                  required
-                  min="1"
-                  placeholder="e.g. 8500000"
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
-                />
-              </div>
-              <div>
-                <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  Area (sqft) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="sqft"
-                  type="number"
-                  value={form.sqft}
-                  onChange={handleChange}
-                  required
-                  min="1"
-                  placeholder="e.g. 1200"
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
-                />
-              </div>
-              <div>
-                <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  Bedrooms <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="beds"
-                  type="number"
-                  value={form.beds}
-                  onChange={handleChange}
-                  required
-                  min="0"
-                  placeholder="e.g. 3"
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
-                />
-              </div>
-              <div>
-                <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  Bathrooms <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="baths"
-                  type="number"
-                  value={form.baths}
-                  onChange={handleChange}
-                  required
-                  min="0"
-                  placeholder="e.g. 2"
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* ── Description & contact ── */}
-          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5">
-            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Description &amp; Contact</h2>
-
-            <div>
-              <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                Description <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                required
-                rows={4}
-                placeholder="Describe the property — highlights, surroundings, unique features..."
-                className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] resize-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  Contact Phone <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  required
-                  placeholder="+91 98765 43210"
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
-                />
-              </div>
-              <div>
-                <label className="block font-manrope text-sm font-medium text-[#374151] mb-1">
-                  Google Maps Link <span className="text-[#6B7280] font-normal">(optional)</span>
-                </label>
-                <input
-                  name="googleMapLink"
-                  value={form.googleMapLink}
-                  onChange={handleChange}
-                  placeholder="https://maps.google.com/..."
-                  className="w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F]"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* ── Amenities ── */}
-          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6">
-            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E] mb-4">Amenities</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {AMENITIES_LIST.map((amenity) => {
-                const checked = amenities.includes(amenity);
-                return (
+            <fieldset>
+              <legend className={labelClass}>Listing for <Required /></legend>
+              <div className="grid grid-cols-3 gap-3" role="radiogroup">
+                {(meta?.listingTypes.map((t) => t.value) ?? ['sell', 'rent', 'lease']).map((value) => (
                   <label
-                    key={amenity}
-                    className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-[background-color,border-color] select-none ${
-                      checked
-                        ? 'border-[#A3078F] bg-[#A3078F]/5 text-[#A3078F]'
-                        : 'border-[#E8E1EA] text-[#374151] hover:border-[#A3078F]/50'
+                    key={value}
+                    className={`cursor-pointer text-center rounded-lg border px-3 py-2.5 font-manrope text-sm font-semibold transition-colors ${
+                      form.listingType === value
+                        ? 'border-[#A3078F] bg-[#A3078F] text-white'
+                        : 'border-[#E8E1EA] text-[#374151] hover:border-[#A3078F]'
                     }`}
                   >
                     <input
-                      type="checkbox"
+                      type="radio"
+                      name="listingType"
+                      value={value}
+                      checked={form.listingType === value}
+                      onChange={() => set('listingType', value as FormState['listingType'])}
                       className="sr-only"
-                      checked={checked}
-                      onChange={() => toggleAmenity(amenity)}
                     />
-                    <span
-                      className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
-                        checked ? 'bg-[#A3078F] border-[#A3078F]' : 'border-[#D6CFDA]'
-                      }`}
-                    >
-                      {checked && (
-                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </span>
-                    <span className="font-manrope text-sm">{amenity}</span>
+                    {LISTING_TYPE_LABELS[value] ?? value}
                   </label>
-                );
-              })}
+                ))}
+              </div>
+            </fieldset>
+
+            <div>
+              <label htmlFor="propertyType" className={labelClass}>Property type <Required /></label>
+              <select id="propertyType" name="propertyType" value={form.propertyType} onChange={handleChange} className={inputClass}>
+                {(meta?.propertyTypes ?? [{ value: 'land', label: 'Land' }]).map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <FieldError message={errors.propertyType} />
             </div>
           </section>
 
-          {/* ── Images ── */}
-          <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6">
-            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E] mb-1">
-              Images <span className="text-red-500">*</span>
-            </h2>
-            <p className="font-manrope text-sm text-[#6B7280] mb-4">
-              Upload up to 4 images (JPG, PNG, WebP). First image will be the cover.
-            </p>
+          {/* ── Land records & area ── */}
+          <section className={sectionClass}>
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Land details</h2>
 
-            {/* Previews */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="khataNo" className={labelClass}>Khata No. {isLand && <Required />}</label>
+                <input id="khataNo" name="khataNo" value={form.khataNo} onChange={handleChange}
+                  required={isLand} maxLength={50} placeholder="KH-10245" className={inputClass} />
+                <FieldError message={errors.khataNo} />
+              </div>
+              <div>
+                <label htmlFor="khasraNo" className={labelClass}>Khasra Number {isLand && <Required />}</label>
+                <input id="khasraNo" name="khasraNo" value={form.khasraNo} onChange={handleChange}
+                  required={isLand} maxLength={50} placeholder="123/2" className={inputClass} />
+                <FieldError message={errors.khasraNo} />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="area" className={labelClass}>Area <Required /></label>
+              <div className="flex gap-2">
+                <input id="area" name="area" type="number" inputMode="decimal" min="0" step="any"
+                  value={form.area} onChange={handleChange} required placeholder="2.50" className={inputClass} />
+                <select name="areaUnit" value={form.areaUnit} onChange={handleChange} aria-label="Area unit"
+                  className={`${inputClass} w-40 flex-shrink-0`}>
+                  {(meta?.areaUnits ?? []).map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+                </select>
+              </div>
+              <FieldError message={errors.area || errors.areaUnit} />
+            </div>
+          </section>
+
+          {/* ── Price ── */}
+          <section className={sectionClass}>
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Price</h2>
+
+            <div>
+              <label htmlFor="price" className={labelClass}>
+                Price (₹) {priceRequired ? <Required /> : <span className="text-[#6B7280] font-normal">(optional — leave empty for "Price on request")</span>}
+              </label>
+              <div className="flex gap-2">
+                <input id="price" name="price" type="number" inputMode="numeric" min="0"
+                  value={form.price} onChange={handleChange} required={priceRequired} placeholder="150000" className={inputClass} />
+                <select name="priceUnit" value={form.priceUnit} onChange={handleChange} aria-label="Price per"
+                  className={`${inputClass} w-44 flex-shrink-0`}>
+                  {(meta?.priceUnits ?? []).map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+                </select>
+              </div>
+              {form.listingType === 'lease' && (
+                <div className="mt-3">
+                  <label htmlFor="pricePeriod" className={labelClass}>Lease amount is per</label>
+                  <select id="pricePeriod" name="pricePeriod" value={form.pricePeriod} onChange={handleChange} className={`${inputClass} sm:w-60`}>
+                    {(meta?.leasePricePeriods ?? [{ value: 'month', label: 'Per month' }, { value: 'year', label: 'Per year' }]).map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {totalPreview && (
+                <p className="font-manrope text-sm text-[#374151] mt-2">
+                  Total: <strong className="text-[#A3078F]">≈ {totalPreview}{periodSuffix}</strong>
+                </p>
+              )}
+              {form.listingType === 'rent' && !totalPreview && (
+                <p className="font-manrope text-xs text-[#6B7280] mt-1">Rent is per month.</p>
+              )}
+              <FieldError message={errors.price || errors.priceUnit || errors.pricePeriod} />
+            </div>
+          </section>
+
+          {/* ── Photos & videos ── */}
+          <section className={sectionClass}>
+            <div>
+              <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Photos &amp; Videos</h2>
+              <p className="font-manrope text-sm text-[#6B7280] mt-1">
+                Up to {MAX_FILES} photos or videos (JPG, PNG, WebP, HEIC, MP4, MOV). The first one is the cover.
+              </p>
+            </div>
+
             {previews.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                {previews.map((src, idx) => (
-                  <div key={idx} className="relative group rounded-lg overflow-hidden aspect-square border border-[#E8E1EA]">
-                    <img src={src} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                {previews.map((p, idx) => (
+                  <div key={p.url} className="relative group rounded-lg overflow-hidden aspect-square border border-[#E8E1EA] bg-[#F3EDF4]">
+                    {p.isVideo
+                      ? <video src={p.url} className="w-full h-full object-cover" muted />
+                      : <img src={p.url} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />}
                     <button
                       type="button"
-                      onClick={() => removeImage(idx)}
-                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Remove image"
+                      onClick={() => removeFile(idx)}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                      aria-label={`Remove file ${idx + 1}`}
                     >
                       ×
                     </button>
                     {idx === 0 && (
-                      <span className="absolute bottom-1 left-1 bg-[#A3078F] text-white font-manrope text-xs px-2 py-0.5 rounded">
-                        Cover
-                      </span>
+                      <span className="absolute bottom-1 left-1 bg-[#A3078F] text-white font-manrope text-xs px-2 py-0.5 rounded">Cover</span>
                     )}
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Upload button */}
-            {images.length < 4 && (
+            {files.length < MAX_FILES && (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 border-2 border-dashed border-[#A3078F]/40 rounded-lg px-6 py-4 text-[#A3078F] font-manrope text-sm hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-[border-color,background-color]"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Add Photos ({images.length}/4)
+                Add photos or videos ({files.length}/{MAX_FILES})
               </button>
             )}
+            <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="sr-only" onChange={handleFiles} />
+            <FieldError message={errors.media} />
+          </section>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="sr-only"
-              onChange={handleImageChange}
-            />
+          {/* ── Location ── */}
+          <section className={sectionClass}>
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Property location</h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="state" className={labelClass}>State <Required /></label>
+                <select id="state" value={selectedState} onChange={(e) => setSelectedState(e.target.value)}
+                  required disabled={states === null} className={inputClass}>
+                  <option value="">{states === null ? 'Loading states…' : 'Choose state'}</option>
+                  {states?.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="district" className={labelClass}>District <Required /></label>
+                <select id="district" name="district" value={form.district} onChange={handleChange}
+                  required disabled={!selectedState || loadingDistricts} className={inputClass}>
+                  <option value="">
+                    {!selectedState ? 'Choose a state first' : loadingDistricts ? 'Loading districts…' : 'Choose district'}
+                  </option>
+                  {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+                <FieldError message={errors.district} />
+              </div>
+            </div>
+
+            <div>
+              <span className={labelClass}>Current location <span className="text-[#6B7280] font-normal">(optional)</span></span>
+              <button
+                type="button"
+                onClick={getLocation}
+                disabled={locating}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 border border-[#E8E1EA] rounded-lg px-5 py-2.5 font-manrope text-sm font-semibold text-[#1A0A1E] hover:border-[#A3078F] hover:text-[#A3078F] disabled:opacity-60"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3" strokeWidth={2} />
+                  <path strokeLinecap="round" strokeWidth={2} d="M12 2v3m0 14v3m10-10h-3M5 12H2" />
+                </svg>
+                {locating ? 'Getting location…' : coords ? 'Update property location' : 'Get property location'}
+              </button>
+              <p className="font-manrope text-xs text-[#6B7280] mt-1.5 tabular-nums">
+                {coords ? `Latitude ${coords.latitude}, Longitude ${coords.longitude}` : 'Latitude and longitude will appear here'}
+                {coords && (
+                  <button type="button" onClick={() => setCoords(null)} className="ml-2 text-[#A3078F] hover:underline">Remove</button>
+                )}
+              </p>
+              <FieldError message={errors.location || errors.latitude || errors.longitude} />
+            </div>
+
+            <div>
+              <label htmlFor="address" className={labelClass}>Address <span className="text-[#6B7280] font-normal">(optional)</span></label>
+              <input id="address" name="address" value={form.address} onChange={handleChange} maxLength={300}
+                placeholder="Google Maps / nearby landmark" className={inputClass} />
+              <FieldError message={errors.address} />
+            </div>
+          </section>
+
+          {/* ── Description & contact ── */}
+          <section className={sectionClass}>
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Description</h2>
+            <div>
+              <label htmlFor="description" className={labelClass}>Description <Required /></label>
+              <textarea id="description" name="description" value={form.description} onChange={handleChange}
+                required rows={4} maxLength={3000} placeholder="Land is located near main road…"
+                className={`${inputClass} resize-none`} />
+              <FieldError message={errors.description} />
+            </div>
+
+            {needsPhone && (
+              <div>
+                <label htmlFor="contactPhone" className={labelClass}>Contact mobile number <Required /></label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 border border-r-0 border-[#E8E1EA] rounded-l-lg font-manrope text-sm text-[#374151] bg-[#FAF8FB]">+91</span>
+                  <input id="contactPhone" name="contactPhone" type="tel" inputMode="numeric" required
+                    value={form.contactPhone}
+                    onChange={(e) => set('contactPhone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="9876543210" className={`${inputClass} rounded-l-none`} />
+                </div>
+                <FieldError message={errors.contactPhone} />
+              </div>
+            )}
           </section>
 
           {/* ── Approval notice ── */}
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="font-manrope text-sm text-amber-800">
-              Your listing will be reviewed by our team before it appears publicly. This helps keep
-              the platform safe and trustworthy for everyone. You'll be notified by email once
-              it's approved.
+              Your listing is reviewed by the admin for your district before it appears publicly. You'll get an
+              email once it's approved or if something needs fixing.
             </p>
           </div>
 
-          {/* ── Submit ── */}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !meta}
             className="w-full bg-[#A3078F] text-white font-manrope font-semibold text-base py-3.5 rounded-xl hover:bg-[#8E0A82] transition-[background-color] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {submitting ? (
@@ -576,7 +576,7 @@ const AddPropertyPage: React.FC = () => {
                 Submitting…
               </span>
             ) : (
-              'Submit for Review'
+              'Register Property'
             )}
           </button>
         </form>

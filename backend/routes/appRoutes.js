@@ -12,6 +12,7 @@ import {
     searchListings, getListing, getListingContact, saveListing, unsaveListing,
     getSavedListings, getMyListings, createListing, updateListing, deleteListing,
     addListingMedia, removeListingMedia, adminListListings, adminUpdateListing, forListingType,
+    requireListingType,
 } from '../controller/appListingController.js';
 import {
     createEnquiry, getSentEnquiries, getReceivedEnquiries, updateEnquiryStatus, withdrawEnquiry,
@@ -42,6 +43,9 @@ router.get('/me/listings', appProtect, wrap(getMyListings));
 router.get('/me/saved', appProtect, wrap(getSavedListings));
 router.get('/me/enquiries/sent', appProtect, wrap(getSentEnquiries));
 router.get('/me/enquiries/received', appProtect, wrap(getReceivedEnquiries));
+
+// Single API for Sell / Rent / Lease — listing_type: SELL | RENT | LEASE
+router.post('/properties', appProtect, uploadListingMedia, requireListingType, wrap(createListing));
 
 // Buy / Sell / Rent / Lease — same handlers as /listings with the listing type fixed
 router.get('/buy', appOptionalAuth, forListingType('sell'), wrap(searchListings));

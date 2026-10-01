@@ -43,6 +43,13 @@ import {
   assignListingDistrict,
 } from '../controller/districtController.js';
 import { adminProtect, reviewerProtect } from '../middleware/authMiddleware.js';
+import { uploadListingMedia } from '../middleware/appUploadMiddleware.js';
+import {
+  createListing,
+  adminGetListing,
+  adminEditListing,
+  adminDeleteListing,
+} from '../controller/appListingController.js';
 import { registry } from '../utils/circuitBreaker.js';
 
 const router = express.Router();
@@ -62,7 +69,15 @@ router.get('/stats', getAdminStats);
 router.get('/appointments', getAllAppointments);
 router.put('/appointments/status', updateAppointmentStatus);
 
-// All website properties with review status ("All Properties" page)
+// Listings (same model and fields as the mobile app / website form) managed by the
+// super admin: Add Property, Edit, Delete. Approve/reject is PATCH /api/v1/app/admin/listings/:id.
+const wrap = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+router.post('/listings', uploadListingMedia, wrap(createListing));
+router.get('/listings/:id', wrap(adminGetListing));
+router.patch('/listings/:id', uploadListingMedia, wrap(adminEditListing));
+router.delete('/listings/:id', wrap(adminDeleteListing));
+
+// Older website properties with review status
 router.get('/properties', listAllProperties);
 router.get('/properties/:id', getPropertyForAdmin);
 

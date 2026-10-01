@@ -85,6 +85,10 @@ export const createEnquiry = async (req, res) => {
     if (!listing) return res.status(404).json({ success: false, message: 'Listing not found' });
 
     const user = req.appUser;
+    if (!listing.owner) {
+        // Posted on the website: its owner has no app inbox — use "View Number"
+        return badRequest(res, 'Please call the owner using "View Number" for this listing');
+    }
     if (listing.owner.equals(user._id)) {
         return badRequest(res, "You can't send an enquiry for your own listing");
     }

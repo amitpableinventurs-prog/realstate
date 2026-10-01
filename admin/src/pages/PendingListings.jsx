@@ -308,7 +308,8 @@ const fromApp = (l) => ({
   specs: l.area?.label ? [{ icon: Maximize, text: l.area.label }] : [],
   description: l.description,
   submitter: l.owner?.name || l.postedBy?.label || "Unknown",
-  contact: l.owner?.phone,
+  contact: l.owner?.email ? `${l.owner.phone} · ${l.owner.email}` : l.owner?.phone,
+  postedFrom: l.postedFrom,
   contactIcon: Phone,
   createdAt: l.createdAt,
   district: toDistrict(l.district),
@@ -320,7 +321,7 @@ const fromApp = (l) => ({
 
 const SOURCES = {
   website: {
-    label: "Website",
+    label: "Admin-added properties",
     emailsOwner: true,
     list: async (params) => {
       const { data } = await apiClient.get("/api/admin/properties/pending", { params });
@@ -331,7 +332,7 @@ const SOURCES = {
     assignDistrict: (id, district) => apiClient.put(`/api/admin/properties/${id}/district`, { district }),
   },
   app: {
-    label: "Mobile App",
+    label: "Listings (App + Website)",
     emailsOwner: false,
     list: async (params) => {
       const { data } = await apiClient.get("/api/v1/app/admin/listings", { params });
@@ -384,6 +385,11 @@ const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, o
             {listing.title}
           </h3>
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {listing.postedFrom && (
+              <span className="text-xs font-medium text-[#7A0A74] bg-[#FAF1F9] border border-[#EBC9E6] px-2 py-0.5 rounded-full">
+                {listing.postedFrom === "website" ? "Website" : "App"}
+              </span>
+            )}
             {listing.typeLabel && (
               <span className="text-xs font-medium text-[#6B6B6A] bg-[#F5F5F3] border border-[#E8E7E5] px-2 py-0.5 rounded-full">
                 {listing.typeLabel}
@@ -535,7 +541,8 @@ const PendingListings = () => {
 
   // Source, status and district filter live in the URL so the Districts page can link here
   const [searchParams, setSearchParams] = useSearchParams();
-  const sourceKey = searchParams.get("source") === "app" ? "app" : "website";
+  // Default tab: user listings (mobile app + website form); "website" = admin-added properties
+  const sourceKey = searchParams.get("source") === "website" ? "website" : "app";
   const status = STATUS_TABS.some((t) => t.value === searchParams.get("status")) ? searchParams.get("status") : "pending";
   const districtFilter = isSuperAdmin ? searchParams.get("district") || "" : "";
   const source = SOURCES[sourceKey];
@@ -656,7 +663,7 @@ const PendingListings = () => {
     <div className="flex flex-wrap items-center gap-3 mb-5">
       <div className="flex gap-1 p-1 bg-[#EBEBEA]/60 rounded-xl">
         {Object.entries(SOURCES).map(([key, s]) => (
-          <button key={key} onClick={() => setFilter("source", key, "website")} className={tabClass(key === sourceKey)}>
+          <button key={key} onClick={() => setFilter("source", key, "app")} className={tabClass(key === sourceKey)}>
             {s.label}
           </button>
         ))}

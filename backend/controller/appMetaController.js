@@ -33,7 +33,8 @@ export const getMeta = (req, res) => {
             areaUnits: Object.entries(AREA_UNITS).map(([value, u]) => ({ value, label: u.label, sqft: u.sqft })),
             defaultAreaUnit: 'decimal',
             // Sale price dropdown ("Per Kattha" / "Per Dismil"); send as priceUnit
-            priceUnits: Object.entries(PRICE_UNITS).map(([value, u]) => ({ value, label: u.label })),
+            // sqft: size of one unit (null for total) — lets the form preview the total price
+            priceUnits: Object.entries(PRICE_UNITS).map(([value, u]) => ({ value, label: u.label, sqft: u.sqft ?? null })),
             defaultPriceUnit: 'kattha',
             // District dropdown values come from GET /districts; `district` is required when creating
             districtsEndpoint: 'GET /districts',

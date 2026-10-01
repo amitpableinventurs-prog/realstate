@@ -60,7 +60,7 @@ const rentLeaseTerms = {
 
 const priceUnitField = {
     type: 'string', enum: PRICE_UNIT_KEYS, default: 'total', example: 'kattha',
-    description: '`total` = price is the full amount. Any other value = price is a rate per that unit and the total is computed from area: `decimal` (Dismil, 435.6 sq ft), `kattha` (1,361.25 sq ft), `bigha` (27,220 sq ft), `acre` (43,560 sq ft), `sqft`. For rent/lease the rate and total are per month (rent) or per pricePeriod (lease).',
+    description: '`total` = price is the full amount. Any other value = price is a rate per that unit and the total is computed from area: `decimal` (Dismil, 435.6 sq ft), `kattha` (1,361.25 sq ft), `bigha` (27,225 sq ft = 20 kattha), `acre` (43,560 sq ft), `sqft`. For rent/lease the rate and total are per month (rent) or per pricePeriod (lease).',
 };
 const sellFields = {
     ...commonListingFields,
@@ -93,6 +93,13 @@ const listingFields = {
     minRentalMonths: { ...rentFields.minRentalMonths, description: 'Rent only' },
     preferredTenants: { ...rentFields.preferredTenants, description: 'Rent only' },
     leaseDurationMonths: { ...leaseFields.leaseDurationMonths, description: 'Lease only' },
+};
+
+// POST /properties — same fields, with listing_type (uppercase) instead of listingType
+const { listingType: _listingType, ...listingFieldsWithoutType } = listingFields;
+const propertyFields = {
+    listing_type: { type: 'string', enum: ['SELL', 'RENT', 'LEASE'], example: 'SELL', description: 'SELL = For Sale, RENT = For Rent, LEASE = For Lease (case-insensitive)' },
+    ...listingFieldsWithoutType,
 };
 
 const landRequired = ['description', 'khataNo', 'khasraNo', 'area', 'district'];
@@ -367,6 +374,7 @@ const spec = {
                 },
             },
             ListingInput: { type: 'object', properties: listingFields },
+            ...createSchemas('PropertyCreate', propertyFields, ['listing_type', ...landRequired]),
             ...createSchemas('ListingCreate', listingFields, landRequired),
             ...createSchemas('SellCreate', sellFields, landRequired),
             ...createSchemas('RentCreate', rentFields, [...landRequired, 'price']),
@@ -605,6 +613,18 @@ const spec = {
                     },
                     ...common401,
                 },
+            },
+        },
+
+        // ── Property listing (single API) ───────────────────────────────────
+        '/properties': {
+            post: {
+                tags: ['My listings'],
+                summary: 'Property listing — single API for Sell / Rent / Lease',
+                description: `One endpoint for all three types: send \`listing_type\` = SELL, RENT or LEASE. Price (\`price\`) is required for RENT and LEASE; rent/lease-only fields (securityDeposit, availableFrom, minRentalMonths, preferredTenants, leaseDurationMonths, pricePeriod) are rejected for other types. Same handler as POST /listings. ${createDescription}`,
+                security: auth,
+                requestBody: createBody('PropertyCreate'),
+                responses: createResponses,
             },
         },
 

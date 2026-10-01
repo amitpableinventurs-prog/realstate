@@ -6,6 +6,9 @@ import { storeAllMedia, deleteMedia, cleanupTempFiles } from '../services/mediaS
 import { MAX_MEDIA_PER_LISTING } from '../middleware/appUploadMiddleware.js';
 import { findActiveDistrict, matchDistrictByCity, reviewScope, canReviewDistrict } from '../utils/districts.js';
 import { logAdminActivity } from '../utils/activityLogger.js';
+import { normalizePhone } from './appAuthController.js';
+import emailService from '../services/emailService.js';
+import User from '../models/userModel.js';
 import {
     AREA_UNITS, isAreaUnit, toSqft, formatArea, formatPriceINR, PRICE_UNITS, PRICE_UNIT_KEYS,
 } from '../utils/areaUnits.js';
@@ -47,6 +50,32 @@ export const formatPrice = (price, period = 'total') =>
 export const forListingType = (listingType) => (req, res, next) => {
     req.fixedListingType = listingType;
     next();
+};
+
+// POST /properties — the single create API, where listing_type must be sent
+export const requireListingType = (req, res, next) => {
+    req.listingTypeRequired = true;
+    next();
+};
+
+// Accepts `listingType` or `listing_type`, in any case ("SELL", "Rent", ...),
+// and "sale" for sell. Returns a copy of the body with a lowercase listingType
+// plus the key the client used, so errors point at the field they sent.
+const normalizeListingType = (body = {}) => {
+    const key = body.listing_type !== undefined ? 'listing_type' : 'listingType';
+    const { listing_type, ...rest } = body;
+    let value = body[key];
+    if (typeof value === 'string') value = value.trim().toLowerCase();
+    if (value === 'sale') value = 'sell'; // "For Sale" in the app
+    if (value !== undefined) rest.listingType = value;
+    return { body: rest, key };
+};
+
+// Reports a bad listing type under the key the client sent
+const listingTypeError = (errors, key) => {
+    if (!errors.listingType || key === 'listingType') return;
+    errors[key] = `Must be one of ${LISTING_TYPES.map((t) => t.toUpperCase()).join(', ')}`;
+    delete errors.listingType;
 };
 
 // Tabs on the search screen
@@ -118,6 +147,41 @@ const resolveListingDistrict = async (body, city, state) => {
     return { id: match?._id ?? null };
 };
 
+// Who is posting: an app user (POST /api/v1/app/listings) or a website user
+// (POST /api/user/listings, same fields). Website accounts may have no mobile
+// number yet, so the form can send contactPhone.
+const posterFor = (req, body) => {
+    if (req.admin) {
+        // Admin panel "Add Property": the admin enters the owner's name and number
+        const phone = normalizePhone(body.contactPhone);
+        if (!phone) return { error: 'Enter a valid 10-digit mobile number' };
+        const ownerName = typeof body.ownerName === 'string' ? body.ownerName.trim().slice(0, 80) : '';
+        return {
+            fields: {
+                postedByAdmin: req.admin.email,
+                postedByType: ['owner', 'agent', 'builder'].includes(body.postedByType) ? body.postedByType : 'owner',
+                postedByName: ownerName || 'Bhumi Bazar',
+                contactPhone: phone,
+            },
+        };
+    }
+    if (req.appUser) {
+        const u = req.appUser;
+        return {
+            fields: {
+                owner: u._id,
+                postedByType: u.accountType,
+                postedByName: u.accountType === 'owner' ? u.name : (u.companyName || u.name),
+                contactPhone: u.phone,
+            },
+        };
+    }
+    const u = req.user;
+    const phone = u.phone || normalizePhone(body.contactPhone);
+    if (!phone) return { error: 'Enter a valid 10-digit mobile number' };
+    return { fields: { websiteOwner: u._id, postedByType: 'owner', postedByName: u.name, contactPhone: phone } };
+};
+
 const findOwnListing = async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.id)) {
         notFound(res);
@@ -128,7 +192,7 @@ const findOwnListing = async (req, res) => {
         notFound(res);
         return null;
     }
-    if (!listing.owner.equals(req.appUser._id)) {
+    if (!listing.owner?.equals(req.appUser._id)) {
         res.status(403).json({ success: false, message: 'You can only change your own listings' });
         return null;
     }
@@ -281,7 +345,9 @@ const serializeDistrict = (district) => {
 };
 
 export const serializeListing = (listing, { savedIds, viewer } = {}) => {
-    const isOwner = Boolean(viewer && listing.owner?.equals?.(viewer._id));
+    // viewer is an AppUser (app) or a website User (website "My Listings")
+    const ownerId = listing.owner ?? listing.websiteOwner;
+    const isOwner = Boolean(viewer && ownerId?.equals?.(viewer._id));
     const areaLabel = formatArea(listing.area.value, listing.area.unit);
     const propertyLabel = PROPERTY_TYPE_LABELS[listing.propertyType];
     const place = listing.city || listing.address;
@@ -448,7 +514,7 @@ export const searchListings = async (req, res) => {
 export const getListing = async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.id)) return notFound(res);
     const listing = await Listing.findById(req.params.id);
-    const isOwner = listing && req.appUser && listing.owner.equals(req.appUser._id);
+    const isOwner = Boolean(listing && req.appUser && listing.owner?.equals(req.appUser._id));
     if (!listing || (listing.status !== 'active' && !isOwner)) return notFound(res);
 
     if (!isOwner) {
@@ -464,7 +530,7 @@ export const getListing = async (req, res) => {
 export const getListingContact = async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.id)) return notFound(res);
     const listing = await Listing.findById(req.params.id).select('status owner contactPhone postedByName postedByType');
-    const isOwner = listing?.owner.equals(req.appUser._id);
+    const isOwner = Boolean(listing?.owner?.equals(req.appUser._id));
     if (!listing || (listing.status !== 'active' && !isOwner)) return notFound(res);
 
     if (!isOwner) {
@@ -554,17 +620,53 @@ export const getMyListings = async (req, res) => {
     });
 };
 
-// POST /listings — "Register your property" (JSON or multipart with media files)
+// ── Website users (same listings, posted from the website form) ─────────────
+
+// GET /api/user/listings — the signed-in website user's listings, any status
+export const getWebsiteUserListings = async (req, res) => {
+    const listings = await Listing.find({ websiteOwner: req.user._id })
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .populate('district', 'name state');
+    res.json({ success: true, data: listings.map((l) => serializeListing(l, { viewer: req.user })) });
+};
+
+// DELETE /api/user/listings/:id
+export const deleteWebsiteUserListing = async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return notFound(res);
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return notFound(res);
+    if (!listing.websiteOwner?.equals(req.user._id)) {
+        return res.status(403).json({ success: false, message: 'You can only delete your own listings' });
+    }
+    await Promise.all(listing.media.map(deleteMedia));
+    await Promise.all([
+        SavedListing.deleteMany({ listing: listing._id }),
+        Enquiry.deleteMany({ listing: listing._id }),
+    ]);
+    await listing.deleteOne();
+    res.json({ success: true, message: 'Listing deleted' });
+};
+
+// POST /listings — "Register your property" (JSON or multipart with media files).
+// Also mounted as POST /api/user/listings for the website form (req.user).
 export const createListing = async (req, res) => {
     const files = req.files || [];
-    const body = { ...req.body, ...(req.fixedListingType && { listingType: req.fixedListingType }) };
-    if (body.listingType === 'sale') body.listingType = 'sell'; // "For Sale" in the app
+    const normalized = normalizeListingType(req.body);
+    const typeKey = normalized.key;
+    const body = { ...normalized.body, ...(req.fixedListingType && { listingType: req.fixedListingType }) };
     const { data, errors } = parseListingInput(body, LISTING_TYPES.includes(body.listingType) ? body.listingType : 'sell');
+    listingTypeError(errors, typeKey);
+    if (req.listingTypeRequired && body.listingType === undefined) {
+        errors.listing_type = `Required: ${LISTING_TYPES.map((t) => t.toUpperCase()).join(', ')}`;
+    }
     // Required: decides which district admin reviews the listing. Falls back to
-    // the district on the user's profile when the app sends none.
-    const user = req.appUser;
+    // the district on the user's profile when none is sent.
+    const user = req.appUser || req.user; // undefined when the admin posts
+    const poster = posterFor(req, body);
+    if (poster.error) errors.contactPhone = poster.error;
     const district = await resolveListingDistrict(body, data.city, data.state);
-    if (!district.error && !district.id && user.district) district.id = user.district._id ?? user.district;
+    if (!district.error && !district.id && user?.district) district.id = user.district._id ?? user.district;
     if (district.error) errors.district = district.error;
     else if (!district.id) errors.district = 'Select a district';
     if (Object.keys(errors).length) {
@@ -573,12 +675,11 @@ export const createListing = async (req, res) => {
     }
 
     const listing = new Listing({
-        owner: user._id,
-        postedByType: user.accountType,
-        postedByName: user.accountType === 'owner' ? user.name : (user.companyName || user.name),
-        contactPhone: user.phone,
+        ...poster.fields,
         district: district.id,
-        status: requireApproval() ? 'pending' : 'active',
+        // The admin is the approver, so their listings go live straight away
+        status: req.admin || !requireApproval() ? 'active' : 'pending',
+        ...(req.admin && { reviewedBy: req.admin.email, reviewedAt: new Date() }),
     });
     applyListingInput(listing, { areaUnit: 'decimal', ...data });
 
@@ -615,8 +716,10 @@ export const updateListing = async (req, res) => {
     const listing = await findOwnListing(req, res);
     if (!listing) return;
 
-    if (req.body?.listingType === 'sale') req.body.listingType = 'sell';
+    const { body, key: typeKey } = normalizeListingType(req.body);
+    req.body = body;
     const { data, errors } = parseListingInput(req.body, listing.listingType);
+    listingTypeError(errors, typeKey);
     const { status } = req.body || {};
     if (status !== undefined) {
         const allowed = (listing.status === 'active' && status === 'inactive') ||
@@ -710,9 +813,35 @@ export const removeListingMedia = async (req, res) => {
 
 // Super admin sees every district; district admins only their own (reviewerProtect)
 
+// Listing as the admin panel sees it: owner contact, where it was posted, review info
+const adminSerializeListing = (l) => ({
+    ...serializeListing(l),
+    owner: l.owner
+        ? { id: l.owner._id, phone: l.owner.phone, name: l.owner.name || null }
+        : l.websiteOwner
+            ? { id: l.websiteOwner._id, phone: l.contactPhone, name: l.websiteOwner.name || null, email: l.websiteOwner.email }
+            : { id: null, phone: l.contactPhone, name: l.postedByName || null },
+    postedFrom: l.websiteOwner ? 'website' : l.postedByAdmin ? 'admin' : 'app',
+    contactPhone: l.contactPhone,
+    district: l.district ? { id: l.district._id, name: l.district.name, state: l.district.state } : null,
+    rejectionReason: l.rejectionReason || null,
+    reviewedBy: l.reviewedBy || null,
+    reviewedAt: l.reviewedAt || null,
+    stats: { views: l.views, contactViews: l.contactViews, saves: l.saves, enquiries: l.enquiries },
+});
+
+// Works on a query or a loaded document (both accept an array of paths)
+const populateForAdmin = (queryOrDoc) => queryOrDoc.populate([
+    { path: 'owner', select: 'phone name' },
+    { path: 'websiteOwner', select: 'name email phone' },
+    { path: 'district', select: 'name state' },
+]);
+
 // GET /admin/listings?status=pending&district=<id>|unassigned
+// counts: listings per status in the same scope (for the status tabs)
 export const adminListListings = async (req, res) => {
-    const filter = reviewScope(req.admin, req.query.district);
+    const scope = reviewScope(req.admin, req.query.district);
+    const filter = { ...scope };
     if (req.query.status) {
         if (!LISTING_STATUSES.includes(req.query.status)) {
             return badRequest(res, `status must be one of ${LISTING_STATUSES.join(', ')}`);
@@ -720,25 +849,118 @@ export const adminListListings = async (req, res) => {
         filter.status = req.query.status;
     }
     const { page, limit, skip } = parsePagination(req.query);
-    const [listings, total] = await Promise.all([
-        Listing.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)
-            .populate('owner', 'phone name')
-            .populate('district', 'name state'),
+    const [listings, total, byStatus] = await Promise.all([
+        populateForAdmin(Listing.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)),
         Listing.countDocuments(filter),
+        Listing.aggregate([{ $match: scope }, { $group: { _id: '$status', n: { $sum: 1 } } }]),
     ]);
+    const counts = Object.fromEntries(LISTING_STATUSES.map((s) => [s, 0]));
+    byStatus.forEach((row) => { counts[row._id] = row.n; });
+    counts.all = byStatus.reduce((sum, row) => sum + row.n, 0);
     res.json({
         success: true,
+        counts,
         data: listings.map((l) => ({
-            ...serializeListing(l),
-            owner: l.owner ? { id: l.owner._id, phone: l.owner.phone, name: l.owner.name || null } : null,
-            district: l.district ? { id: l.district._id, name: l.district.name, state: l.district.state } : null,
-            rejectionReason: l.rejectionReason || null,
-            reviewedBy: l.reviewedBy || null,
-            reviewedAt: l.reviewedAt || null,
-            stats: { views: l.views, contactViews: l.contactViews, saves: l.saves, enquiries: l.enquiries },
+            ...adminSerializeListing(l),
         })),
         pagination: paginationMeta(page, limit, total),
     });
+};
+
+// ── Super admin: listings managed from the admin panel ───────────────────────
+// POST /api/admin/listings uses createListing (req.admin set → live immediately).
+
+// GET /api/admin/listings/:id — any status, for the admin edit form
+export const adminGetListing = async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return notFound(res);
+    const listing = await populateForAdmin(Listing.findById(req.params.id));
+    if (!listing) return notFound(res);
+    res.json({ success: true, data: adminSerializeListing(listing) });
+};
+
+// PATCH /api/admin/listings/:id — edit any listing (multipart). Same fields as
+// create, plus `media` files to add and `removeMediaIds` (JSON array) to delete.
+// Admin edits keep the current review status.
+export const adminEditListing = async (req, res) => {
+    const files = req.files || [];
+    const fail = async (status, body) => {
+        await cleanupTempFiles(files);
+        return res.status(status).json(body);
+    };
+    if (!mongoose.isValidObjectId(req.params.id)) return fail(404, { success: false, message: 'Listing not found' });
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return fail(404, { success: false, message: 'Listing not found' });
+
+    const { body, key: typeKey } = normalizeListingType(req.body);
+    const { data, errors } = parseListingInput(body, listing.listingType);
+    listingTypeError(errors, typeKey);
+
+    if (body.district !== undefined && String(body.district) !== String(listing.district)) {
+        const district = await findActiveDistrict(body.district);
+        if (!district) errors.district = 'Select a district';
+        else listing.district = district._id;
+    }
+    if (body.contactPhone !== undefined) {
+        const phone = normalizePhone(body.contactPhone);
+        if (!phone) errors.contactPhone = 'Enter a valid 10-digit mobile number';
+        else listing.contactPhone = phone;
+    }
+    if (body.ownerName !== undefined && !listing.owner && !listing.websiteOwner) {
+        listing.postedByName = String(body.ownerName).trim().slice(0, 80) || 'Bhumi Bazar';
+    }
+
+    let removeIds = [];
+    if (body.removeMediaIds) {
+        try {
+            removeIds = JSON.parse(body.removeMediaIds);
+            if (!Array.isArray(removeIds)) throw new Error('not an array');
+        } catch {
+            errors.removeMediaIds = 'Must be a JSON array of media ids';
+        }
+    }
+    const toRemove = removeIds.map((id) => mongoose.isValidObjectId(id) && listing.media.id(id)).filter(Boolean);
+    if (listing.media.length - toRemove.length + files.length > MAX_MEDIA_PER_LISTING) {
+        errors.media = `A listing can have at most ${MAX_MEDIA_PER_LISTING} photos and videos`;
+    }
+    if (Object.keys(errors).length) {
+        return fail(400, { success: false, message: 'Please fix the highlighted fields', errors });
+    }
+
+    applyListingInput(listing, data);
+    const stored = await storeAllMedia(files);
+    listing.media.push(...stored);
+    try {
+        await listing.validate();
+    } catch (error) {
+        await Promise.all(stored.map(deleteMedia));
+        if (error instanceof mongoose.Error.ValidationError) {
+            return badRequest(res, 'Please fix the highlighted fields', validationErrors(error));
+        }
+        throw error;
+    }
+    for (const media of toRemove) {
+        await deleteMedia(media);
+        media.deleteOne();
+    }
+    await listing.save();
+    await populateForAdmin(listing);
+    res.json({ success: true, message: 'Listing updated', data: adminSerializeListing(listing) });
+};
+
+// DELETE /api/admin/listings/:id — removes the listing, its media, saves and enquiries
+export const adminDeleteListing = async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return notFound(res);
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return notFound(res);
+    await Promise.all(listing.media.map(deleteMedia));
+    await Promise.all([
+        SavedListing.deleteMany({ listing: listing._id }),
+        Enquiry.deleteMany({ listing: listing._id }),
+    ]);
+    await listing.deleteOne();
+    await logAdminActivity(req.admin.email, 'delete_property', 'listing', listing._id,
+        serializeListing(listing).title, {}, req);
+    res.json({ success: true, message: 'Listing deleted' });
 };
 
 // Statuses a district admin may set; the super admin may set any
@@ -790,6 +1012,21 @@ export const adminUpdateListing = async (req, res) => {
         await logAdminActivity(req.admin.email, status === 'active' ? 'approve_listing' : 'reject_listing',
             'listing', listing._id, listing.title || '',
             { previousStatus, newStatus: status, reason: listing.rejectionReason, district: listing.district?.name }, req);
+        await notifyWebsiteOwner(listing, status);
     }
     res.json({ success: true, message: 'Listing updated', data: serializeListing(listing) });
+};
+
+// Website posters have an email address (app users don't) — tell them the decision
+const notifyWebsiteOwner = async (listing, status) => {
+    if (!listing.websiteOwner) return;
+    try {
+        const owner = await User.findById(listing.websiteOwner).select('email');
+        if (!owner?.email) return;
+        const title = serializeListing(listing).title;
+        if (status === 'active') await emailService.sendListingApproved(owner.email, title, String(listing._id));
+        else await emailService.sendListingRejected(owner.email, title, listing.rejectionReason);
+    } catch (error) {
+        console.error('Listing decision email failed (non-fatal):', error.message);
+    }
 };

@@ -1,9 +1,9 @@
 // Square-foot size of each land unit. Regional units use the Bihar standard:
-// 1 bigha = 20 kattha = 27,220 sq ft; 1 kattha = 1,361.25 sq ft.
+// 1 bigha = 20 kattha = 62.5 dismil = 27,225 sq ft; 1 kattha = 1,361.25 sq ft.
 const SQFT = {
     decimal: 435.6, // dismil (stored as "decimal")
     kattha: 1361.25,
-    bigha: 27220,
+    bigha: 27225,
     acre: 43560,
     sqft: 1,
 };
