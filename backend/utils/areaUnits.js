@@ -11,6 +11,7 @@ const SQFT = {
 // Units a listing's area can be entered in (the app's Area dropdown)
 export const AREA_UNITS = {
     decimal: { label: 'Dismil',    sqft: SQFT.decimal },
+    kattha:  { label: 'Kattha',    sqft: SQFT.kattha },
     bigha:   { label: 'Bigha',     sqft: SQFT.bigha },
     acre:    { label: 'Acre',      sqft: SQFT.acre },
     sqft:    { label: 'Square ft', sqft: SQFT.sqft },
@@ -19,7 +20,7 @@ export const AREA_UNITS = {
 export const AREA_UNIT_KEYS = Object.keys(AREA_UNITS);
 
 // How a sale price can be quoted: as a total, or as a rate per unit
-// ("₹1,50,000 per Kattha"). Kattha is offered for pricing only.
+// ("₹1,50,000 per Kattha").
 export const PRICE_UNITS = {
     total:   { label: 'Total price' },
     decimal: { label: 'Per Dismil',    short: 'Dismil',    sqft: SQFT.decimal },

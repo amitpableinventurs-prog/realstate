@@ -9,6 +9,7 @@ import { logAdminActivity } from '../utils/activityLogger.js';
 import { normalizePhone } from './appAuthController.js';
 import emailService from '../services/emailService.js';
 import User from '../models/userModel.js';
+import { notifyListingDecision } from '../services/notificationService.js';
 import {
     AREA_UNITS, isAreaUnit, toSqft, formatArea, formatPriceINR, PRICE_UNITS, PRICE_UNIT_KEYS,
 } from '../utils/areaUnits.js';
@@ -23,10 +24,10 @@ const PREFERRED_TENANTS = Listing.schema.path('preferredTenants').enumValues;
 const NEW_LAUNCH_DAYS = Number(process.env.APP_NEW_LAUNCH_DAYS) || 30;
 // Listings are public only after a district admin (or the super admin) approves
 // them. Set APP_LISTING_REQUIRE_APPROVAL=false to publish immediately instead.
-const requireApproval = () => process.env.APP_LISTING_REQUIRE_APPROVAL !== 'false';
+export const requireApproval = () => process.env.APP_LISTING_REQUIRE_APPROVAL !== 'false';
 
 // Hidden from buyers until an admin approves it again
-const sendBackForReview = (listing) => {
+export const sendBackForReview = (listing) => {
     listing.status = 'pending';
     listing.rejectionReason = undefined;
 };
@@ -150,7 +151,7 @@ const resolveListingDistrict = async (body, city, state) => {
 // Who is posting: an app user (POST /api/v1/app/listings) or a website user
 // (POST /api/user/listings, same fields). Website accounts may have no mobile
 // number yet, so the form can send contactPhone.
-const posterFor = (req, body) => {
+export const posterFor = (req, body) => {
     if (req.admin) {
         // Admin panel "Add Property": the admin enters the owner's name and number
         const phone = normalizePhone(body.contactPhone);
@@ -200,7 +201,7 @@ const findOwnListing = async (req, res) => {
 };
 
 // areaSqft is derived from area, so its error would only duplicate area's
-const validationErrors = (error) =>
+export const validationErrors = (error) =>
     Object.fromEntries(Object.entries(error.errors).filter(([path]) => path !== 'areaSqft').map(([path, e]) => [
         path.replace(/^area\.value$/, 'area').replace(/^area\.unit$/, 'areaUnit'),
         e.kind === 'required' ? `${path.replace(/^area\./, 'area ')} is required` : e.message,
@@ -209,7 +210,7 @@ const validationErrors = (error) =>
 // Parses the flat request body used by both JSON and multipart requests.
 // Only format/type checks happen here; required fields are enforced by the schema.
 // currentType is the listing's type before this change (for field applicability).
-const parseListingInput = (body = {}, currentType = 'sell') => {
+export const parseListingInput = (body = {}, currentType = 'sell') => {
     const data = {};
     const errors = {};
 
@@ -305,7 +306,7 @@ const parseListingInput = (body = {}, currentType = 'sell') => {
     return { data, errors };
 };
 
-const applyListingInput = (listing, data) => {
+export const applyListingInput = (listing, data) => {
     const { areaValue, areaUnit, ...rest } = data;
     listing.set(rest);
     if (areaValue !== undefined) listing.set('area.value', areaValue);
@@ -415,7 +416,7 @@ export const serializeListing = (listing, { savedIds, viewer } = {}) => {
     };
 };
 
-const savedIdsFor = async (user, listings) => {
+export const savedIdsFor = async (user, listings) => {
     if (!user || !listings.length) return new Set();
     const saved = await SavedListing.find({
         user: user._id,
@@ -660,6 +661,7 @@ export const createListing = async (req, res) => {
     if (req.listingTypeRequired && body.listingType === undefined) {
         errors.listing_type = `Required: ${LISTING_TYPES.map((t) => t.toUpperCase()).join(', ')}`;
     }
+    if (!data.description) errors.description = 'description is required';
     // Required: decides which district admin reviews the listing. Falls back to
     // the district on the user's profile when none is sent.
     const user = req.appUser || req.user; // undefined when the admin posts
@@ -1013,12 +1015,13 @@ export const adminUpdateListing = async (req, res) => {
             'listing', listing._id, listing.title || '',
             { previousStatus, newStatus: status, reason: listing.rejectionReason, district: listing.district?.name }, req);
         await notifyWebsiteOwner(listing, status);
+        await notifyListingDecision(listing);
     }
     res.json({ success: true, message: 'Listing updated', data: serializeListing(listing) });
 };
 
 // Website posters have an email address (app users don't) — tell them the decision
-const notifyWebsiteOwner = async (listing, status) => {
+export const notifyWebsiteOwner = async (listing, status) => {
     if (!listing.websiteOwner) return;
     try {
         const owner = await User.findById(listing.websiteOwner).select('email');

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Enquiry from '../models/enquiryModel.js';
 import Listing from '../models/listingModel.js';
 import { serializeListing, formatPrice, toNumber, toDate } from './appListingController.js';
+import { notifyNewEnquiry } from '../services/notificationService.js';
 
 // Buyer/tenant → owner enquiries: "I want to buy / rent / lease this".
 
@@ -103,6 +104,7 @@ export const createEnquiry = async (req, res) => {
         // Re-sending re-opens it for the owner
         existing.set({ ...data, ...sender, status: 'new' });
         await existing.save();
+        await notifyNewEnquiry(existing, listing);
         existing.listing = listing;
         return res.json({
             success: true,
@@ -139,6 +141,7 @@ export const createEnquiry = async (req, res) => {
         throw error;
     }
     await Listing.updateOne({ _id: listing._id }, { $inc: { enquiries: 1 } });
+    await notifyNewEnquiry(enquiry, listing);
 
     enquiry.listing = listing;
     res.status(201).json({

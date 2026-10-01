@@ -7,6 +7,7 @@ import { Admin } from '../models/userModel.js';
 import { isSuperAdminEmail } from '../middleware/authMiddleware.js';
 import { logAdminActivity } from '../utils/activityLogger.js';
 import { findActiveDistrict } from '../utils/districts.js';
+import { syncStatesFromDistricts } from '../utils/states.js';
 
 // Districts (cities) and the district admins who review listings in them.
 // Everything here except listPublicDistricts is super-admin only.
@@ -125,6 +126,7 @@ export const createDistrict = async (req, res) => {
     try {
         const district = await District.create({ name, state });
         await logAdminActivity(req.admin.email, 'create_district', 'district', district._id, `${name}, ${state}`, {}, req);
+        await syncStatesFromDistricts();
         res.status(201).json({ success: true, district: { id: district._id, name, state, isActive: true } });
     } catch (error) {
         if (error.code === 11000) return fail(res, 409, `District "${name}" already exists in ${state}`);
@@ -157,6 +159,7 @@ export const updateDistrict = async (req, res) => {
         const district = await District.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
         if (!district) return fail(res, 404, 'District not found');
         await logAdminActivity(req.admin.email, 'update_district', 'district', district._id, `${district.name}, ${district.state}`, {}, req);
+        if (updates.state) await syncStatesFromDistricts();
         res.json({
             success: true,
             district: { id: district._id, name: district.name, state: district.state, isActive: district.isActive },

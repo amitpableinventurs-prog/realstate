@@ -122,7 +122,7 @@ export const updateMe = async (req, res) => {
 export const deleteMe = async (req, res) => {
     const user = req.appUser;
 
-    const listings = await Listing.find({ owner: user._id }).select('media');
+    const listings = await Listing.find({ owner: user._id }).setOptions({ withDeleted: true }).select('media');
     await Promise.all(listings.flatMap((listing) => listing.media.map(deleteMedia)));
     const listingIds = listings.map((l) => l._id);
 

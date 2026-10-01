@@ -29,10 +29,13 @@ const AppUserSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ['active', 'suspended', 'banned'],
+        // deleted = account deleted via DELETE /api/v1/users/me (soft delete).
+        // Logging in again with the same number starts a fresh profile.
+        enum: ['active', 'suspended', 'banned', 'deleted'],
         default: 'active'
     },
     lastLoginAt: { type: Date },
+    deletedAt: { type: Date },
 }, {
     timestamps: true
 });

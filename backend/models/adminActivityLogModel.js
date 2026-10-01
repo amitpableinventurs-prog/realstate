@@ -30,14 +30,19 @@ const adminActivityLogSchema = new mongoose.Schema({
       'delete_district',
       'create_district_admin',
       'update_district_admin',
-      'delete_district_admin'
+      'delete_district_admin',
+      'update_listing',
+      'restore_listing',
+      'create_state',
+      'update_state',
+      'delete_state'
     ]
   },
   // property = website listing, listing = mobile app listing
   targetType: {
     type: String,
     required: true,
-    enum: ['property', 'listing', 'user', 'appointment', 'district', 'admin']
+    enum: ['property', 'listing', 'user', 'appointment', 'district', 'admin', 'state']
   },
   targetId: {
     type: mongoose.Schema.Types.ObjectId,

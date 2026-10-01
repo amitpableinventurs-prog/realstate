@@ -8,8 +8,8 @@ const MediaSchema = new mongoose.Schema({
     url: { type: String, required: true },
     type: { type: String, enum: ['image', 'video'], required: true },
     // Where the file lives, so it can be deleted later
-    storage: { type: String, enum: ['imagekit', 'local'], required: true },
-    storageId: { type: String }, // ImageKit fileId or local filename
+    storage: { type: String, enum: ['imagekit', 'local', 's3'], required: true },
+    storageId: { type: String }, // ImageKit fileId, local filename or S3 key
 });
 
 const PointSchema = new mongoose.Schema({
@@ -58,7 +58,8 @@ const ListingSchema = new mongoose.Schema({
     },
 
     title: { type: String, trim: true, maxlength: 200 },
-    description: { type: String, required: true, trim: true, maxlength: 3000 },
+    // Optional for /api/v1 properties; the /api/v1/app create endpoint still requires it
+    description: { type: String, trim: true, maxlength: 3000 },
 
     // Land records (required for land, optional for buildings)
     khataNo: { type: String, required: isLand, trim: true, maxlength: 50 },
@@ -128,6 +129,12 @@ const ListingSchema = new mongoose.Schema({
     reviewedBy: { type: String },
     reviewedAt: { type: Date },
 
+    // Soft delete (/api/v1): hidden from every query unless withDeleted is set,
+    // so an admin can restore it. The older endpoints still delete for real.
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date },
+    deletedBy: { type: String }, // 'owner' or the admin's email
+
     views: { type: Number, default: 0 },
     contactViews: { type: Number, default: 0 },
     saves: { type: Number, default: 0 },
@@ -144,6 +151,21 @@ ListingSchema.index({ owner: 1, createdAt: -1 });
 ListingSchema.index({ websiteOwner: 1, createdAt: -1 }, { sparse: true });
 ListingSchema.index({ district: 1, status: 1, createdAt: -1 });
 ListingSchema.index({ location: '2dsphere' });
+ListingSchema.index({ owner: 1, status: 1 });
+ListingSchema.index({ status: 1, district: 1, price: 1 });
+ListingSchema.index({ khataNo: 1, khasraNo: 1 });
+
+// Soft-deleted listings are excluded from reads. Pass { withDeleted: true }
+// via setOptions (queries) or the aggregate's options to include them.
+const QUERY_HOOKS = ['find', 'findOne', 'countDocuments', 'findOneAndUpdate', 'findOneAndDelete', 'distinct'];
+ListingSchema.pre(QUERY_HOOKS, function () {
+    if (this.getOptions().withDeleted || 'isDeleted' in this.getFilter()) return;
+    this.where({ isDeleted: { $ne: true } });
+});
+ListingSchema.pre('aggregate', function () {
+    if (this.options?.withDeleted) return;
+    this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+});
 
 const Listing = mongoose.model('Listing', ListingSchema);
 

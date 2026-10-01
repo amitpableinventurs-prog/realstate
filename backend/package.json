@@ -17,6 +17,8 @@
   "author": "Aayush Vaghela",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1144.0",
+    "@aws-sdk/s3-request-presigner": "^3.1144.0",
     "@azure-rest/ai-inference": "^1.0.0-beta.5",
     "@azure/core-auth": "^1.9.0",
     "@azure/core-sse": "^2.1.3",

@@ -9,8 +9,9 @@ import logger from '../utils/logger.js';
 // ── OTP settings (all overridable via env) ───────────────────────────────────
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = Number(process.env.OTP_RESEND_COOLDOWN_SECONDS) || 30;
-const MAX_SENDS_PER_WINDOW = Number(process.env.OTP_MAX_SENDS_PER_HOUR) || 5;
-const SEND_WINDOW_MS = 60 * 60 * 1000;
+// At most 3 OTPs per number in 10 minutes
+const MAX_SENDS_PER_WINDOW = Number(process.env.OTP_MAX_SENDS_PER_WINDOW) || 3;
+const SEND_WINDOW_MS = (Number(process.env.OTP_SEND_WINDOW_MINUTES) || 10) * 60 * 1000;
 const MAX_VERIFY_ATTEMPTS = Number(process.env.OTP_MAX_ATTEMPTS) || 5;
 
 const ACCESS_TOKEN_TTL_SECONDS = (Number(process.env.APP_ACCESS_TOKEN_TTL_MINUTES) || 60) * 60;
@@ -261,7 +262,7 @@ export const verifyOtp = async (req, res) => {
 
     const now = new Date();
     let user = await AppUser.findOne({ phone });
-    const isNewUser = !user;
+    let isNewUser = !user;
     if (!user) {
         try {
             user = await AppUser.create({ phone, isPhoneVerified: true });
@@ -269,6 +270,15 @@ export const verifyOtp = async (req, res) => {
             if (error.code !== 11000) throw error;
             user = await AppUser.findOne({ phone }); // created by a concurrent request
         }
+    }
+
+    // A deleted account (DELETE /api/v1/users/me) comes back as a new profile
+    if (user.status === 'deleted') {
+        user.set({
+            status: 'active', deletedAt: undefined, name: undefined, email: undefined, state: undefined,
+            district: undefined, accountType: 'owner', companyName: undefined, intent: undefined,
+        });
+        isNewUser = true;
     }
 
     if (user.status !== 'active') {

@@ -101,6 +101,8 @@ frontend/src/
 - **Frontend is TypeScript, admin is JavaScript** — don't add TypeScript to the admin app.
 - **Structured logging**: Winston logger with request correlation IDs (`X-Request-ID` header). Log format is JSON in production.
 - **Health checks**: `GET /health` (liveness) and `GET /health/ready` (readiness with DB connectivity check).
+- **Two mobile/web APIs on the same data**: `/api/v1` (`routes/v1Routes.js`, `controller/v1/`, docs `/api-docs/v1`) follows the Bhoomi Bazar technical document — snake_case fields, `SELL/RENT/LEASE`, `KATHA/DISMIL`, `PENDING/APPROVED/...`, `{ success, data, meta }` / `errorCode`. It maps onto the same `Listing`/`AppUser` models as the older `/api/v1/app` API (`utils/v1.js` holds the enum mapping and serializers). Keep both working when changing those models.
+- **Soft delete**: `Listing` query middleware hides `isDeleted` documents; pass `.setOptions({ withDeleted: true })` to include them.
 
 ## Deployment
 
