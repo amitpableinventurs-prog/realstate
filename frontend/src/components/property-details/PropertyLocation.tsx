@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, ExternalLink } from 'lucide-react';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface PropertyLocationProps {
   address?: string;
@@ -52,7 +53,8 @@ function getEmbedUrl(link: string): string | null {
 }
 
 const PropertyLocation: React.FC<PropertyLocationProps> = ({ address, city, state, zipcode, location, propertyName, googleMapLink }) => {
-  const displayTitle = city || location?.split(',').pop()?.trim() || 'Location';
+  const { t } = useI18n();
+  const displayTitle = city || location?.split(',')[0]?.trim() || t('details.location');
   const displayAddress = address
     ? `${address}, ${city}, ${state} ${zipcode}`
     : location || '';
@@ -66,7 +68,7 @@ const PropertyLocation: React.FC<PropertyLocationProps> = ({ address, city, stat
       <div className="flex items-center gap-3 mb-6">
         <div className="w-1 h-6 bg-[#A3078F] rounded-full" />
         <h2 className="font-syne text-2xl text-[#0F172A]">
-          Location
+          {t('details.location')}
         </h2>
       </div>
 
@@ -91,7 +93,7 @@ const PropertyLocation: React.FC<PropertyLocationProps> = ({ address, city, stat
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-[#A3078F] hover:text-[#8E0A82] font-manrope text-sm font-medium shrink-0 transition-[color]"
             >
-              Open in Maps
+              {t('details.openMaps')}
               <ExternalLink className="w-4 h-4" />
             </a>
           )}
@@ -119,10 +121,10 @@ const PropertyLocation: React.FC<PropertyLocationProps> = ({ address, city, stat
               <MapPin className="w-8 h-8 text-[#A3078F]/60" />
             </div>
             <p className="font-manrope text-sm text-[#64748B]">
-              Map not available for this property
+              {t('details.noMap')}
             </p>
             <p className="font-manrope text-xs text-[#94A3B8]">
-              Contact us for directions
+              {t('details.noMapHint')}
             </p>
           </div>
         )}

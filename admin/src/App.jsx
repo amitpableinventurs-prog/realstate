@@ -26,7 +26,6 @@ import Districts from "./pages/Districts";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
 import ActivityLogs from "./pages/ActivityLogs";
-import AIModels from "./pages/AIModels";
 import Blog from "./pages/Blog";
 import Careers from "./pages/Careers";
 
@@ -96,7 +95,6 @@ const AppLayout = () => {
                   <Route path="/users" element={<Users />} />
                   <Route path="/users/:id" element={<UserDetails />} />
                   <Route path="/activity-logs" element={<ActivityLogs />} />
-                  <Route path="/ai-models" element={<AIModels />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/careers" element={<Careers />} />
                 </Route>

@@ -94,13 +94,13 @@ export default function getStatusPage() {
       <!-- Endpoints -->
       <p class="section-title">API Endpoints</p>
 
-      <div class="ep"><div class="ep-left"><span class="method m-get">GET</span><span class="path">/api/products/list</span></div><span class="ep-desc">Property listings</span></div>
-      <div class="ep"><div class="ep-left"><span class="method m-post">POST</span><span class="path">/api/users/register</span></div><span class="ep-desc">User registration</span></div>
-      <div class="ep"><div class="ep-left"><span class="method m-post">POST</span><span class="path">/api/users/login</span></div><span class="ep-desc">User authentication</span></div>
+      <div class="ep"><div class="ep-left"><span class="method m-get">GET</span><span class="path">/api/v1/list-property</span></div><span class="ep-desc">All listings (approved properties)</span></div>
+      <div class="ep"><div class="ep-left"><span class="method m-post">POST</span><span class="path">/api/v1/auth/send-otp</span></div><span class="ep-desc">Mobile + OTP login</span></div>
+      <div class="ep"><div class="ep-left"><span class="method m-post">POST</span><span class="path">/api/v1/properties</span></div><span class="ep-desc">Add property (SELL / RENT / LEASE)</span></div>
       <div class="ep"><div class="ep-left"><span class="method m-get">GET</span><span class="path">/api/appointments</span></div><span class="ep-desc">Property viewings</span></div>
       <div class="ep"><div class="ep-left"><span class="method m-get">GET</span><span class="path">/api/news</span></div><span class="ep-desc">News &amp; newsletters</span></div>
       <div class="ep"><div class="ep-left"><span class="method m-post">POST</span><span class="path">/api/forms</span></div><span class="ep-desc">Contact form</span></div>
-      <div class="ep"><div class="ep-left"><span class="method m-get">GET</span><span class="path">/api/admin/dashboard</span></div><span class="ep-desc">Admin dashboard</span></div>
+      <div class="ep"><div class="ep-left"><span class="method m-get">GET</span><span class="path">/api/v1/admin/dashboard</span></div><span class="ep-desc">Admin dashboard</span></div>
       <div class="ep"><div class="ep-left"><span class="method m-post">POST</span><span class="path">/api/ai/analysis</span></div><span class="ep-desc">AI property analysis</span></div>
       <div class="ep"><div class="ep-left"><span class="method m-get">GET</span><span class="path">/api/locations</span></div><span class="ep-desc">Location search</span></div>
       <div class="ep"><div class="ep-left"><span class="method m-get">GET</span><span class="path">/health</span></div><span class="ep-desc">Health check</span></div>

@@ -9,13 +9,27 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true, // sends httpOnly user_refresh cookie on every request
 });
+
+// Session from mobile + OTP login (POST /v1/auth/verify-otp): a short-lived
+// access token and a refresh token that rotates on every refresh.
+export const TOKEN_KEY = 'buildestate_token';
+export const REFRESH_KEY = 'buildestate_refresh';
+export const USER_KEY = 'buildestate_user';
+
+export const saveTokens = (tokens: { access_token: string; refresh_token: string }) => {
+  localStorage.setItem(TOKEN_KEY, tokens.access_token);
+  localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
+};
+
+export const clearSessionStorage = () => {
+  [TOKEN_KEY, REFRESH_KEY, USER_KEY].forEach((key) => localStorage.removeItem(key));
+};
 
 // ── Request interceptor: attach auth token ──────────────────
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('buildestate_token');
+    const token = localStorage.getItem(TOKEN_KEY);
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
@@ -23,20 +37,26 @@ apiClient.interceptors.request.use(
 );
 
 // ── Silent refresh on 401 ───────────────────────────────────
-let _refreshPromise: Promise<unknown> | null = null;
+let _refreshPromise: Promise<string> | null = null;
 
-const attemptRefresh = () => {
+// Parallel 401s share one refresh call (a refresh token works only once)
+const attemptRefresh = (): Promise<string> => {
   if (!_refreshPromise) {
-    _refreshPromise = axios
-      .post(`${API_BASE_URL}/users/refresh`, {}, { withCredentials: true })
-      .finally(() => { _refreshPromise = null; });
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    _refreshPromise = (refreshToken
+      ? axios.post(`${API_BASE_URL}/v1/auth/refresh-token`, { refresh_token: refreshToken })
+          .then(({ data }) => {
+            saveTokens(data.data);
+            return data.data.access_token as string;
+          })
+      : Promise.reject(new Error('No refresh token'))
+    ).finally(() => { _refreshPromise = null; });
   }
   return _refreshPromise;
 };
 
 const clearSession = () => {
-  localStorage.removeItem('buildestate_token');
-  localStorage.removeItem('buildestate_user');
+  clearSessionStorage();
   if (window.location.pathname !== '/signin') window.location.href = '/signin';
 };
 
@@ -45,32 +65,32 @@ apiClient.interceptors.response.use(
   async (error) => {
     const original = error.config as typeof error.config & { _retried?: boolean };
     const url: string = original?.url ?? '';
+    const isAuthEndpoint = url.includes('/v1/auth/');
+    const hadSession = Boolean(localStorage.getItem(TOKEN_KEY));
 
-    // Don't try to refresh on auth endpoints themselves
-    const isAuthEndpoint = url.includes('/users/refresh') || url.includes('/users/login') || url.includes('/users/logout');
-
-    if (error.response?.status === 401 && !original._retried && !isAuthEndpoint) {
+    if (error.response?.status === 401 && hadSession && !original._retried && !isAuthEndpoint) {
       original._retried = true;
       try {
-        const { data } = await attemptRefresh() as { data: { token: string; success: boolean } };
-        if (data.success && data.token) {
-          localStorage.setItem('buildestate_token', data.token);
-          original.headers.Authorization = `Bearer ${data.token}`;
-          return apiClient(original);
-        }
+        const accessToken = await attemptRefresh();
+        original.headers.Authorization = `Bearer ${accessToken}`;
+        return apiClient(original);
       } catch {
         clearSession();
         return Promise.reject(error);
       }
     }
-
-    if (error.response?.status === 401) {
-      clearSession();
-    }
-
+    if (error.response?.status === 401 && hadSession && !isAuthEndpoint) clearSession();
     return Promise.reject(error);
   }
 );
+
+/** Message for a failed API call: the API's message, else a fallback. */
+export const apiErrorMessage = (err: unknown, fallback: string): string =>
+  (err as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
+
+/** Field errors of a failed API call ({ field: message }), if any. */
+export const apiFieldErrors = (err: unknown): Record<string, string> =>
+  (err as { response?: { data?: { errors?: Record<string, string> } } })?.response?.data?.errors || {};
 
 // ═══════════════════════════════════════════════════════════
 // API Endpoints — aligned with backend routes
@@ -82,77 +102,211 @@ export const newsAPI = {
     apiClient.post('/news/newsdata', { email }),
 };
 
-// User Authentication
-// Backend register expects { name, email, password }
-// Sign-up fields — same details the app collects ("Tell us about you") plus a password
-export interface SignUpData {
-  fullName: string;
-  email: string;
-  phone: string;     // 10-digit Indian mobile; the backend adds +91
-  state: string;
-  district: string;  // District id from districtsAPI.list({ state })
-  password: string;
+// ── Bhoomi Bazar API v1 (technical document section 6) ─────────────────────
+
+interface Envelope<T> { success: boolean; message?: string; data: T }
+interface ListEnvelope<T> { success: boolean; data: T[]; meta: { page: number; limit: number; total: number; totalPages: number } }
+
+export interface Ref { id: string; name: string | null }
+
+export interface AppUser {
+  id: string;
+  mobile: string;
+  name: string | null;
+  email: string | null;
+  state_id: string | null;
+  state: Ref | null;
+  district_id: string | null;
+  district: Ref | null;
+  profile_complete: boolean;
+  created_at: string;
 }
 
-// We transform fullName → name here so the UI can keep using fullName
-export const userAPI = {
-  register: (data: SignUpData) =>
-    apiClient.post('/users/register', {
-      name: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      state: data.state,
-      district: data.district,
-      password: data.password,
-    }),
+export interface LoginResult {
+  token_type: string;
+  access_token: string;
+  expires_in: number;
+  refresh_token: string;
+  refresh_token_expires_at: string;
+  is_new_user: boolean;
+  profile_complete: boolean;
+  user: AppUser;
+}
 
-  login: (data: { email: string; password: string; rememberMe?: boolean }) =>
-    apiClient.post('/users/login', data),
-
-  forgotPassword: (email: string) =>
-    apiClient.post('/users/forgot', { email }),
-
-  resetPassword: (token: string, password: string) =>
-    apiClient.post(`/users/reset/${token}`, { password }),
-
-  verifyEmail: (token: string) =>
-    apiClient.get(`/users/verify/${token}`),
-
-  getProfile: () =>
-    apiClient.get('/users/me'),
-
-  updateProfile: (data: { name?: string; currentPassword?: string; newPassword?: string }) =>
-    apiClient.put('/users/me', data),
-
-  refresh: () => apiClient.post('/users/refresh', {}),
-  logout: () => apiClient.post('/users/logout', {}),
+// 6.1 Authentication — mobile number + OTP
+export const authAPI = {
+  sendOtp: (mobile: string) =>
+    apiClient.post<Envelope<{ mobile: string; otp_length: number; expires_in: number; resend_after: number; dev_otp?: string }>>('/v1/auth/send-otp', { mobile }),
+  resendOtp: (mobile: string) => apiClient.post('/v1/auth/resend-otp', { mobile }),
+  verifyOtp: (mobile: string, otp: string) =>
+    apiClient.post<Envelope<LoginResult>>('/v1/auth/verify-otp', { mobile, otp }),
+  logout: () => apiClient.post('/v1/auth/logout', {}),
 };
 
-// Properties (CRUD — admin-managed listings)
-export const propertiesAPI = {
-  getAll: () =>
-    apiClient.get('/products/list'),
+// 6.2 Profile
+export interface ProfileInput { name?: string; email?: string; state_id?: string; district_id?: string }
 
-  getById: (id: string) =>
-    apiClient.get(`/products/single/${id}`),
-
-  // Server-side filtered search over approved listings (Search page)
-  search: (params: PropertySearchParams) =>
-    apiClient.get('/products/list', { params }),
+export const profileAPI = {
+  me: () => apiClient.get<Envelope<AppUser>>('/v1/users/me'),
+  update: (data: ProfileInput) => apiClient.put<Envelope<AppUser>>('/v1/users/me', data),
+  deleteAccount: () => apiClient.delete('/v1/users/me'),
 };
 
-export interface PropertySearchParams {
-  q?: string;
-  state?: string;
-  district?: string;
-  type?: string;
-  availability?: 'buy' | 'rent' | 'lease';
-  maxPrice?: number;
-  beds?: number;
-  sort?: 'newest' | 'price_asc' | 'price_desc';
+// 6.4 Master data
+export const masterAPI = {
+  states: () => apiClient.get<Envelope<{ id: string; name: string }[]>>('/v1/master/states'),
+  districts: (stateId: string) =>
+    apiClient.get<Envelope<{ id: string; name: string; state_id: string }[]>>(`/v1/master/states/${stateId}/districts`),
+};
+
+// Properties — land listings for SELL / RENT / LEASE
+export type ListingType = 'SELL' | 'RENT' | 'LEASE';
+export type Unit = 'KATHA' | 'DISMIL';
+export type PropertyStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SOLD' | 'RENTED' | 'LEASED';
+
+export interface PropertyCardData {
+  id: string;
+  listing_type: ListingType;
+  status: PropertyStatus;
+  title: string;
+  khata_number: string;
+  khasra_number: string;
+  area: { value: number; unit: Unit };
+  price: { amount: number; per_unit: Unit; label: string };
+  estimated_total: number | null;
+  address: string | null;
+  thumbnail_url: string | null;
+  image_count: number;
+  state: Ref | null;
+  district: Ref | null;
+  is_saved: boolean;
+  created_at: string;
+  rejection_reason?: string | null;
+}
+
+export interface PropertyDetailData extends PropertyCardData {
+  owner_id: string;
+  owner: { name: string | null; mobile?: string | null };
+  description: string | null;
+  images: { url: string; thumbnail_url: string; is_primary: boolean; sort_order: number }[];
+  location: { latitude: number; longitude: number } | null;
+  state_id: string | null;
+  district_id: string | null;
+  is_owner: boolean;
+  updated_at: string;
+}
+
+export interface PropertyInput {
+  listing_type: ListingType;
+  khata_number: string;
+  khasra_number: string;
+  area: { value: number; unit: Unit };
+  price: { amount: number; per_unit: Unit };
+  description?: string;
+  address?: string | null;
+  image_urls: string[];
+  location?: { latitude: number; longitude: number } | null;
+  state_id?: string;
+  district_id?: string;
+}
+
+// GET /list-property query: all approved listings (technical document 4.7)
+export interface ListingQuery {
+  search?: string;
+  listing_type?: ListingType;
+  state_id?: string;
+  district_id?: string;
+  min_price?: number;
+  max_price?: number;
+  price_unit?: Unit;
+  min_area?: number;
+  max_area?: number;
+  area_unit?: Unit;
+  sort?: 'latest' | 'price_asc' | 'price_desc';
   page?: number;
   limit?: number;
 }
+
+export const propertiesAPI = {
+  // 6.4 Approved properties with search, filters, sort and pagination
+  listings: (params: ListingQuery) => apiClient.get<ListEnvelope<PropertyCardData>>('/v1/list-property', { params }),
+  getById: (id: string) => apiClient.get<Envelope<PropertyDetailData>>(`/v1/list-property/${id}`),
+  // 6.3 Owner
+  create: (data: PropertyInput) => apiClient.post<Envelope<PropertyDetailData>>('/v1/list-property', data),
+  update: (id: string, data: Partial<PropertyInput>) => apiClient.put<Envelope<PropertyDetailData>>(`/v1/list-property/${id}`, data),
+  remove: (id: string) => apiClient.delete(`/v1/list-property/${id}`),
+  markClosed: (id: string, status: 'SOLD' | 'RENTED' | 'LEASED') =>
+    apiClient.patch<Envelope<PropertyDetailData>>(`/v1/list-property/${id}/status`, { status }),
+  mine: (params: { status?: PropertyStatus; listing_type?: ListingType; page?: number; limit?: number } = {}) =>
+    apiClient.get<ListEnvelope<PropertyCardData>>('/v1/list-property/my', { params }),
+};
+
+// Error keys of the property API → the add-property form's fields
+const PROPERTY_ERROR_FIELDS: Record<string, string> = {
+  'area.value': 'area', 'area.unit': 'area',
+  'price.amount': 'price', 'price.per_unit': 'price',
+  state_id: 'district_id',
+  'location.latitude': 'location', 'location.longitude': 'location',
+};
+
+export const propertyErrorsToForm = (errors: Record<string, string>) =>
+  Object.fromEntries(Object.entries(errors).map(([key, message]) => [PROPERTY_ERROR_FIELDS[key] || key, message]));
+
+// 4.6 Photos: pre-signed upload URLs, then PUT each file to its URL
+export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const MAX_PHOTO_MB = 5;
+
+export const uploadsAPI = {
+  /** Uploads the files and returns their URLs, in the same order. */
+  uploadPhotos: async (files: File[]): Promise<string[]> => {
+    if (!files.length) return [];
+    const { data } = await apiClient.post<Envelope<{ upload_url: string; method: string; headers: Record<string, string>; file_url: string }[]>>(
+      '/v1/uploads/presign',
+      { files: files.map((f) => ({ content_type: f.type, size: f.size })) }
+    );
+    await Promise.all(data.data.map(async (target, i) => {
+      const res = await fetch(target.upload_url, { method: target.method || 'PUT', headers: target.headers, body: files[i] });
+      if (!res.ok) throw new Error(`Upload of ${files[i].name} failed`);
+    }));
+    return data.data.map((target) => target.file_url);
+  },
+};
+
+// 6.5 Wishlist
+export const wishlistAPI = {
+  list: (page = 1) => apiClient.get<ListEnvelope<PropertyCardData & { saved_at: string }>>('/v1/wishlist', { params: { page, limit: 50 } }),
+  add: (propertyId: string) => apiClient.post(`/v1/wishlist/${propertyId}`),
+  remove: (propertyId: string) => apiClient.delete(`/v1/wishlist/${propertyId}`),
+};
+
+// 6.6 Enquiries and notifications
+export interface ReceivedEnquiry {
+  id: string;
+  property: { id: string; listing_type: ListingType; khata_number: string; khasra_number: string; thumbnail_url: string | null } | null;
+  from_user: { id: string; name: string | null; mobile: string } | null;
+  message: string | null;
+  created_at: string;
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string | null;
+  type: 'PROPERTY_APPROVED' | 'PROPERTY_REJECTED' | 'NEW_ENQUIRY';
+  reference_id: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export const enquiriesAPI = {
+  send: (propertyId: string, message: string) => apiClient.post(`/v1/properties/${propertyId}/enquiries`, { message }),
+  received: () => apiClient.get<ListEnvelope<ReceivedEnquiry>>('/v1/enquiries/received', { params: { limit: 50 } }),
+};
+
+export const notificationsAPI = {
+  list: () => apiClient.get<ListEnvelope<AppNotification> & { unread_count: number }>('/v1/notifications', { params: { limit: 50 } }),
+  markRead: (id: string) => apiClient.patch(`/v1/notifications/${id}/read`),
+};
 
 // Blog (admin-managed articles)
 export interface BlogPostSummary {
@@ -236,93 +390,7 @@ export const careersAPI = {
     apiClient.post<{ success: boolean; message: string }>(`/careers/jobs/${slug}/apply`, data),
 };
 
-// Districts (cities) a listing can belong to — decides who reviews it
-export interface District {
-  id: string;
-  name: string;
-  state: string;
-}
-
-export interface IndianState {
-  name: string;
-  districtCount: number;
-}
-
-export const districtsAPI = {
-  list: (params: { state?: string; q?: string } = {}) =>
-    apiClient.get<{ success: boolean; districts: District[] }>('/districts', { params }),
-  states: () => apiClient.get<{ success: boolean; states: IndianState[] }>('/districts/states'),
-};
-
-// ── Property listings (same fields and API as the mobile "Register property" screen) ──
-
-export interface ListingOption { value: string; label: string }
-
-export interface ListingMeta {
-  listingTypes: ListingOption[];   // sell / rent / lease
-  propertyTypes: ListingOption[];  // land / house / apartment / commercial
-  areaUnits: (ListingOption & { sqft: number })[]; // Dismil, Bigha, Acre, Square ft
-  priceUnits: (ListingOption & { sqft: number | null })[]; // Total price, Per Dismil, Per Kattha, ... (sqft null = total)
-  defaultAreaUnit: string;
-  defaultPriceUnit: string;
-  leasePricePeriods: ListingOption[];
-  media: { maxPerUpload: number; maxImageMb: number; maxVideoMb: number };
-}
-
-/** A listing as returned by the listing API (website "My Listings") */
-export interface UserListing {
-  id: string;
-  title: string;
-  description: string;
-  listingType: 'sell' | 'rent' | 'lease';
-  propertyType: string;
-  typeLabel: string;
-  priceLabel: string;
-  unitPriceLabel: string | null;
-  area: { value: number; unit: string; label: string };
-  khataNo: string | null;
-  khasraNo: string | null;
-  coverImage: string | null;
-  address: string | null;
-  district: { id: string; name: string | null; state: string | null } | null;
-  status: 'pending' | 'active' | 'rejected' | 'inactive';
-  rejectionReason?: string | null;
-  createdAt: string;
-}
-
-export const listingsAPI = {
-  // Dropdown values shared with the mobile app
-  meta: () => apiClient.get<{ success: boolean; data: ListingMeta }>('/v1/app/meta'),
-  // multipart: khataNo, khasraNo, area, areaUnit, price, priceUnit, pricePeriod, listingType,
-  // propertyType, description, district, latitude, longitude, address, contactPhone, media[]
-  create: (formData: FormData) =>
-    apiClient.post<{ success: boolean; message: string; data: UserListing }>('/user/listings', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  mine: () => apiClient.get<{ success: boolean; data: UserListing[] }>('/user/listings'),
-  delete: (id: string) => apiClient.delete(`/user/listings/${id}`),
-};
-
-// User-submitted property listings (require auth) — older beds/baths form
-export const userListingsAPI = {
-  create: (formData: FormData) =>
-    apiClient.post('/user/properties', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-
-  getMyListings: () =>
-    apiClient.get('/user/properties'),
-
-  update: (id: string, formData: FormData) =>
-    apiClient.put(`/user/properties/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-
-  delete: (id: string) =>
-    apiClient.delete(`/user/properties/${id}`),
-};
-
-// Appointments (supports guest + auth bookings)
+// Site visits (guests and signed-in users)
 export const appointmentsAPI = {
   schedule: (data: {
     propertyId: string;
@@ -333,7 +401,7 @@ export const appointmentsAPI = {
     phone: string;
     message?: string;
   }) =>
-    apiClient.post('/appointments/schedule', data),
+    apiClient.post(localStorage.getItem(TOKEN_KEY) ? '/appointments/schedule/auth' : '/appointments/schedule', data),
 
   getByUser: () =>
     apiClient.get('/appointments/user'),

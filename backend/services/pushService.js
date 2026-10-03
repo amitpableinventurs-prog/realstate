@@ -66,13 +66,13 @@ export const sendPushToUser = async (userId, { title, body, data }) => {
     if (!account) return { sent: 0, skipped: true };
 
     try {
-        const devices = await DeviceToken.find({ user: userId }).select('fcmToken');
+        const devices = await DeviceToken.find({ user_id: userId }).select('fcm_token');
         if (!devices.length) return { sent: 0 };
 
         const accessToken = await getAccessToken(account);
         const url = `https://fcm.googleapis.com/v1/projects/${account.projectId}/messages:send`;
         const results = await Promise.allSettled(devices.map((d) => axios.post(url, {
-            message: { token: d.fcmToken, notification: { title, body }, data: stringify(data) },
+            message: { token: d.fcm_token, notification: { title, body }, data: stringify(data) },
         }, { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 10000 })));
 
         const invalid = devices.filter((d, i) => {

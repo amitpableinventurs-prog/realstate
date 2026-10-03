@@ -9,7 +9,7 @@ const appointmentSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: false  // Optional — supports guest bookings
+    required: false  // users._id; optional — guests can book too
   },
   guestInfo: {
     name: { type: String },

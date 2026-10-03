@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, MapPin } from 'lucide-react';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface PropertyCardProps {
   id: string;
@@ -8,25 +9,30 @@ interface PropertyCardProps {
   name: string;
   price: string;
   location: string;
-  /** Spec line, e.g. ["3 Beds", "2 Baths", "1,200 sqft"] or ["2.34 Dismil", "Khata KH-1"] */
+  /** Spec line, e.g. ["5 Katha", "Khata KH-1", "Khasra 45/2"] */
   specs: string[];
-  /** Secondary price, e.g. "₹1.50 Lakhs / Kattha" */
+  /** Secondary price, e.g. "Est. total ₹12.50 L" */
   subPrice?: string | null;
   badge?: string;
+  /** Badge colour: the listing type, or 'closed' for sold / rented / leased */
+  badgeTone?: 'SELL' | 'RENT' | 'LEASE' | 'closed';
   tags?: string[];
+  /** Wishlist heart; hidden when onToggleSave is not given */
+  saved?: boolean;
+  onToggleSave?: () => void;
 }
 
 const badgeColor: Record<string, string> = {
-  'FOR RENT': 'bg-blue-500',
-  'SOLD': 'bg-[#6B7280]',
-  'HOT': 'bg-[#A3078F]',
+  SELL: 'bg-[#10B981]',
+  RENT: 'bg-blue-500',
+  LEASE: 'bg-teal-600',
+  closed: 'bg-[#6B7280]',
 };
 
 const PropertyCard: React.FC<PropertyCardProps> = ({
-  id, image, name, price, location, specs, subPrice, badge, tags = []
+  id, image, name, price, location, specs, subPrice, badge, badgeTone = 'SELL', tags = [], saved = false, onToggleSave,
 }) => {
-  const [favorited, setFavorited] = useState(false);
-
+  const { t } = useI18n();
   return (
     <Link to={`/property/${id}`} className="group block outline-none focus-visible:ring-2 focus-visible:ring-[#A3078F] rounded-2xl">
       <article className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] transition-shadow duration-300">
@@ -47,21 +53,24 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
           {/* Badge */}
           {badge && (
-            <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-md font-space-mono text-[10px] font-bold text-white tracking-wider ${badgeColor[badge] ?? 'bg-[#10B981]'}`}>
+            <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-md font-space-mono text-[10px] font-bold text-white tracking-wider ${badgeColor[badgeTone] ?? 'bg-[#10B981]'}`}>
               {badge}
             </div>
           )}
 
-          {/* Favourite */}
-          <button
-            aria-label={favorited ? 'Remove from favourites' : 'Add to favourites'}
-            onClick={e => { e.preventDefault(); setFavorited(f => !f); }}
-            className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors duration-200 active:scale-[0.96]"
-          >
-            <Heart
-              className={`w-4 h-4 transition-colors duration-200 ${favorited ? 'text-[#A3078F] fill-[#A3078F]' : 'text-white'}`}
-            />
-          </button>
+          {/* Favourite (wishlist) */}
+          {onToggleSave && (
+            <button
+              aria-label={saved ? t('wishlist.remove') : t('wishlist.save')}
+              aria-pressed={saved}
+              onClick={e => { e.preventDefault(); onToggleSave(); }}
+              className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors duration-200 active:scale-[0.96]"
+            >
+              <Heart
+                className={`w-4 h-4 transition-colors duration-200 ${saved ? 'text-[#A3078F] fill-[#A3078F]' : 'text-white'}`}
+              />
+            </button>
+          )}
 
           {/* Price overlay — bottom of image */}
           <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-8">

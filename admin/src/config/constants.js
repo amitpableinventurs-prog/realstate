@@ -4,15 +4,6 @@ export const backendurl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:
 // Public website, used for "View on site" links
 export const websiteurl = import.meta.env.VITE_WEBSITE_URL || 'http://localhost:5180';
 
-// API endpoints
-export const API_ENDPOINTS = {
-  login: '/api/users/admin',
-  properties: '/api/products',
-  appointments: '/api/appointments',
-  users: '/api/users',
-  admin: '/api/admin'
-};
-
 // App constants
 export const APP_CONSTANTS = {
   TOKEN_KEY: 'token',

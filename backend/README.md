@@ -119,29 +119,16 @@ Server initializes and binds to `http://localhost:4000`
 ## 🔌 API Endpoints Reference
 
 <details>
-<summary><strong>Authentication & User Routines (`/api/users`)</strong></summary>
+<summary><strong>Bhoomi Bazar API (`/api/v1`)</strong></summary>
 
-| Request | Route Namespace | Restrictions       | Purpose                                    |
-| ------- | --------------- | ------------------ | ------------------------------------------ |
-| `POST`  | `/register`     | Public             | Instantiate fresh identity record          |
-| `POST`  | `/login`        | Public             | Validate credentials and vend JWT          |
-| `POST`  | `/admin`        | Public             | Specialized admin credential validation    |
-| `GET`   | `/me`           | Valid JWT required | Recover authorized profile dataset         |
-| `POST`  | `/forgot`       | Public             | Dispatch recovery lifecycle email          |
-| `POST`  | `/reset/:token` | Public             | Validate token and overwrite password hash |
+Everything from section 6 of the technical document — mobile + OTP login, profile,
+properties (one create API for SELL / RENT / LEASE), public listing with filters,
+wishlist, enquiries, notifications, photo uploads and the admin API. Used by the
+mobile app, the website and the admin panel. Interactive reference: `/api-docs`.
 
-</details>
-
-<details>
-<summary><strong>Property Data Stores (`/api/products`)</strong></summary>
-
-| Request | Route Namespace | Restrictions | Purpose                                            |
-| ------- | --------------- | ------------ | -------------------------------------------------- |
-| `GET`   | `/list`         | Public       | Aggregate extensive real estate catalogs           |
-| `GET`   | `/single/:id`   | Public       | Target solitary property structure map             |
-| `POST`  | `/add`          | Admin Only   | Ingest multipart property payload (up to 4 images) |
-| `POST`  | `/update`       | Admin Only   | Mutate deployed property details / replace media   |
-| `POST`  | `/remove`       | Admin Only   | Obliterate property mapping and linked data        |
+Data lives in the collections of section 5.2 (`users`, `admins`, `properties`,
+`states`, `districts`, `wishlists`, `enquiries`, `notifications`, `device_tokens`,
+`refresh_tokens`). Older data is converted with `npm run migrate:doc-schema`.
 
 </details>
 

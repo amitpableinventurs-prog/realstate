@@ -125,7 +125,7 @@ export const apiLimiter = rateLimit({
 /**
  * OTP send limiter (mobile app)
  * Limits: 10 OTP requests per 15 minutes per IP — per-phone limits are enforced
- * separately in appAuthController so one IP can't flood a single number
+ * separately in controller/v1/authController so one IP can't flood a single number
  */
 export const otpSendLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

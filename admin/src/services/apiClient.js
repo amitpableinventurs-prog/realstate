@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { APP_CONSTANTS, backendurl } from '../config/constants';
+import { saveAdminSession, clearAdminSession } from '../lib/adminSession';
 
 const apiClient = axios.create({
   baseURL: backendurl,
@@ -21,8 +22,7 @@ apiClient.interceptors.request.use(
 );
 
 const clearSession = () => {
-  localStorage.removeItem(APP_CONSTANTS.TOKEN_KEY);
-  localStorage.removeItem(APP_CONSTANTS.IS_ADMIN_KEY);
+  clearAdminSession();
   if (window.location.pathname !== '/login') {
     window.location.href = '/login';
   }
@@ -34,7 +34,7 @@ let refreshPromise = null;
 const refreshAccessToken = () => {
   if (!refreshPromise) {
     refreshPromise = axios
-      .post(`${backendurl}/api/users/admin/refresh`, {}, { withCredentials: true })
+      .post(`${backendurl}/api/v1/admin/auth/refresh`, {}, { withCredentials: true })
       .finally(() => {
         refreshPromise = null;
       });
@@ -46,15 +46,15 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    const isAuthEndpoint = original?.url?.includes('/api/users/admin');
+    const isAuthEndpoint = original?.url?.includes('/api/v1/admin/auth/');
 
     if (error.response?.status === 401 && original && !original._retry && !isAuthEndpoint) {
       original._retry = true;
       try {
         const { data } = await refreshAccessToken();
-        if (data.success && data.token) {
-          localStorage.setItem(APP_CONSTANTS.TOKEN_KEY, data.token);
-          original.headers.Authorization = `Bearer ${data.token}`;
+        if (data.success && data.data?.access_token) {
+          saveAdminSession(data.data);
+          original.headers.Authorization = `Bearer ${data.data.access_token}`;
           return apiClient(original);
         }
       } catch {

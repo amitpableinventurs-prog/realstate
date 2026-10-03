@@ -2,17 +2,27 @@ import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'sonner';
 import { Upload, X, MapPin, Home, IndianRupee, Phone, Crosshair, FileText, Image as ImageIcon } from 'lucide-react';
-import apiClient from '../services/apiClient';
 import DistrictOptions from './DistrictOptions';
+import { fetchDistricts } from '../lib/districts';
+import { uploadPhotos, photoProblem } from '../lib/uploads';
 import { cn } from '../lib/utils';
 
-// Admin "Add Property" / "Edit" form — the same fields as the mobile app's
-// "Register your property" screen and the website form:
-// Khata, Khasra, Area (+unit), Price per Kattha/Dismil, Photos, Description,
-// current location (optional) and Sale/Rent/Lease.
+// Admin "Add Property" / "Edit" form — the property fields of the technical
+// document: Sell/Rent/Lease, Khata, Khasra, Area and Price (per Katha or
+// Dismil), Photos, Description, optional current location, and the district.
+// Adding also needs the owner's mobile number: the property is listed under
+// their account (created if new), so they see it in My Listings.
 
-const MAX_MEDIA = 10;
-const LISTING_TYPE_LABELS = { sell: 'For Sale', rent: 'For Rent', lease: 'For Lease' };
+const MAX_PHOTOS = 10;
+const LISTING_TYPES = [
+  { value: 'SELL', label: 'For Sale' },
+  { value: 'RENT', label: 'For Rent' },
+  { value: 'LEASE', label: 'For Lease' },
+];
+const UNITS = [
+  { value: 'KATHA', label: 'Katha' },
+  { value: 'DISMIL', label: 'Dismil' },
+];
 
 const inputClass = "w-full px-4 py-3 bg-white border border-[#E6D6E8] rounded-xl text-[#17131A] placeholder-[#9CA3AF] text-sm transition-all duration-200 outline-none focus:border-[#A3078F] focus:ring-2 focus:ring-[#A3078F]/15 disabled:opacity-60";
 const labelClass = "block text-sm font-semibold text-[#17131A] mb-2";
@@ -39,51 +49,47 @@ const Required = () => <span className="text-red-500">*</span>;
 const formatINR = (n) =>
   n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(2)} Lakhs` : `₹${Math.round(n).toLocaleString('en-IN')}`;
 
-// Form values from an existing listing (edit) or defaults (add)
-const initialValues = (listing) => ({
-  listingType: listing?.listingType || 'sell',
-  propertyType: listing?.propertyType || 'land',
-  khataNo: listing?.khataNo || '',
-  khasraNo: listing?.khasraNo || '',
-  area: listing?.area?.value != null ? String(listing.area.value) : '',
-  areaUnit: listing?.area?.unit || 'decimal',
-  // Per-unit listings show the rate they were entered with
-  price: listing?.unitPrice != null ? String(listing.unitPrice) : listing?.price != null ? String(listing.price) : '',
-  priceUnit: listing ? listing.priceUnit || 'total' : 'kattha',
-  pricePeriod: listing?.pricePeriod === 'year' ? 'year' : 'month',
-  description: listing?.description || '',
-  address: listing?.address || '',
-  district: listing?.district?.id || '',
-  contactPhone: (listing?.contactPhone || '').replace(/^\+91/, ''),
-  ownerName: listing?.postedFrom === 'admin' ? listing?.owner?.name || '' : '',
+// Form values from an existing property (edit) or defaults (add)
+const initialValues = (property) => ({
+  listing_type: property?.listing_type || 'SELL',
+  khata_number: property?.khata_number || '',
+  khasra_number: property?.khasra_number || '',
+  area_value: property?.area?.value != null ? String(property.area.value) : '',
+  area_unit: property?.area?.unit || 'KATHA',
+  price_amount: property?.price?.amount != null ? String(property.price.amount) : '',
+  price_unit: property?.price?.per_unit || 'KATHA',
+  description: property?.description || '',
+  address: property?.address || '',
+  district_id: property?.district_id || '',
+  owner_mobile: '',
+  owner_name: '',
 });
+
+// API error keys → the field the message is shown under
+const ERROR_FIELD = {
+  'area.value': 'area', 'area.unit': 'area', area: 'area',
+  'price.amount': 'price', 'price.per_unit': 'price', price: 'price',
+  state_id: 'district_id', image_urls: 'photos',
+  location: 'location', 'location.latitude': 'location', 'location.longitude': 'location',
+};
 
 const ListingForm = ({ listing, onSubmit, submitLabel }) => {
   const isEdit = Boolean(listing);
-  const ownerEditable = !isEdit || listing.postedFrom === 'admin';
-  const [meta, setMeta] = useState(null);
   const [districts, setDistricts] = useState([]);
   const [values, setValues] = useState(() => initialValues(listing));
   const [coords, setCoords] = useState(listing?.location || null);
-  const [existingMedia, setExistingMedia] = useState(listing?.media || []);
-  const [removeIds, setRemoveIds] = useState([]);
-  const [files, setFiles] = useState([]);
-  const [previews, setPreviews] = useState([]);
+  // Photos in display order: { url } already uploaded, or { file, preview } to upload
+  const [photos, setPhotos] = useState(() => (listing?.images || []).map((i) => ({ url: i.url })));
   const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const fileInput = useRef(null);
 
   useEffect(() => {
-    apiClient.get('/api/v1/app/meta')
-      .then(({ data }) => setMeta(data.data))
-      .catch(() => toast.error('Could not load the form options'));
-    apiClient.get('/api/admin/districts')
-      .then(({ data }) => setDistricts(data.districts || []))
-      .catch(() => setDistricts([]));
+    fetchDistricts().then(setDistricts).catch(() => toast.error('Could not load the districts'));
   }, []);
 
-  useEffect(() => () => previews.forEach((p) => URL.revokeObjectURL(p.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => photos.forEach((p) => p.preview && URL.revokeObjectURL(p.preview)), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (key, value) => {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -91,27 +97,24 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
   };
   const handleChange = (e) => set(e.target.name, e.target.value);
 
-  const mediaCount = existingMedia.length + files.length;
-
   const addFiles = (e) => {
     const picked = Array.from(e.target.files || []);
-    const room = MAX_MEDIA - mediaCount;
-    if (picked.length > room) toast.error(`A listing can have at most ${MAX_MEDIA} photos and videos`);
-    const allowed = picked.slice(0, Math.max(0, room));
-    setFiles((prev) => [...prev, ...allowed]);
-    setPreviews((prev) => [...prev, ...allowed.map((f) => ({ url: URL.createObjectURL(f), isVideo: f.type.startsWith('video/') }))]);
     if (fileInput.current) fileInput.current.value = '';
+    const problems = picked.map(photoProblem).filter(Boolean);
+    if (problems.length) toast.error(problems[0]);
+    const ok = picked.filter((f) => !photoProblem(f));
+    const room = MAX_PHOTOS - photos.length;
+    if (ok.length > room) toast.error(`A property can have at most ${MAX_PHOTOS} photos`);
+    const added = ok.slice(0, Math.max(0, room)).map((file) => ({ file, preview: URL.createObjectURL(file) }));
+    setPhotos((prev) => [...prev, ...added]);
+    setErrors((prev) => ({ ...prev, photos: undefined }));
   };
 
-  const removeNewFile = (index) => {
-    URL.revokeObjectURL(previews[index].url);
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const removeExisting = (media) => {
-    setExistingMedia((prev) => prev.filter((m) => m.id !== media.id));
-    setRemoveIds((prev) => [...prev, media.id]);
+  const removePhoto = (index) => {
+    setPhotos((prev) => {
+      if (prev[index].preview) URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const getLocation = () => {
@@ -130,46 +133,50 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
     );
   };
 
+  // estimated_total is only calculated when both units are the same
   const totalPreview = (() => {
-    if (!meta || values.priceUnit === 'total') return null;
-    const area = Number(values.area);
-    const price = Number(values.price);
-    const areaSqft = meta.areaUnits.find((u) => u.value === values.areaUnit)?.sqft;
-    const unitSqft = meta.priceUnits.find((u) => u.value === values.priceUnit)?.sqft;
-    if (!(area > 0) || !(price > 0) || !areaSqft || !unitSqft) return null;
-    return formatINR((price * area * areaSqft) / unitSqft);
+    const area = Number(values.area_value);
+    const price = Number(values.price_amount);
+    if (!(area > 0) || !(price > 0) || values.area_unit !== values.price_unit) return null;
+    return formatINR(price * area);
   })();
-
-  const isLand = values.propertyType === 'land';
-  const priceRequired = values.listingType !== 'sell';
-  const periodSuffix = values.listingType === 'rent' ? ' / month' : values.listingType === 'lease' ? ` / ${values.pricePeriod}` : '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const fd = new FormData();
-    ['listingType', 'propertyType', 'khataNo', 'khasraNo', 'area', 'areaUnit', 'description', 'address', 'district', 'contactPhone']
-      .forEach((key) => fd.append(key, values[key].trim ? values[key].trim() : values[key]));
-    if (values.price) {
-      fd.append('price', values.price);
-      fd.append('priceUnit', values.priceUnit);
+    if (!photos.length) {
+      setErrors({ photos: 'Add at least 1 photo' });
+      return;
     }
-    if (values.listingType === 'lease') fd.append('pricePeriod', values.pricePeriod);
-    if (ownerEditable) fd.append('ownerName', values.ownerName.trim());
-    if (coords) {
-      fd.append('latitude', String(coords.latitude));
-      fd.append('longitude', String(coords.longitude));
-    }
-    if (removeIds.length) fd.append('removeMediaIds', JSON.stringify(removeIds));
-    files.forEach((file) => fd.append('media', file));
-
     setSaving(true);
     setErrors({});
     try {
-      await onSubmit(fd);
+      // Upload new photos first, keeping the display order
+      const newFiles = photos.filter((p) => p.file).map((p) => p.file);
+      const newUrls = await uploadPhotos(newFiles);
+      let next = 0;
+      const imageUrls = photos.map((p) => p.url || newUrls[next++]);
+
+      await onSubmit({
+        listing_type: values.listing_type,
+        khata_number: values.khata_number.trim(),
+        khasra_number: values.khasra_number.trim(),
+        area: { value: Number(values.area_value), unit: values.area_unit },
+        price: { amount: Number(values.price_amount), per_unit: values.price_unit },
+        description: values.description.trim(),
+        address: values.address.trim() || (isEdit ? null : undefined),
+        image_urls: imageUrls,
+        district_id: values.district_id,
+        location: coords,
+        ...(!isEdit && { owner_mobile: values.owner_mobile, owner_name: values.owner_name.trim() || undefined }),
+      });
+      // Uploaded photos are now saved with the property
+      setPhotos(imageUrls.map((url) => ({ url })));
     } catch (error) {
       const data = error.response?.data;
-      if (data?.errors) setErrors(data.errors);
-      toast.error(data?.message || 'Could not save the listing');
+      if (data?.errors) {
+        setErrors(Object.fromEntries(Object.entries(data.errors).map(([key, message]) => [ERROR_FIELD[key] || key, message])));
+      }
+      toast.error(data?.message || error.message || 'Could not save the property');
     } finally {
       setSaving(false);
     }
@@ -177,125 +184,130 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Owner */}
+      <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
+        <SectionHeader icon={Phone} title="Owner" subtitle={isEdit ? undefined : 'The property is listed under this mobile number'} />
+        {isEdit ? (
+          <p className="text-sm text-[#17131A]">
+            <span className="font-semibold">{listing.owner?.name || 'Owner'}</span>
+            {listing.owner?.mobile && <span className="text-[#5A5856]"> · {listing.owner.mobile}</span>}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="lf-owner-mobile" className={labelClass}>Owner mobile <Required /></label>
+              <div className="flex">
+                <span className="inline-flex items-center px-3 border border-r-0 border-[#E6D6E8] rounded-l-xl text-sm text-[#5A5856] bg-[#FAF8FB]">+91</span>
+                <input id="lf-owner-mobile" name="owner_mobile" type="tel" inputMode="numeric" required value={values.owner_mobile}
+                  onChange={(e) => set('owner_mobile', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="9876543210" className={cn(inputClass, 'rounded-l-none')} />
+              </div>
+              <FieldError message={errors.owner_mobile} />
+            </div>
+            <div>
+              <label htmlFor="lf-owner-name" className={labelClass}>Owner name <span className="font-normal text-[#9CA3AF]">(for a new account)</span></label>
+              <input id="lf-owner-name" name="owner_name" value={values.owner_name} onChange={handleChange} maxLength={80}
+                placeholder="Full name" className={inputClass} />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Type */}
       <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
         <SectionHeader icon={Home} title="Listing type" />
-        <div className="space-y-4">
-          <div>
-            <span className={labelClass}>Listing for <Required /></span>
-            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Listing for">
-              {(meta?.listingTypes?.map((t) => t.value) || ['sell', 'rent', 'lease']).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={values.listingType === value}
-                  onClick={() => set('listingType', value)}
-                  className={cn(
-                    "py-2.5 rounded-xl text-sm font-semibold border transition-all",
-                    values.listingType === value ? "bg-[#A3078F] border-[#A3078F] text-white" : "bg-white border-[#E6D6E8] text-[#5A5856] hover:border-[#A3078F]"
-                  )}
-                >
-                  {LISTING_TYPE_LABELS[value] || value}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label htmlFor="lf-propertyType" className={labelClass}>Property type <Required /></label>
-            <select id="lf-propertyType" name="propertyType" value={values.propertyType} onChange={handleChange} className={inputClass}>
-              {(meta?.propertyTypes || [{ value: 'land', label: 'Land' }]).map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-          </div>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Listing for">
+          {LISTING_TYPES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={values.listing_type === value}
+              onClick={() => set('listing_type', value)}
+              className={cn(
+                "py-2.5 rounded-xl text-sm font-semibold border transition-all",
+                values.listing_type === value ? "bg-[#A3078F] border-[#A3078F] text-white" : "bg-white border-[#E6D6E8] text-[#5A5856] hover:border-[#A3078F]"
+              )}
+            >
+              {label}
+            </button>
+          ))}
         </div>
+        <FieldError message={errors.listing_type} />
       </div>
 
       {/* Land details */}
       <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
-        <SectionHeader icon={FileText} title="Land details" subtitle="Khata and Khasra are required for land" />
+        <SectionHeader icon={FileText} title="Land details" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="lf-khata" className={labelClass}>Khata No. {isLand && <Required />}</label>
-            <input id="lf-khata" name="khataNo" value={values.khataNo} onChange={handleChange} required={isLand}
+            <label htmlFor="lf-khata" className={labelClass}>Khata Number <Required /></label>
+            <input id="lf-khata" name="khata_number" value={values.khata_number} onChange={handleChange} required
               maxLength={50} placeholder="KH-10245" className={inputClass} />
-            <FieldError message={errors.khataNo} />
+            <FieldError message={errors.khata_number} />
           </div>
           <div>
-            <label htmlFor="lf-khasra" className={labelClass}>Khasra Number {isLand && <Required />}</label>
-            <input id="lf-khasra" name="khasraNo" value={values.khasraNo} onChange={handleChange} required={isLand}
+            <label htmlFor="lf-khasra" className={labelClass}>Khasra Number <Required /></label>
+            <input id="lf-khasra" name="khasra_number" value={values.khasra_number} onChange={handleChange} required
               maxLength={50} placeholder="123/2" className={inputClass} />
-            <FieldError message={errors.khasraNo} />
+            <FieldError message={errors.khasra_number} />
           </div>
           <div className="sm:col-span-2">
             <label htmlFor="lf-area" className={labelClass}>Area <Required /></label>
             <div className="flex gap-2">
-              <input id="lf-area" name="area" type="number" min="0" step="any" value={values.area} onChange={handleChange}
-                required placeholder="2.50" className={inputClass} />
-              <select name="areaUnit" value={values.areaUnit} onChange={handleChange} aria-label="Area unit" className={cn(inputClass, "w-40 flex-shrink-0")}>
-                {(meta?.areaUnits || []).map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+              <input id="lf-area" name="area_value" type="number" min="0" step="any" value={values.area_value} onChange={handleChange}
+                required placeholder="5" className={inputClass} />
+              <select name="area_unit" value={values.area_unit} onChange={handleChange} aria-label="Area unit" className={cn(inputClass, "w-40 flex-shrink-0")}>
+                {UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
               </select>
             </div>
-            <FieldError message={errors.area || errors.areaUnit} />
+            <FieldError message={errors.area} />
           </div>
         </div>
       </div>
 
       {/* Price */}
       <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
-        <SectionHeader icon={IndianRupee} title="Price" subtitle={priceRequired ? undefined : 'Leave empty for "Price on request"'} />
+        <SectionHeader icon={IndianRupee} title="Price" subtitle="Rate per Katha or Dismil" />
         <div className="flex gap-2">
-          <input name="price" type="number" min="0" value={values.price} onChange={handleChange} required={priceRequired}
-            placeholder="150000" aria-label="Price" className={inputClass} />
-          <select name="priceUnit" value={values.priceUnit} onChange={handleChange} aria-label="Price per" className={cn(inputClass, "w-44 flex-shrink-0")}>
-            {(meta?.priceUnits || []).map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+          <input name="price_amount" type="number" min="0" value={values.price_amount} onChange={handleChange} required
+            placeholder="250000" aria-label="Price" className={inputClass} />
+          <select name="price_unit" value={values.price_unit} onChange={handleChange} aria-label="Price per" className={cn(inputClass, "w-44 flex-shrink-0")}>
+            {UNITS.map((u) => <option key={u.value} value={u.value}>Per {u.label}</option>)}
           </select>
         </div>
-        {values.listingType === 'lease' && (
-          <select name="pricePeriod" value={values.pricePeriod} onChange={handleChange} aria-label="Lease amount per" className={cn(inputClass, "mt-3 sm:w-60")}>
-            <option value="month">Per month</option>
-            <option value="year">Per year</option>
-          </select>
-        )}
         {totalPreview && (
-          <p className="text-sm text-[#5A5856] mt-2">Total: <strong className="text-[#A3078F]">≈ {totalPreview}{periodSuffix}</strong></p>
+          <p className="text-sm text-[#5A5856] mt-2">Estimated total: <strong className="text-[#A3078F]">{totalPreview}</strong></p>
         )}
-        <FieldError message={errors.price || errors.priceUnit || errors.pricePeriod} />
+        <FieldError message={errors.price} />
       </div>
 
-      {/* Photos & videos */}
+      {/* Photos */}
       <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
-        <SectionHeader icon={ImageIcon} title="Photos & Videos" subtitle={`Up to ${MAX_MEDIA}. The first one is the cover.`} />
-        {(existingMedia.length > 0 || previews.length > 0) && (
+        <SectionHeader icon={ImageIcon} title="Photos" subtitle={`JPG, PNG or WEBP, up to ${MAX_PHOTOS}. The first one is the cover.`} />
+        {photos.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
-            {existingMedia.map((m) => (
-              <div key={m.id} className="relative aspect-square rounded-xl overflow-hidden border border-[#E6D6E8] bg-[#F5F0F6]">
-                {m.type === 'video' ? <video src={m.url} className="w-full h-full object-cover" muted /> : <img src={m.url} alt="" className="w-full h-full object-cover" />}
-                <button type="button" onClick={() => removeExisting(m)} aria-label="Remove"
+            {photos.map((p, i) => (
+              <div key={p.url || p.preview} className={cn("relative aspect-square rounded-xl overflow-hidden border bg-[#F5F0F6]", p.file ? "border-[#A3078F]/40" : "border-[#E6D6E8]")}>
+                <img src={p.url || p.preview} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => removePhoto(i)} aria-label="Remove photo"
                   className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center">
                   <X className="w-3.5 h-3.5" />
                 </button>
-              </div>
-            ))}
-            {previews.map((p, i) => (
-              <div key={p.url} className="relative aspect-square rounded-xl overflow-hidden border border-[#A3078F]/40 bg-[#F5F0F6]">
-                {p.isVideo ? <video src={p.url} className="w-full h-full object-cover" muted /> : <img src={p.url} alt="" className="w-full h-full object-cover" />}
-                <button type="button" onClick={() => removeNewFile(i)} aria-label="Remove"
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-                <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-[#A3078F] text-white px-1.5 py-0.5 rounded">New</span>
+                {i === 0 && <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-[#17131A]/80 text-white px-1.5 py-0.5 rounded">Cover</span>}
+                {p.file && <span className="absolute bottom-1 right-1 text-[10px] font-semibold bg-[#A3078F] text-white px-1.5 py-0.5 rounded">New</span>}
               </div>
             ))}
           </div>
         )}
-        {mediaCount < MAX_MEDIA && (
+        {photos.length < MAX_PHOTOS && (
           <button type="button" onClick={() => fileInput.current?.click()}
             className="flex items-center gap-2 border-2 border-dashed border-[#A3078F]/40 rounded-xl px-6 py-4 text-[#A3078F] text-sm font-medium hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-colors">
-            <Upload className="w-4 h-4" /> Add photos or videos ({mediaCount}/{MAX_MEDIA})
+            <Upload className="w-4 h-4" /> Add photos ({photos.length}/{MAX_PHOTOS})
           </button>
         )}
-        <input ref={fileInput} type="file" accept="image/*,video/*" multiple className="sr-only" onChange={addFiles} />
-        <FieldError message={errors.media} />
+        <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={addFiles} />
+        <FieldError message={errors.photos} />
       </div>
 
       {/* Location */}
@@ -304,64 +316,50 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
         <div className="space-y-4">
           <div>
             <label htmlFor="lf-district" className={labelClass}>District <Required /></label>
-            <select id="lf-district" name="district" value={values.district} onChange={handleChange} required className={inputClass}>
+            <select id="lf-district" name="district_id" value={values.district_id} onChange={handleChange} required className={inputClass}>
               <option value="">Select district…</option>
-              <DistrictOptions districts={districts} keepId={values.district} />
+              <DistrictOptions districts={districts} keepId={values.district_id} />
             </select>
-            <FieldError message={errors.district} />
-          </div>
-          <div>
-            <span className={labelClass}>Current location <span className="font-normal text-[#9CA3AF]">(optional)</span></span>
-            <button type="button" onClick={getLocation} disabled={locating}
-              className="flex items-center gap-2 px-4 py-2.5 border border-[#E6D6E8] rounded-xl text-sm font-semibold text-[#17131A] hover:border-[#A3078F] hover:text-[#A3078F] disabled:opacity-60">
-              <Crosshair className="w-4 h-4" />
-              {locating ? 'Getting location…' : coords ? 'Update property location' : 'Get property location'}
-            </button>
-            <p className="text-xs text-[#9CA3AF] mt-1.5 tabular-nums">
-              {coords ? `Latitude ${coords.latitude}, Longitude ${coords.longitude}` : 'Latitude and longitude will appear here'}
-            </p>
+            <FieldError message={errors.district_id} />
           </div>
           <div>
             <label htmlFor="lf-address" className={labelClass}>Address <span className="font-normal text-[#9CA3AF]">(optional)</span></label>
             <input id="lf-address" name="address" value={values.address} onChange={handleChange} maxLength={300}
-              placeholder="Google Maps / nearby landmark" className={inputClass} />
+              placeholder="Village / mohalla / landmark" className={inputClass} />
+            <FieldError message={errors.address} />
           </div>
-        </div>
-      </div>
-
-      {/* Description & contact */}
-      <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
-        <SectionHeader icon={Phone} title="Description & contact" />
-        <div className="space-y-4">
           <div>
-            <label htmlFor="lf-description" className={labelClass}>Description <Required /></label>
-            <textarea id="lf-description" name="description" value={values.description} onChange={handleChange} required
-              rows={4} maxLength={3000} placeholder="Land is located near main road…" className={cn(inputClass, 'resize-none')} />
-            <FieldError message={errors.description} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {ownerEditable && (
-              <div>
-                <label htmlFor="lf-owner" className={labelClass}>Owner / contact name</label>
-                <input id="lf-owner" name="ownerName" value={values.ownerName} onChange={handleChange} maxLength={80}
-                  placeholder="Bhumi Bazar" className={inputClass} />
-              </div>
-            )}
-            <div>
-              <label htmlFor="lf-phone" className={labelClass}>Contact mobile <Required /></label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 border border-r-0 border-[#E6D6E8] rounded-l-xl text-sm text-[#5A5856] bg-[#FAF8FB]">+91</span>
-                <input id="lf-phone" name="contactPhone" type="tel" inputMode="numeric" required value={values.contactPhone}
-                  onChange={(e) => set('contactPhone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  placeholder="9876543210" className={cn(inputClass, 'rounded-l-none')} />
-              </div>
-              <FieldError message={errors.contactPhone} />
+            <span className={labelClass}>Current location <span className="font-normal text-[#9CA3AF]">(optional)</span></span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={getLocation} disabled={locating}
+                className="flex items-center gap-2 px-4 py-2.5 border border-[#E6D6E8] rounded-xl text-sm font-semibold text-[#17131A] hover:border-[#A3078F] hover:text-[#A3078F] disabled:opacity-60">
+                <Crosshair className="w-4 h-4" />
+                {locating ? 'Getting location…' : coords ? 'Update property location' : 'Get property location'}
+              </button>
+              {coords && (
+                <button type="button" onClick={() => setCoords(null)} className="text-xs text-[#5A5856] underline hover:text-red-600">
+                  Remove location
+                </button>
+              )}
             </div>
+            <p className="text-xs text-[#9CA3AF] mt-1.5 tabular-nums">
+              {coords ? `Latitude ${coords.latitude}, Longitude ${coords.longitude}` : 'Latitude and longitude will appear here'}
+            </p>
+            <FieldError message={errors.location} />
           </div>
         </div>
       </div>
 
-      <button type="submit" disabled={saving || !meta}
+      {/* Description */}
+      <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
+        <SectionHeader icon={FileText} title="Description" subtitle="Optional" />
+        <textarea id="lf-description" name="description" value={values.description} onChange={handleChange}
+          rows={4} maxLength={3000} placeholder="Road-facing land, close to the main market…" aria-label="Description"
+          className={cn(inputClass, 'resize-none')} />
+        <FieldError message={errors.description} />
+      </div>
+
+      <button type="submit" disabled={saving}
         className="w-full py-3.5 bg-[#A3078F] hover:bg-[#7A0A74] text-white rounded-xl font-semibold transition-colors disabled:opacity-60">
         {saving ? 'Saving…' : submitLabel}
       </button>

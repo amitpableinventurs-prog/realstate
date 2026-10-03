@@ -2,9 +2,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import PendingUpload from '../../models/pendingUploadModel.js';
 import { isS3Configured, presignPut, presignExpirySeconds, s3PublicUrl, headObjectSize } from '../../services/s3Service.js';
-import {
-    imagekitConfigured, publicBaseUrl, storeBuffer, deleteMedia, LOCAL_MEDIA_ROUTE,
-} from '../../services/mediaStorageService.js';
+import { imagekitConfigured, publicBaseUrl, storeBuffer, expectedUrl } from '../../services/mediaStorageService.js';
 import { fail, ok, validationFailed } from '../../utils/v1.js';
 
 // Property photos (technical document 4.6). The client asks for upload URLs,
@@ -24,6 +22,11 @@ const signature = (id, expires) =>
 
 const randomName = (contentType) => `${crypto.randomBytes(16).toString('hex')}.${IMAGE_TYPES[contentType]}`;
 
+/** Who is uploading: the signed-in user, or an admin adding/editing a property. */
+export const uploaderOf = (req) => (req.admin
+    ? { uploader_id: req.admin.id, uploader_type: 'admin' }
+    : { uploader_id: req.user._id, uploader_type: 'user' });
+
 // POST /uploads/presign { files: [{ content_type, size }] }
 export const presign = async (req, res) => {
     const files = req.body?.files;
@@ -38,27 +41,24 @@ export const presign = async (req, res) => {
     });
     if (Object.keys(errors).length) return validationFailed(res, errors);
 
-    const userId = req.appUser._id;
+    const uploader = uploaderOf(req);
     const expiresIn = presignExpirySeconds();
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
     const useS3 = isS3Configured();
 
     const uploads = await Promise.all(files.map(async ({ content_type: contentType, size }) => {
         const filename = randomName(contentType);
+        const base = { ...uploader, content_type: contentType, size, expires_at: expiresAt };
         if (useS3) {
-            const key = `properties/${userId}/${filename}`;
+            const key = `properties/${uploader.uploader_id}/${filename}`;
             const uploadUrl = await presignPut({ key, contentType, size });
-            const record = { user: userId, url: s3PublicUrl(key), contentType, size, storage: 's3', storageId: key, expiresAt };
-            return { record, uploadUrl };
+            return { record: { ...base, url: s3PublicUrl(key), storage: 's3', storage_id: key }, uploadUrl };
         }
         const id = new mongoose.Types.ObjectId();
         const expires = Math.floor(expiresAt.getTime() / 1000);
-        const storage = imagekitConfigured() ? 'imagekit' : 'local';
-        // ImageKit keeps the name as given (useUniqueFileName: false), so the URL is known now
-        const url = storage === 'imagekit'
-            ? `${process.env.IMAGEKIT_URL_ENDPOINT.replace(/\/$/, '')}/AppListings/${filename}`
-            : `${publicBaseUrl()}${LOCAL_MEDIA_ROUTE}/${filename}`;
-        const record = { _id: id, user: userId, url, contentType, size, storage, storageId: filename, expiresAt };
+        const record = {
+            ...base, _id: id, url: expectedUrl(filename), storage: imagekitConfigured() ? 'imagekit' : 'local', storage_id: filename,
+        };
         const uploadUrl = `${publicBaseUrl()}/api/v1/uploads/${id}?expires=${expires}&signature=${signature(id, expires)}`;
         return { record, uploadUrl };
     }));
@@ -67,7 +67,7 @@ export const presign = async (req, res) => {
     return ok(res, uploads.map(({ record, uploadUrl }) => ({
         upload_url: uploadUrl,
         method: 'PUT',
-        headers: { 'Content-Type': record.contentType },
+        headers: { 'Content-Type': record.content_type },
         file_url: record.url,
         expires_in: expiresIn,
     })));
@@ -98,33 +98,33 @@ export const receiveUpload = async (req, res) => {
 
     const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
     const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
-    if (contentType !== record.contentType) {
-        return validationFailed(res, { 'Content-Type': `Must be ${record.contentType}, as requested` });
+    if (contentType !== record.content_type) {
+        return validationFailed(res, { 'Content-Type': `Must be ${record.content_type}, as requested` });
     }
     if (body.length !== record.size) {
         return validationFailed(res, { 'Content-Length': `Expected ${record.size} bytes, got ${body.length}` });
     }
-    if (!MAGIC[record.contentType](body)) {
-        return validationFailed(res, { file: `The file is not a valid ${record.contentType}` });
+    if (!MAGIC[record.content_type](body)) {
+        return validationFailed(res, { file: `The file is not a valid ${record.content_type}` });
     }
 
-    const stored = await storeBuffer(body, record.storageId);
-    record.set({ url: stored.url, storage: stored.storage, storageId: stored.storageId, uploaded: true });
+    const stored = await storeBuffer(body, record.storage_id);
+    record.set({ url: stored.url, storage: stored.storage, storage_id: stored.storage_id, uploaded: true });
     await record.save();
     return ok(res, { file_url: stored.url }, 'Uploaded');
 };
 
 /**
- * Turns image_urls into Listing media entries. A URL is accepted when it is one
- * of `keep` (already on the property) or was issued to `userId` by /presign and
- * has been uploaded. Returns { media, pending, error }: `pending` are the
- * upload records to remove once the property is saved.
+ * Turns image_urls into property images. A URL is accepted when it is already
+ * on the property (`keep`) or was issued to `uploaderId` by /presign and has
+ * been uploaded. Returns { images, pending, error }: `pending` are the upload
+ * records to remove once the property is saved.
  */
-export const resolveImageUrls = async (userId, urls, keep = []) => {
-    const kept = new Map(keep.map((m) => [m.url, m]));
+export const resolveImageUrls = async (uploaderId, urls, keep = []) => {
+    const kept = new Set(keep);
     const newUrls = urls.filter((u) => !kept.has(u));
-    const records = newUrls.length && userId
-        ? await PendingUpload.find({ user: userId, url: { $in: newUrls } })
+    const records = newUrls.length && uploaderId
+        ? await PendingUpload.find({ uploader_id: uploaderId, url: { $in: newUrls } })
         : [];
     const byUrl = new Map(records.map((r) => [r.url, r]));
 
@@ -132,24 +132,16 @@ export const resolveImageUrls = async (userId, urls, keep = []) => {
         const record = byUrl.get(url);
         if (!record) return { error: `Unknown image URL ${url}. Upload it with /uploads/presign first.` };
         if (record.storage === 's3') {
-            const size = await headObjectSize(record.storageId);
+            const size = await headObjectSize(record.storage_id);
             if (size === null) return { error: `Image ${url} has not been uploaded yet` };
         } else if (!record.uploaded) {
             return { error: `Image ${url} has not been uploaded yet` };
         }
     }
-
-    const media = urls.map((url) => {
-        const existing = kept.get(url);
-        if (existing) return existing;
-        const r = byUrl.get(url);
-        return { url: r.url, type: 'image', storage: r.storage, storageId: r.storageId };
-    });
-    return { media, pending: records };
+    // sort_order / is_primary are set from the order when the property is saved
+    return { images: urls.map((url) => ({ url })), pending: records };
 };
 
 /** Removes upload records once their files belong to a property. */
 export const consumeUploads = (records = []) =>
     records.length ? PendingUpload.deleteMany({ _id: { $in: records.map((r) => r._id) } }) : undefined;
-
-export { deleteMedia };

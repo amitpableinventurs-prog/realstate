@@ -6,8 +6,8 @@ import { ArrowLeft } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import ListingForm from '../components/ListingForm';
 
-// Admin "Edit" for any listing (app, website or admin-added), same fields as Add.
-// Editing keeps the listing's current review status.
+// Admin "Edit" for any property (PUT /api/v1/admin/properties/:id), same fields
+// as Add. Editing keeps the property's current review status.
 const UpdateListing = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -15,16 +15,14 @@ const UpdateListing = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    apiClient.get(`/api/admin/listings/${id}`)
+    apiClient.get(`/api/v1/admin/properties/${id}`)
       .then(({ data }) => setListing(data.data))
-      .catch((err) => setError(err.response?.data?.message || 'Failed to load the listing'));
+      .catch((err) => setError(err.response?.data?.message || 'Failed to load the property'));
   }, [id]);
 
-  const handleSubmit = async (formData) => {
-    await apiClient.patch(`/api/admin/listings/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    toast.success('Listing updated');
+  const handleSubmit = async (body) => {
+    await apiClient.put(`/api/v1/admin/properties/${id}`, body);
+    toast.success('Property updated');
     navigate('/list');
   };
 

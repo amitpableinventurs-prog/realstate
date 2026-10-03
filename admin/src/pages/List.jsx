@@ -9,40 +9,66 @@ import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../services/apiClient";
 import { cn } from "../lib/utils";
 
-// All Properties — every listing (mobile app, website form, admin), with the same
-// fields as the mobile screen: Khata, Khasra, Area, Price per Kattha/Dismil,
-// Photos, Description, Location, Sale/Rent/Lease. Only "Live" ones are public.
+// All Properties — every property (from the app, the website and the admin
+// panel) with the fields of the technical document: Khata, Khasra, Area and
+// Price per Katha/Dismil, Photos, Description, Location, Sell/Rent/Lease.
+// Only APPROVED ones are public.
 
 const PAGE_SIZE = 20;
 
 const STATUS = {
-  active: { label: "Live", className: "bg-emerald-500 text-white" },
-  pending: { label: "Pending", className: "bg-amber-400 text-[#17131A]" },
-  rejected: { label: "Disapproved", className: "bg-red-500 text-white" },
-  inactive: { label: "Hidden by owner", className: "bg-[#6B7280] text-white" },
+  APPROVED: { label: "Live", className: "bg-emerald-500 text-white" },
+  PENDING: { label: "Pending", className: "bg-amber-400 text-[#17131A]" },
+  REJECTED: { label: "Disapproved", className: "bg-red-500 text-white" },
+  SOLD: { label: "Sold", className: "bg-[#6B7280] text-white" },
+  RENTED: { label: "Rented", className: "bg-[#6B7280] text-white" },
+  LEASED: { label: "Leased", className: "bg-[#6B7280] text-white" },
 };
 const STATUS_TABS = [
   { value: "", label: "All", countKey: "all" },
-  { value: "active", label: "Live", countKey: "active" },
-  { value: "pending", label: "Pending", countKey: "pending" },
-  { value: "rejected", label: "Disapproved", countKey: "rejected" },
+  { value: "APPROVED", label: "Live", countKey: "APPROVED" },
+  { value: "PENDING", label: "Pending", countKey: "PENDING" },
+  { value: "REJECTED", label: "Disapproved", countKey: "REJECTED" },
+  { value: "SOLD", label: "Sold", countKey: "SOLD" },
+  { value: "RENTED", label: "Rented", countKey: "RENTED" },
+  { value: "LEASED", label: "Leased", countKey: "LEASED" },
 ];
-const PROPERTY_TYPES = [
-  { value: "all", label: "All Types" },
-  { value: "land", label: "Land" },
-  { value: "house", label: "House" },
-  { value: "apartment", label: "Apartment" },
-  { value: "commercial", label: "Commercial" },
+const LISTING_TYPES = [
+  { value: "", label: "All Types" },
+  { value: "SELL", label: "For Sale" },
+  { value: "RENT", label: "For Rent" },
+  { value: "LEASE", label: "For Lease" },
 ];
 const LISTING_TYPE_BADGE = {
-  sell: { label: "For Sale", className: "bg-[#A3078F]/85 text-white" },
-  rent: { label: "For Rent", className: "bg-blue-600/85 text-white" },
-  lease: { label: "For Lease", className: "bg-teal-600/85 text-white" },
+  SELL: { label: "For Sale", className: "bg-[#A3078F]/85 text-white" },
+  RENT: { label: "For Rent", className: "bg-blue-600/85 text-white" },
+  LEASE: { label: "For Lease", className: "bg-teal-600/85 text-white" },
 };
-const SOURCE_LABEL = { app: "App", website: "Website", admin: "Admin" };
+const UNIT_LABELS = { KATHA: "Katha", DISMIL: "Dismil" };
 
-const canApprove = (l) => l.status === "pending" || l.status === "rejected";
-const canDisapprove = (l) => l.status === "pending" || l.status === "active";
+// A property from GET /api/v1/admin/properties, with the names the cards use
+const toListing = (p) => ({
+  id: p.id,
+  title: p.title,
+  description: p.description,
+  listingType: p.listing_type,
+  status: p.status,
+  coverImage: p.thumbnail_url,
+  mediaCount: p.image_count,
+  area: { label: `${p.area.value} ${UNIT_LABELS[p.area.unit] || p.area.unit}` },
+  khataNo: p.khata_number,
+  khasraNo: p.khasra_number,
+  priceLabel: p.price?.label,
+  unitPriceLabel: p.estimated_total != null ? `Est. total ₹${p.estimated_total.toLocaleString("en-IN")}` : null,
+  district: p.district ? { name: p.district.name, state: p.state?.name } : null,
+  address: p.address,
+  owner: p.owner,
+  contactPhone: p.owner?.mobile,
+  rejectionReason: p.rejection_reason,
+});
+
+const canApprove = (l) => l.status === "PENDING" || l.status === "REJECTED";
+const canDisapprove = (l) => l.status === "PENDING" || l.status === "APPROVED";
 
 const StatusBadge = ({ listing }) => {
   const s = STATUS[listing.status] || STATUS.pending;
@@ -70,7 +96,7 @@ const ReviewButtons = ({ listing, onApprove, onDisapprove, busy, compact = false
   );
 };
 
-// Reason is required; the owner sees it in their listings (and by email for website users)
+// Reason is required; the owner is notified and sees it in My Listings
 const DisapproveModal = ({ listing, onClose, onConfirm, loading }) => {
   const [reason, setReason] = useState("");
   return (
@@ -133,7 +159,6 @@ const ListingGridCard = ({ listing, onApprove, onDisapprove, onDelete, busy }) =
         )}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           {typeBadge && <span className={cn("px-2.5 py-1 text-xs font-semibold rounded-full", typeBadge.className)}>{typeBadge.label}</span>}
-          <span className="px-2.5 py-1 bg-[#17131A]/80 text-[#FAF8FB] text-xs font-semibold rounded-full capitalize">{listing.propertyType}</span>
         </div>
         <div className="absolute top-3 right-3"><StatusBadge listing={listing} /></div>
         {listing.mediaCount > 1 && (
@@ -164,10 +189,9 @@ const ListingGridCard = ({ listing, onApprove, onDisapprove, onDelete, busy }) =
 
         <div className="flex items-center justify-between text-xs text-[#9CA3AF] mt-2">
           <span className="flex items-center gap-1 truncate"><Phone className="w-3 h-3" />{listing.owner?.name ? `${listing.owner.name} · ` : ""}{listing.contactPhone}</span>
-          <span className="flex-shrink-0">{SOURCE_LABEL[listing.postedFrom] || "App"}</span>
         </div>
 
-        {listing.status === "rejected" && listing.rejectionReason && (
+        {listing.status === "REJECTED" && listing.rejectionReason && (
           <p className="mt-3 text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5 line-clamp-2">
             <span className="font-semibold">Reason:</span> {listing.rejectionReason}
           </p>
@@ -198,7 +222,7 @@ const ListingRow = ({ listing, onApprove, onDisapprove, onDelete, busy }) => (
     </div>
     <div className="text-right flex-shrink-0">
       <div className="font-bold text-[#A3078F] text-sm">{listing.priceLabel}</div>
-      <div className="text-xs text-[#9CA3AF]">{listing.unitPriceLabel || listing.typeLabel}</div>
+      <div className="text-xs text-[#9CA3AF]">{listing.unitPriceLabel || LISTING_TYPE_BADGE[listing.listingType]?.label}</div>
     </div>
     <div className="flex items-center gap-1.5 flex-shrink-0">
       <ReviewButtons listing={listing} onApprove={onApprove} onDisapprove={onDisapprove} busy={busy} compact />
@@ -216,7 +240,7 @@ const PropertyListings = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
+  const [filterType, setFilterType] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [busy, setBusy] = useState({}); // { [id]: "approve" | "disapprove" }
   const [disapproveTarget, setDisapproveTarget] = useState(null);
@@ -224,18 +248,19 @@ const PropertyListings = () => {
   const fetchListings = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await apiClient.get("/api/v1/app/admin/listings", {
-        params: { page, limit: PAGE_SIZE, ...(status && { status }) },
+      const { data } = await apiClient.get("/api/v1/admin/properties", {
+        params: { page, limit: PAGE_SIZE, ...(status && { status }), ...(filterType && { listing_type: filterType }) },
       });
-      setListings(data.data || []);
-      setCounts(data.counts || {});
-      setTotalPages(Math.max(1, data.pagination?.totalPages || 1));
+      setListings((data.data || []).map(toListing));
+      const byStatus = data.counts || {};
+      setCounts({ ...byStatus, all: Object.values(byStatus).reduce((sum, n) => sum + n, 0) });
+      setTotalPages(Math.max(1, data.meta?.totalPages || 1));
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to fetch properties");
     } finally {
       setLoading(false);
     }
-  }, [page, status]);
+  }, [page, status, filterType]);
 
   useEffect(() => { fetchListings(); }, [fetchListings]);
 
@@ -247,10 +272,10 @@ const PropertyListings = () => {
   });
 
   // After a decision the card changes tab, so reload the page and counts
-  const decide = async (listing, body, success) => {
-    setCardBusy(listing.id, body.status === "active" ? "approve" : "disapprove");
+  const decide = async (listing, action, body, success) => {
+    setCardBusy(listing.id, action);
     try {
-      await apiClient.patch(`/api/v1/app/admin/listings/${listing.id}`, body);
+      await apiClient.patch(`/api/v1/admin/properties/${listing.id}/${action === "approve" ? "approve" : "reject"}`, body);
       toast.success(success);
       setDisapproveTarget(null);
       await fetchListings();
@@ -262,15 +287,15 @@ const PropertyListings = () => {
   };
 
   const handleApprove = (listing) =>
-    decide(listing, { status: "active" }, `"${listing.title}" approved — now live on the website and app`);
+    decide(listing, "approve", {}, `"${listing.title}" approved — now live on the website and app`);
 
   const handleDisapprove = (reason) =>
-    decide(disapproveTarget, { status: "rejected", rejectionReason: reason }, `"${disapproveTarget.title}" disapproved and hidden`);
+    decide(disapproveTarget, "disapprove", { rejection_reason: reason }, `"${disapproveTarget.title}" disapproved and hidden`);
 
   const handleDelete = async (listing) => {
-    if (!window.confirm(`Delete "${listing.title}"? Its photos are deleted too. This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${listing.title}"? It is hidden everywhere (it can be restored later).`)) return;
     try {
-      await apiClient.delete(`/api/admin/listings/${listing.id}`);
+      await apiClient.delete(`/api/v1/admin/properties/${listing.id}`);
       toast.success("Property deleted");
       await fetchListings();
     } catch (error) {
@@ -280,9 +305,8 @@ const PropertyListings = () => {
 
   const q = searchTerm.trim().toLowerCase();
   const visible = listings.filter((l) =>
-    (filterType === "all" || l.propertyType === filterType) &&
-    (!q || [l.title, l.description, l.khataNo, l.khasraNo, l.address, l.district?.name, l.contactPhone]
-      .some((f) => f?.toLowerCase().includes(q)))
+    !q || [l.title, l.description, l.khataNo, l.khasraNo, l.address, l.district?.name, l.owner?.name, l.contactPhone]
+      .some((f) => f?.toLowerCase().includes(q))
   );
 
   const cardProps = (l) => ({
@@ -299,7 +323,7 @@ const PropertyListings = () => {
           <div>
             <h1 className="text-3xl font-bold text-[#17131A] mb-1">Properties</h1>
             <p className="text-[#5A5856] text-sm">
-              <span className="font-semibold text-[#A3078F]">{counts.all ?? 0}</span> listings from the app, website and admin
+              <span className="font-semibold text-[#A3078F]">{counts.all ?? 0}</span> properties from the app, website and admin
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -327,7 +351,7 @@ const PropertyListings = () => {
               {t.label}
               <span className={cn(
                 "min-w-[1.5rem] px-1.5 py-0.5 rounded-full text-xs tabular-nums",
-                status === t.value ? "bg-white/25" : t.countKey === "pending" && counts.pending ? "bg-amber-100 text-amber-800" : "bg-[#F5F0F6]"
+                status === t.value ? "bg-white/25" : t.countKey === "PENDING" && counts.PENDING ? "bg-amber-100 text-amber-800" : "bg-[#F5F0F6]"
               )}>
                 {counts[t.countKey] ?? 0}
               </span>
@@ -345,8 +369,8 @@ const PropertyListings = () => {
                 className="w-full pl-9 pr-4 py-2.5 bg-[#FAF8FB] border border-[#E6D6E8] rounded-xl text-sm text-[#17131A] placeholder-[#9CA3AF] outline-none focus:border-[#A3078F] focus:ring-2 focus:ring-[#A3078F]/15" />
             </div>
             <div className="flex flex-wrap items-center gap-1 bg-[#FAF8FB] rounded-xl p-1">
-              {PROPERTY_TYPES.map((t) => (
-                <button key={t.value} onClick={() => setFilterType(t.value)}
+              {LISTING_TYPES.map((t) => (
+                <button key={t.value} onClick={() => { setFilterType(t.value); setPage(1); }}
                   className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
                     filterType === t.value ? "bg-[#17131A] text-[#FAF8FB] shadow-sm" : "text-[#5A5856] hover:text-[#17131A]")}>
                   {t.label}
@@ -378,9 +402,9 @@ const PropertyListings = () => {
             </div>
             <h3 className="text-lg font-bold text-[#17131A] mb-2">No properties found</h3>
             <p className="text-sm text-[#9CA3AF] mb-6">
-              {searchTerm || filterType !== "all" || status ? "Try another tab or filter" : "Add the first property, or wait for listings from the app and website"}
+              {searchTerm || filterType || status ? "Try another tab or filter" : "Add the first property, or wait for listings from the app and website"}
             </p>
-            {!searchTerm && filterType === "all" && !status && (
+            {!searchTerm && !filterType && !status && (
               <Link to="/add" className="inline-block px-6 py-3 bg-[#A3078F] text-white rounded-xl font-semibold text-sm hover:bg-[#7A0A74] transition-colors">
                 Add Property
               </Link>

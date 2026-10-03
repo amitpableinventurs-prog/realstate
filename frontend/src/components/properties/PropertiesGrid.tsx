@@ -1,23 +1,24 @@
 import React from 'react';
 import { motion, type Variants } from 'framer-motion';
-import PropertyCard from './PropertyCard';
-import type { Property } from '../../pages/PropertiesPage';
-import { propertyPriceLabel, propertySpecs } from '../../utils/propertyDisplay';
 import { Link } from 'react-router-dom';
-import { MapPin, Bed, Bath, Maximize2 } from 'lucide-react';
+import { MapPin, Maximize2 } from 'lucide-react';
+import PropertyCard from './PropertyCard';
+import { useI18n } from '../../i18n/I18nContext';
+import { useLandText } from '../../i18n/useLandText';
+import type { Property } from '../../utils/propertyDisplay';
 
 const fallbackImages = [
-  "https://images.unsplash.com/photo-1622015663381-d2e05ae91b72?w=800",
-  "https://images.unsplash.com/photo-1695067440629-b5e513976100?w=800",
-  "https://images.unsplash.com/photo-1738168279272-c08d6dd22002?w=800",
-  "https://images.unsplash.com/photo-1769428003672-296f923d19b2?w=800",
-  "https://images.unsplash.com/photo-1761509386107-9baefe0073f2?w=800",
-  "https://images.unsplash.com/photo-1762732793012-8bdab3af00b4?w=800",
+  "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800",
+  "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800",
+  "https://images.unsplash.com/photo-1500076656116-558758c991c1?w=800",
+  "https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?w=800",
 ];
 
 interface PropertiesGridProps {
   properties: Property[];
   viewMode?: 'grid' | 'list';
+  /** Save / unsave a property (wishlist); hides the heart when not given */
+  onToggleSave?: (property: Property) => void;
 }
 
 const container: Variants = {
@@ -29,72 +30,46 @@ const item: Variants = {
   show: { opacity: 1, y: 0 },
 };
 
+const badgeTone = (p: Property) => (['SOLD', 'RENTED', 'LEASED'].includes(p.status) ? 'closed' as const : p.listingType);
+
 // List view row — more compact than the card
 const PropertyRow: React.FC<{ property: Property; index: number }> = ({ property, index }) => {
-  const img = property.image?.[0] || fallbackImages[index % fallbackImages.length];
-  const badge = property.availability === 'sold' ? 'SOLD'
-    : property.availability === 'rent' ? 'FOR RENT'
-    : property.availability === 'sale' ? 'FOR SALE'
-    : property.availability?.toUpperCase();
-
+  const text = useLandText();
+  const title = text.title(property);
   return (
     <Link to={`/property/${property._id}`} className="group block outline-none focus-visible:ring-2 focus-visible:ring-[#A3078F] rounded-2xl">
       <div className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.09)] transition-shadow duration-300 flex gap-0">
-        {/* Thumbnail */}
         <div className="relative w-52 shrink-0 overflow-hidden">
           <img
-            src={img}
-            alt={property.title}
+            src={property.image[0] || fallbackImages[index % fallbackImages.length]}
+            alt={title}
             loading="lazy"
             decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            style={{ outline: '1px solid rgba(0,0,0,0.07)', outlineOffset: '-1px' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
-          {badge && (
-            <div className="absolute top-3 left-3 px-2 py-0.5 rounded font-space-mono text-[10px] font-bold text-white bg-[#10B981]">
-              {badge}
-            </div>
-          )}
+          <div className="absolute top-3 left-3 px-2 py-0.5 rounded font-space-mono text-[10px] font-bold text-white bg-[#10B981]">
+            {text.badge(property)}
+          </div>
         </div>
-
-        {/* Content */}
         <div className="flex-1 px-6 py-5 flex flex-col justify-between">
           <div>
-            <h3 className="font-fraunces text-lg font-semibold text-[#1A0A1E] mb-1 leading-snug">{property.title}</h3>
+            <h3 className="font-fraunces text-lg font-semibold text-[#1A0A1E] mb-1 leading-snug">{title}</h3>
             <div className="flex items-center gap-1 mb-3">
               <MapPin className="w-3.5 h-3.5 text-[#A3078F] shrink-0" />
               <span className="font-manrope text-sm text-[#6B7280]">{property.location}</span>
             </div>
-            {property.source === 'app' ? (
-              <div className="flex flex-wrap items-center gap-4 font-manrope text-sm text-[#6B7280]">
-                {propertySpecs(property).map((spec, i) => (
-                  <span key={spec} className="flex items-center gap-1.5">
-                    {i === 0 && <Maximize2 className="w-4 h-4" />}{spec}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-4 font-manrope text-sm text-[#6B7280]">
-                <span className="flex items-center gap-1.5"><Bed className="w-4 h-4" />{property.beds ?? 0} Beds</span>
-                <span className="flex items-center gap-1.5"><Bath className="w-4 h-4" />{property.baths ?? 0} Baths</span>
-                <span className="flex items-center gap-1.5"><Maximize2 className="w-4 h-4" />{property.sqft.toLocaleString()} sqft</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center justify-between mt-4">
-            <div>
-              <p className="font-fraunces text-2xl font-bold text-[#A3078F] tabular-nums">
-                {propertyPriceLabel(property)}
-              </p>
-              {property.unitPriceLabel && (
-                <p className="font-manrope text-xs text-[#6B7280] tabular-nums">{property.unitPriceLabel}</p>
-              )}
+            <div className="flex flex-wrap items-center gap-4 font-manrope text-sm text-[#6B7280]">
+              {text.specs(property).map((spec, i) => (
+                <span key={spec} className="flex items-center gap-1.5">
+                  {i === 0 && <Maximize2 className="w-4 h-4" />}{spec}
+                </span>
+              ))}
             </div>
-            {property.type && (
-              <span className="font-manrope text-xs uppercase tracking-wider text-[#9CA3AF] border border-[#E8E1EA] rounded px-2 py-0.5">
-                {property.type}
-              </span>
+          </div>
+          <div className="mt-4">
+            <p className="font-fraunces text-2xl font-bold text-[#A3078F] tabular-nums">{text.price(property)}</p>
+            {text.estTotal(property) && (
+              <p className="font-manrope text-xs text-[#6B7280] tabular-nums">{text.estTotal(property)}</p>
             )}
           </div>
         </div>
@@ -103,44 +78,35 @@ const PropertyRow: React.FC<{ property: Property; index: number }> = ({ property
   );
 };
 
-const PropertiesGrid: React.FC<PropertiesGridProps> = ({ properties, viewMode = 'grid' }) => {
+const PropertiesGrid: React.FC<PropertiesGridProps> = ({ properties, viewMode = 'grid', onToggleSave }) => {
+  const { t } = useI18n();
+  const text = useLandText();
   return (
     <div className="max-w-[1440px] mx-auto px-6 pb-16 pt-4">
       {viewMode === 'grid' ? (
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
-        >
+        <motion.div variants={container} initial="hidden" animate="show"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {properties.map((property, index) => (
             <motion.div key={property._id} variants={item}>
               <PropertyCard
                 id={property._id}
-                image={property.image?.[0] || fallbackImages[index % fallbackImages.length]}
-                name={property.title}
-                price={propertyPriceLabel(property)}
-                subPrice={property.unitPriceLabel}
+                image={property.image[0] || fallbackImages[index % fallbackImages.length]}
+                name={text.title(property)}
+                price={text.price(property)}
+                subPrice={text.estTotal(property)}
                 location={property.location}
-                specs={propertySpecs(property)}
-                badge={
-                  property.availability === 'sold' ? 'SOLD' :
-                  property.availability === 'rent' ? 'FOR RENT' :
-                  property.availability === 'sale' ? 'FOR SALE' :
-                  property.availability?.toUpperCase()
-                }
-                tags={property.type ? [property.type] : []}
+                specs={text.specs(property)}
+                badge={text.badge(property)}
+                badgeTone={badgeTone(property)}
+                tags={[t('property.land')]}
+                saved={property.isSaved}
+                onToggleSave={onToggleSave ? () => onToggleSave(property) : undefined}
               />
             </motion.div>
           ))}
         </motion.div>
       ) : (
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="flex flex-col gap-4"
-        >
+        <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-4">
           {properties.map((property, index) => (
             <motion.div key={property._id} variants={item}>
               <PropertyRow property={property} index={index} />

@@ -1,28 +1,39 @@
 import { APP_CONSTANTS } from '../config/constants';
 
+// The signed-in admin, as returned by POST /api/v1/admin/auth/login (and
+// /refresh): { access_token, admin: { id, email, name, role, district } }.
+// Role and district are for showing the right UI only — the API enforces them.
+
+const PROFILE_KEY = 'adminProfile';
+
+/** Stores the login/refresh response. */
+export function saveAdminSession({ access_token: accessToken, admin }) {
+  localStorage.setItem(APP_CONSTANTS.TOKEN_KEY, accessToken);
+  localStorage.setItem(APP_CONSTANTS.IS_ADMIN_KEY, 'true');
+  if (admin) localStorage.setItem(PROFILE_KEY, JSON.stringify(admin));
+}
+
+export function clearAdminSession() {
+  localStorage.removeItem(APP_CONSTANTS.TOKEN_KEY);
+  localStorage.removeItem(APP_CONSTANTS.IS_ADMIN_KEY);
+  localStorage.removeItem(PROFILE_KEY);
+}
+
 /**
- * Reads the signed-in admin from the access token in localStorage.
- * Role and district are for showing the right UI only — the API enforces them.
- *
  * @returns {{ email: string, name: string, isSuperAdmin: boolean,
  *   district: { id: string, name: string } | null } | null}
  */
 export function getAdminSession() {
   try {
-    const token = localStorage.getItem(APP_CONSTANTS.TOKEN_KEY);
-    if (!token) return null;
-
-    // base64url → UTF-8 JSON (district names may be non-ASCII)
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-    const payload = JSON.parse(new TextDecoder().decode(bytes));
-
-    const isDistrictAdmin = payload.role === 'district_admin';
+    if (!localStorage.getItem(APP_CONSTANTS.TOKEN_KEY)) return null;
+    const admin = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    if (!admin) return null;
+    const isSuperAdmin = admin.role !== 'DISTRICT_ADMIN';
     return {
-      email: payload.email || '',
-      name: payload.name || '',
-      isSuperAdmin: !isDistrictAdmin,
-      district: isDistrictAdmin ? payload.district || null : null,
+      email: admin.email || '',
+      name: admin.name || '',
+      isSuperAdmin,
+      district: isSuperAdmin ? null : admin.district || null,
     };
   } catch {
     return null;

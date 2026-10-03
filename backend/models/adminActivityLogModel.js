@@ -35,10 +35,14 @@ const adminActivityLogSchema = new mongoose.Schema({
       'restore_listing',
       'create_state',
       'update_state',
-      'delete_state'
+      'delete_state',
+      'update_property',
+      'restore_property',
+      'activate_user',
+      'deactivate_user'
     ]
   },
-  // property = website listing, listing = mobile app listing
+  // 'listing' is kept for entries logged before properties replaced listings
   targetType: {
     type: String,
     required: true,

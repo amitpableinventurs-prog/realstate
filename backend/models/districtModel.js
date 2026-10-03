@@ -1,22 +1,20 @@
 import mongoose from 'mongoose';
 
-// Districts (cities) grouped by state. Seeded from data/indianDistricts.json
-// (npm run seed:districts) and managed by the super admin. Every listing and
-// app user belongs to one; each district admin reviews only their district.
-const districtSchema = new mongoose.Schema({
+// districts — technical document 5.2. Each district belongs to one state.
+// Seeded from data/indianDistricts.json (npm run seed:districts) and managed by
+// the admin. Inactive districts stay on existing records but are hidden from
+// the dropdowns.
+const DistrictSchema = new mongoose.Schema({
+    state_id: { type: mongoose.Schema.Types.ObjectId, ref: 'State', required: true },
     name: { type: String, required: true, trim: true, maxlength: 80 },
-    state: { type: String, required: true, trim: true, maxlength: 80 },
-    // Inactive districts stay attached to existing listings but are hidden
-    // from the dropdowns, so nothing new can pick them.
-    isActive: { type: Boolean, default: true },
+    is_active: { type: Boolean, default: true },
 }, {
-    timestamps: true
+    collection: 'districts',
 });
 
-// Names repeat across states (Aurangabad: Bihar and Maharashtra), so a name is
-// unique per state, case-insensitively.
-districtSchema.index({ state: 1, name: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+// Names repeat across states (Aurangabad: Bihar and Maharashtra)
+DistrictSchema.index({ state_id: 1, name: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
-const District = mongoose.model('District', districtSchema);
+const District = mongoose.model('District', DistrictSchema);
 
 export default District;

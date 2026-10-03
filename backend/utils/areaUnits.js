@@ -1,54 +1,15 @@
-// Square-foot size of each land unit. Regional units use the Bihar standard:
-// 1 bigha = 20 kattha = 62.5 dismil = 27,225 sq ft; 1 kattha = 1,361.25 sq ft.
-const SQFT = {
-    decimal: 435.6, // dismil (stored as "decimal")
-    kattha: 1361.25,
-    bigha: 27225,
-    acre: 43560,
-    sqft: 1,
-};
+// Area and price units (technical document 4.4: KATHA or DISMIL).
+// Bihar standard: 1 katha = 1,361.25 sq ft = 3.125 dismil (1 dismil = 435.6 sq ft).
 
-// Units a listing's area can be entered in (the app's Area dropdown)
-export const AREA_UNITS = {
-    decimal: { label: 'Dismil',    sqft: SQFT.decimal },
-    kattha:  { label: 'Kattha',    sqft: SQFT.kattha },
-    bigha:   { label: 'Bigha',     sqft: SQFT.bigha },
-    acre:    { label: 'Acre',      sqft: SQFT.acre },
-    sqft:    { label: 'Square ft', sqft: SQFT.sqft },
-};
+export const UNIT_LABELS = { KATHA: 'Katha', DISMIL: 'Dismil' };
 
-export const AREA_UNIT_KEYS = Object.keys(AREA_UNITS);
+const DISMIL_PER_UNIT = { KATHA: 3.125, DISMIL: 1 };
 
-// How a sale price can be quoted: as a total, or as a rate per unit
-// ("₹1,50,000 per Kattha").
-export const PRICE_UNITS = {
-    total:   { label: 'Total price' },
-    decimal: { label: 'Per Dismil',    short: 'Dismil',    sqft: SQFT.decimal },
-    kattha:  { label: 'Per Kattha',    short: 'Kattha',    sqft: SQFT.kattha },
-    bigha:   { label: 'Per Bigha',     short: 'Bigha',     sqft: SQFT.bigha },
-    acre:    { label: 'Per Acre',      short: 'Acre',      sqft: SQFT.acre },
-    sqft:    { label: 'Per Square ft', short: 'Square ft', sqft: SQFT.sqft },
-};
-
-export const PRICE_UNIT_KEYS = Object.keys(PRICE_UNITS);
-
-export const isAreaUnit = (unit) => Object.prototype.hasOwnProperty.call(AREA_UNITS, unit);
-
-export const toSqft = (value, unit) => value * AREA_UNITS[unit].sqft;
-
-const round = (n, places = 4) => Number(n.toFixed(places));
-
-export const convertArea = (value, from) => {
-    const sqft = toSqft(value, from);
-    return AREA_UNIT_KEYS.map((unit) => ({
-        unit,
-        label: AREA_UNITS[unit].label,
-        value: round(sqft / AREA_UNITS[unit].sqft),
-    }));
-};
+/** How many dismil one `unit` is (for comparing areas and rates across units). */
+export const dismilPer = (unit) => DISMIL_PER_UNIT[unit];
 
 export const formatArea = (value, unit) =>
-    `${Number(value).toFixed(2)} ${AREA_UNITS[unit]?.label || unit}`;
+    `${Number(value).toFixed(2)} ${UNIT_LABELS[unit] || unit}`;
 
 // Indian notation: ₹25.00 Lakhs, ₹1.20 Cr
 export const formatPriceINR = (price) => {

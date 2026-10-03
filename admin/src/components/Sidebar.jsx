@@ -15,14 +15,13 @@ import {
   ChevronRight,
   Building2,
   Menu,
-  Cpu,
   Newspaper,
   Briefcase,
   MapPin,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import apiClient from '../services/apiClient';
-import { getAdminSession, homePathFor } from '../lib/adminSession';
+import { getAdminSession, homePathFor, clearAdminSession } from '../lib/adminSession';
 
 const Sidebar = ({ isOpen, setIsOpen, isCollapsed, setIsCollapsed }) => {
   const navigate = useNavigate();
@@ -40,12 +39,11 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, setIsCollapsed }) => {
 
   const handleLogout = async () => {
     try {
-      await apiClient.post('/api/users/admin/logout'); // revokes the refresh cookie
+      await apiClient.post('/api/v1/admin/auth/logout'); // revokes the refresh cookie
     } catch {
       // best-effort — clear the local session regardless
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('isAdmin');
+    clearAdminSession();
     navigate('/login');
   };
 
@@ -85,9 +83,8 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, setIsCollapsed }) => {
       ],
     },
     {
-      label: 'AI & Activity',
+      label: 'Activity',
       items: [
-        { path: '/ai-models', label: 'AI Models', icon: Cpu },
         { path: '/activity-logs', label: 'Activity Logs', icon: FileText },
       ],
     },

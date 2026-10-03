@@ -3,13 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
+import { I18nProvider } from './i18n/I18nContext';
 import PageTransition from './components/common/PageTransition';
 import ScrollToTop from './components/common/ScrollToTop';
 import StructuredData from './components/common/StructuredData';
 
 // Lazy load pages for better performance (Code Splitting)
 const HomePage = lazy(() => import('./pages/HomePage'));
-const PropertiesPage = lazy(() => import('./pages/PropertiesPage'));
 const PropertyDetailsPage = lazy(() => import('./pages/PropertyDetailsPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
@@ -17,10 +17,7 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const SignInPage = lazy(() => import('./pages/SignInPage'));
-const SignUpPage = lazy(() => import('./pages/SignUpPage'));
-const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
-const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
+const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'));
 const AddPropertyPage = lazy(() => import('./pages/AddPropertyPage'));
 const MyListingsPage = lazy(() => import('./pages/MyListingsPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -62,9 +59,11 @@ function AnimatedRoutes() {
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
-          <Route path="/properties" element={<PageTransition><PropertiesPage /></PageTransition>} />
-          <Route path="/property/:id" element={<PageTransition><PropertyDetailsPage /></PageTransition>} />
+          {/* Approved land properties with search, filters and sort (technical document 8.2) */}
+          <Route path="/properties" element={<PageTransition><SearchPage /></PageTransition>} />
           <Route path="/search" element={<PageTransition><SearchPage /></PageTransition>} />
+          <Route path="/property/:id" element={<PageTransition><PropertyDetailsPage /></PageTransition>} />
+          <Route path="/properties/:id" element={<PageTransition><PropertyDetailsPage /></PageTransition>} />
           {/* The AI Hub was replaced by plain search; keep old links working */}
           <Route path="/ai-hub" element={<Navigate to="/search" replace />} />
           <Route path="/about" element={<PageTransition><AboutUsPage /></PageTransition>} />
@@ -76,13 +75,19 @@ function AnimatedRoutes() {
           <Route path="/careers" element={<PageTransition><CareersPage /></PageTransition>} />
           <Route path="/careers/:slug" element={<PageTransition><JobDetailsPage /></PageTransition>} />
           <Route path="/signin" element={<PageTransition><SignInPage /></PageTransition>} />
-          <Route path="/signup" element={<PageTransition><SignUpPage /></PageTransition>} />
-          <Route path="/forgot-password" element={<PageTransition><ForgotPasswordPage /></PageTransition>} />
-          <Route path="/reset/:token" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
-          <Route path="/verify-email/:token" element={<PageTransition><VerifyEmailPage /></PageTransition>} />
+          {/* Mobile number + OTP login; a new account is created on first login */}
+          <Route path="/login" element={<Navigate to="/signin" replace />} />
+          <Route path="/signup" element={<Navigate to="/signin" replace />} />
+          <Route path="/complete-profile" element={<PageTransition><CompleteProfilePage /></PageTransition>} />
+          <Route path="/profile" element={<PageTransition><CompleteProfilePage /></PageTransition>} />
           <Route path="/add-property" element={<PageTransition><AddPropertyPage /></PageTransition>} />
+          <Route path="/list-property" element={<PageTransition><AddPropertyPage /></PageTransition>} />
           <Route path="/my-listings" element={<PageTransition><MyListingsPage /></PageTransition>} />
+          <Route path="/my-properties" element={<PageTransition><MyListingsPage /></PageTransition>} />
           <Route path="/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
+          <Route path="/wishlist" element={<PageTransition><DashboardPage tab="saved" /></PageTransition>} />
+          <Route path="/enquiries" element={<PageTransition><DashboardPage tab="enquiries" /></PageTransition>} />
+          <Route path="/notifications" element={<PageTransition><DashboardPage tab="notifications" /></PageTransition>} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AnimatePresence>
@@ -94,12 +99,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <I18nProvider>
       <AuthProvider>
         <Suspense fallback={<PageLoader />}>
           <AnimatedRoutes />
         </Suspense>
         <Toaster position="top-center" richColors />
       </AuthProvider>
+      </I18nProvider>
     </BrowserRouter>
   );
 }

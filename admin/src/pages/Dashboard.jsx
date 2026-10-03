@@ -180,9 +180,8 @@ const Skeleton = ({ className }) => (
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 const Dashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [userStats, setUserStats] = useState(null);
-  const [propertyStats, setPropertyStats] = useState(null);
+  const [dashboard, setDashboard] = useState(null);
+  const [pendingAppts, setPendingAppts] = useState(0);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -196,35 +195,16 @@ const Dashboard = () => {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const [overviewRes, userRes, propertyRes, activityRes] = await Promise.allSettled([
-        apiClient.get("/api/admin/stats/overview"),
-        apiClient.get("/api/admin/stats/users"),
-        apiClient.get("/api/admin/stats/properties"),
+      const [dashboardRes, apptRes, activityRes] = await Promise.allSettled([
+        apiClient.get("/api/v1/admin/dashboard"),
+        apiClient.get("/api/appointments/stats"),
         apiClient.get("/api/admin/activity-logs?limit=10"),
       ]);
 
-      let overviewData = null;
-      if (overviewRes.status === "fulfilled" && overviewRes.value.data.success) {
-        overviewData = overviewRes.value.data.data;
-        setStats(overviewData);
-      }
-      if (userRes.status === "fulfilled" && userRes.value.data.success)
-        setUserStats(userRes.value.data.data);
-      if (propertyRes.status === "fulfilled" && propertyRes.value.data.success)
-        setPropertyStats(propertyRes.value.data.data);
-
-      // Activity: try dedicated endpoint first, fall back to overview's recentActivity
-      if (activityRes.status === "fulfilled" && activityRes.value.data.success) {
-        const logs = activityRes.value.data.data || activityRes.value.data.logs || [];
-        if (logs.length > 0) {
-          setRecentActivity(logs);
-        } else if (overviewData?.recentActivity?.length) {
-          setRecentActivity(overviewData.recentActivity);
-        }
-      } else if (overviewData?.recentActivity?.length) {
-        setRecentActivity(overviewData.recentActivity);
-      }
-
+      if (dashboardRes.status !== "fulfilled") throw dashboardRes.reason;
+      setDashboard(dashboardRes.value.data.data);
+      if (apptRes.status === "fulfilled") setPendingAppts(apptRes.value.data.stats?.pending ?? 0);
+      if (activityRes.status === "fulfilled") setRecentActivity(activityRes.value.data.logs || []);
       setError(null);
     } catch {
       setError("Unable to connect. Please try again.");
@@ -237,44 +217,50 @@ const Dashboard = () => {
 
   useEffect(() => { fetchStats(); }, []);
 
-  // Transform data for Recharts
-  const viewsData = (stats?.viewsData?.labels || []).map((d, i) => ({
-    date: new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    views: stats.viewsData.datasets?.[0]?.data?.[i] ?? 0,
-  }));
+  // Daily counts for the last 30 days, with empty days filled in
+  const last30Days = (rows = [], key) => {
+    const byDate = new Map(rows.map((r) => [r.date, r.count]));
+    return Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(Date.now() - (29 - i) * 86400000);
+      const iso = d.toISOString().slice(0, 10);
+      return { date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), [key]: byDate.get(iso) ?? 0 };
+    });
+  };
+  const propertiesData = last30Days(dashboard?.new_properties_last_30_days, "properties");
+  const usersData = last30Days(dashboard?.new_users_last_30_days, "users");
 
-  const usersData = (userStats?.newUsersByDay || []).map((item) => ({
-    date: new Date(item._id).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    users: item.count,
-  }));
-
-  const pendingListings = stats?.pendingListings ?? 0;
-  const pendingAppts = stats?.pendingAppointments ?? 0;
+  const byStatus = dashboard?.properties?.by_status || {};
+  const totalProperties = dashboard?.properties?.total ?? 0;
+  const pendingListings = byStatus.PENDING ?? 0;
   const hasActions = pendingListings > 0 || pendingAppts > 0;
-
-  const reviewTotal = (propertyStats?.approvedCount ?? 0) + (propertyStats?.rejectedCount ?? 0) + (propertyStats?.pendingCount ?? 0);
+  const reviewTotal = (byStatus.APPROVED ?? 0) + (byStatus.REJECTED ?? 0) + pendingListings;
+  const approvalRate = reviewTotal - pendingListings > 0
+    ? Math.round(((byStatus.APPROVED ?? 0) / (reviewTotal - pendingListings)) * 100)
+    : null;
+  const users = dashboard?.users || {};
+  const closed = (byStatus.SOLD ?? 0) + (byStatus.RENTED ?? 0) + (byStatus.LEASED ?? 0);
 
   const kpis = [
     {
       label: "Total Properties",
-      value: stats?.totalProperties,
-      sub: "All listed properties",
+      value: totalProperties,
+      sub: `${byStatus.APPROVED ?? 0} live · ${closed} sold / rented / leased`,
       icon: Building2,
       accent: false,
     },
     {
       label: "Total Users",
-      value: userStats?.Total || stats?.totalUsers,
-      sub: `${userStats?.Active ?? 0} active`,
+      value: users.total,
+      sub: `${users.active ?? 0} active`,
       icon: Users,
       accent: false,
     },
     {
       label: "Pending Appointments",
-      value: stats?.pendingAppointments,
+      value: pendingAppts,
       sub: "Awaiting confirmation",
       icon: Calendar,
-      accent: (stats?.pendingAppointments ?? 0) > 0,
+      accent: pendingAppts > 0,
     },
   ];
 
@@ -398,8 +384,8 @@ const Dashboard = () => {
         >
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-base font-semibold text-[#0F0C11]">Property Views</h2>
-              <p className="text-xs text-[#9B9B99] mt-0.5">Daily view activity</p>
+              <h2 className="text-base font-semibold text-[#0F0C11]">New Properties</h2>
+              <p className="text-xs text-[#9B9B99] mt-0.5">Properties added per day</p>
             </div>
             <div className="flex items-center gap-1.5 text-xs font-medium text-[#A3078F]">
               <TrendingUp className="w-3.5 h-3.5" />
@@ -408,9 +394,9 @@ const Dashboard = () => {
           </div>
 
           <div className="h-56">
-            {viewsData.length > 0 ? (
+            {propertiesData.some((d) => d.properties > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={viewsData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
+                <AreaChart data={propertiesData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
                   <defs>
                     <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#A3078F" stopOpacity={0.14} />
@@ -429,9 +415,9 @@ const Dashboard = () => {
                     axisLine={false} tickLine={false}
                     allowDecimals={false}
                   />
-                  <Tooltip content={<ChartTooltip unit=" views" />} cursor={{ stroke: "#E8E7E5", strokeWidth: 1 }} />
+                  <Tooltip content={<ChartTooltip unit=" properties" />} cursor={{ stroke: "#E8E7E5", strokeWidth: 1 }} />
                   <Area
-                    type="monotone" dataKey="views"
+                    type="monotone" dataKey="properties"
                     stroke="#A3078F" strokeWidth={1.5}
                     fill="url(#viewsGradient)"
                     dot={false}
@@ -442,7 +428,7 @@ const Dashboard = () => {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center">
-                <p className="text-sm text-[#9B9B99]">No view data yet</p>
+                <p className="text-sm text-[#9B9B99]">No new properties in the last 30 days</p>
               </div>
             )}
           </div>
@@ -462,7 +448,7 @@ const Dashboard = () => {
             <p className="text-xs text-[#9B9B99] mb-5">Last 30 days</p>
 
             <div className="h-36">
-              {usersData.length > 0 ? (
+              {usersData.some((d) => d.users > 0) ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={usersData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
                     <defs>
@@ -504,9 +490,8 @@ const Dashboard = () => {
             {/* User status bars */}
             <div className="mt-5 pt-5 border-t border-[#F0EFED] space-y-3.5">
               <p className="text-xs font-medium text-[#9B9B99] uppercase tracking-wider mb-3">Account Status</p>
-              <StatBar label="Active" value={userStats?.Active} total={userStats?.Total || 1} color="#10B981" />
-              <StatBar label="Suspended" value={userStats?.Suspended} total={userStats?.Total || 1} color="#F59E0B" />
-              <StatBar label="Banned" value={userStats?.Banned} total={userStats?.Total || 1} color="#EF4444" />
+              <StatBar label="Active" value={users.active} total={users.total || 1} color="#10B981" />
+              <StatBar label="Deactivated" value={users.inactive} total={users.total || 1} color="#EF4444" />
             </div>
           </motion.div>
 
@@ -522,9 +507,9 @@ const Dashboard = () => {
                 <h2 className="text-base font-semibold text-[#0F0C11] mb-0.5">Listing Review</h2>
                 <p className="text-xs text-[#9B9B99]">Property submission outcomes</p>
               </div>
-              {propertyStats?.approvalRate != null && (
+              {approvalRate != null && (
                 <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                  {propertyStats.approvalRate}% approved
+                  {approvalRate}% approved
                 </span>
               )}
             </div>
@@ -532,21 +517,21 @@ const Dashboard = () => {
             <div className="space-y-4">
               <ReviewBar
                 label="Approved"
-                value={propertyStats?.approvedCount ?? 0}
+                value={byStatus.APPROVED ?? 0}
                 total={reviewTotal}
                 color="#10B981"
                 Icon={CheckCircle2}
               />
               <ReviewBar
                 label="Pending"
-                value={propertyStats?.pendingCount ?? 0}
+                value={pendingListings}
                 total={reviewTotal}
                 color="#F59E0B"
                 Icon={Clock}
               />
               <ReviewBar
                 label="Rejected"
-                value={propertyStats?.rejectedCount ?? 0}
+                value={byStatus.REJECTED ?? 0}
                 total={reviewTotal}
                 color="#EF4444"
                 Icon={XCircle}
@@ -559,15 +544,15 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-[#F8F7F5] rounded-lg p-3">
                   <p className="font-space-mono text-xl font-bold text-[#0F0C11] tabular-nums">
-                    {stats?.totalProperties ?? "—"}
+                    {totalProperties}
                   </p>
                   <p className="text-xs text-[#9B9B99] mt-0.5">Total</p>
                 </div>
                 <div className="bg-[#F8F7F5] rounded-lg p-3">
                   <p className="font-space-mono text-xl font-bold text-emerald-600 tabular-nums">
-                    {stats?.activeListings ?? "—"}
+                    {byStatus.APPROVED ?? 0}
                   </p>
-                  <p className="text-xs text-[#9B9B99] mt-0.5">Active</p>
+                  <p className="text-xs text-[#9B9B99] mt-0.5">Live</p>
                 </div>
               </div>
             </div>
@@ -593,7 +578,7 @@ const Dashboard = () => {
               </Link>
             </div>
 
-            <ActivityTimeline items={recentActivity.length ? recentActivity : stats?.recentActivity} />
+            <ActivityTimeline items={recentActivity} />
           </motion.div>
 
         </div>

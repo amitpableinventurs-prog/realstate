@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { APP_CONSTANTS } from '../config/constants';
-import { getAdminSession } from '../lib/adminSession';
+import { getAdminSession, clearAdminSession } from '../lib/adminSession';
 
 const AuthContext = createContext();
 
@@ -11,8 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(APP_CONSTANTS.TOKEN_KEY);
-    localStorage.removeItem(APP_CONSTANTS.IS_ADMIN_KEY);
+    clearAdminSession();
     setIsAuthenticated(false);
     setUser(null);
   }, []);

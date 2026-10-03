@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import apiClient from '../services/apiClient';
+import { clearAdminSession } from '../lib/adminSession';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -44,12 +45,11 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await apiClient.post('/api/users/admin/logout'); // revokes the refresh cookie
+      await apiClient.post('/api/v1/admin/auth/logout'); // revokes the refresh cookie
     } catch {
       // best-effort — clear the local session regardless
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('isAdmin');
+    clearAdminSession();
     navigate('/login');
   };
 

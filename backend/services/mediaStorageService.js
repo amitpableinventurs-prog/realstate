@@ -1,13 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 import logger from '../utils/logger.js';
-import { deleteS3Object } from './s3Service.js';
+import { isS3Configured, s3PublicUrl, deleteS3Object } from './s3Service.js';
 
-// Listing photos/videos go to ImageKit when it is configured; otherwise they are
-// kept on local disk and served from /uploads/app-media (fine for development).
+// Property photos. With S3 configured, clients upload straight to S3 with
+// pre-signed URLs. Otherwise uploads go through PUT /api/v1/uploads/:id and are
+// stored on ImageKit when it is configured, or on local disk (development),
+// served from /uploads/app-media.
 
 export const LOCAL_MEDIA_DIR = path.join(process.cwd(), 'uploads', 'app-media');
 export const LOCAL_MEDIA_ROUTE = '/uploads/app-media';
+const IMAGEKIT_FOLDER = 'AppListings';
 
 // APP_MEDIA_STORAGE: auto (ImageKit when its keys are set) | imagekit | local
 export const imagekitConfigured = () => {
@@ -30,85 +33,52 @@ const getImagekit = async () => {
     return imagekitClient;
 };
 
-const removeTemp = (file) => fs.promises.unlink(file.path).catch(() => {});
-
-export const cleanupTempFiles = (files = []) => Promise.all(files.map(removeTemp));
-
 export const publicBaseUrl = () =>
     (process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 4000}`).replace(/\/$/, '');
 
-// Stores one multer temp file and returns a Listing media entry
-export const storeMedia = async (file) => {
-    const type = file.mimetype.startsWith('video/') ? 'video' : 'image';
-
-    if (imagekitConfigured()) {
-        try {
-            const imagekit = await getImagekit();
-            const result = await imagekit.upload({
-                file: await fs.promises.readFile(file.path),
-                fileName: file.filename,
-                folder: 'AppListings',
-            });
-            return { url: result.url, type, storage: 'imagekit', storageId: result.fileId };
-        } finally {
-            await removeTemp(file);
-        }
-    }
-
-    await fs.promises.mkdir(LOCAL_MEDIA_DIR, { recursive: true });
-    await fs.promises.rename(file.path, path.join(LOCAL_MEDIA_DIR, file.filename));
-    return {
-        url: `${publicBaseUrl()}${LOCAL_MEDIA_ROUTE}/${file.filename}`,
-        type,
-        storage: 'local',
-        storageId: file.filename,
-    };
-};
+/** URL a non-S3 upload named `filename` will have once stored (known before the upload). */
+export const expectedUrl = (filename) => (imagekitConfigured()
+    ? `${process.env.IMAGEKIT_URL_ENDPOINT.replace(/\/$/, '')}/${IMAGEKIT_FOLDER}/${filename}`
+    : `${publicBaseUrl()}${LOCAL_MEDIA_ROUTE}/${filename}`);
 
 // Stores an uploaded file body (PUT /api/v1/uploads/:id) under `filename`.
-// Returns { url, storage, storageId } like a Listing media entry.
 export const storeBuffer = async (buffer, filename) => {
     if (imagekitConfigured()) {
         const imagekit = await getImagekit();
         const result = await imagekit.upload({
             file: buffer,
             fileName: filename,
-            folder: 'AppListings',
+            folder: IMAGEKIT_FOLDER,
             useUniqueFileName: false,
         });
-        return { url: result.url, storage: 'imagekit', storageId: result.fileId };
+        return { url: result.url, storage: 'imagekit', storage_id: filename };
     }
     await fs.promises.mkdir(LOCAL_MEDIA_DIR, { recursive: true });
     await fs.promises.writeFile(path.join(LOCAL_MEDIA_DIR, filename), buffer);
-    return { url: `${publicBaseUrl()}${LOCAL_MEDIA_ROUTE}/${filename}`, storage: 'local', storageId: filename };
+    return { url: expectedUrl(filename), storage: 'local', storage_id: filename };
 };
 
-// Stores all files; if any upload fails, already-stored ones are removed again
-export const storeAllMedia = async (files = []) => {
-    const results = await Promise.allSettled(files.map(storeMedia));
-    const failed = results.find((r) => r.status === 'rejected');
-    if (failed) {
-        await Promise.all(results
-            .filter((r) => r.status === 'fulfilled')
-            .map((r) => deleteMedia(r.value)));
-        await cleanupTempFiles(files);
-        throw failed.reason;
-    }
-    return results.map((r) => r.value);
-};
-
-export const deleteMedia = async (media) => {
+/**
+ * Deletes a stored photo by its URL (properties keep only the URL). Best
+ * effort: a leftover file is not worth failing a request over.
+ */
+export const deleteImageByUrl = async (url) => {
     try {
-        if (media.storage === 'imagekit' && media.storageId) {
+        const localPrefix = `${publicBaseUrl()}${LOCAL_MEDIA_ROUTE}/`;
+        const s3Prefix = isS3Configured() ? s3PublicUrl('') : null;
+        const imagekitPrefix = process.env.IMAGEKIT_URL_ENDPOINT?.replace(/\/$/, '');
+
+        if (url.startsWith(localPrefix)) {
+            await fs.promises.unlink(path.join(LOCAL_MEDIA_DIR, path.basename(url)));
+        } else if (s3Prefix && url.startsWith(s3Prefix)) {
+            await deleteS3Object(url.slice(s3Prefix.length));
+        } else if (imagekitPrefix && url.startsWith(`${imagekitPrefix}/`) && imagekitConfigured()) {
             const imagekit = await getImagekit();
-            await imagekit.deleteFile(media.storageId);
-        } else if (media.storage === 's3' && media.storageId) {
-            await deleteS3Object(media.storageId);
-        } else if (media.storage === 'local' && media.storageId) {
-            await fs.promises.unlink(path.join(LOCAL_MEDIA_DIR, path.basename(media.storageId)));
+            const name = path.basename(new URL(url).pathname);
+            const files = await imagekit.listFiles({ searchQuery: `name = "${name}"`, limit: 1 });
+            if (files[0]?.fileId) await imagekit.deleteFile(files[0].fileId);
         }
     } catch (error) {
-        // A leftover file is not worth failing the request over
-        logger.warn('Failed to delete listing media', { storageId: media.storageId, error: error.message });
+        logger.warn('Failed to delete property photo', { url, error: error.message });
     }
 };

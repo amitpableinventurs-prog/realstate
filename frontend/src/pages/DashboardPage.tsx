@@ -2,9 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
-import { appointmentsAPI, userListingsAPI, userAPI } from '../services/api';
+import {
+  appointmentsAPI, propertiesAPI, wishlistAPI, enquiriesAPI, notificationsAPI,
+  type ReceivedEnquiry, type AppNotification,
+} from '../services/api';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import PropertiesGrid from '../components/properties/PropertiesGrid';
+import { toProperty, LISTING_TYPE_LABELS, type Property } from '../utils/propertyDisplay';
+import { useWishlistToggle } from '../hooks/useWishlistToggle';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,8 +27,7 @@ import {
 interface AppointmentProperty {
   _id: string;
   title: string;
-  location: string;
-  image?: string[];
+  images?: { url: string }[];
 }
 
 interface Appointment {
@@ -36,10 +41,6 @@ interface Appointment {
   createdAt: string;
 }
 
-interface ListingSummary {
-  _id: string;
-  status: 'pending' | 'active' | 'rejected' | 'expired';
-}
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
@@ -68,145 +69,142 @@ function isUpcoming(apt: Appointment): boolean {
   );
 }
 
-// ── Settings tab ──────────────────────────────────────────────────────────────
+// ── Saved properties (wishlist) ──────────────────────────────────────────────
 
-const SettingsTab: React.FC = () => {
-  const { user, updateUser } = useAuth();
-  const [name, setName] = useState(user?.name ?? '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [saving, setSaving] = useState(false);
+const SavedTab: React.FC = () => {
+  const [saved, setSaved] = useState<Property[] | null>(null);
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) { toast.error('Name cannot be empty.'); return; }
+  useEffect(() => {
+    wishlistAPI.list()
+      .then(({ data }) => setSaved(data.data.map(toProperty)))
+      .catch(() => { setSaved([]); toast.error('Failed to load your saved properties.'); });
+  }, []);
 
-    setSaving(true);
-    try {
-      const payload: { name?: string; currentPassword?: string; newPassword?: string } = {};
-      if (name.trim() !== user?.name) payload.name = name.trim();
+  // Unsaving removes the card
+  const toggle = useWishlistToggle(useCallback((p: Property) => {
+    setSaved((prev) => (prev || []).filter((x) => x._id !== p._id || p.isSaved));
+  }, []));
 
-      if (newPassword) {
-        if (newPassword.length < 8) { toast.error('New password must be at least 8 characters.'); setSaving(false); return; }
-        if (newPassword !== confirmPassword) { toast.error('Passwords do not match.'); setSaving(false); return; }
-        if (!currentPassword) { toast.error('Enter your current password to set a new one.'); setSaving(false); return; }
-        payload.currentPassword = currentPassword;
-        payload.newPassword = newPassword;
-      }
+  if (!saved) return <div className="h-40 bg-white border border-[#E8E1EA] rounded-2xl animate-pulse" />;
+  if (!saved.length) {
+    return (
+      <EmptyState icon="favorite_border" text="No saved properties yet. Tap the heart on a property to save it.">
+        <Link to="/properties" className="inline-block bg-[#A3078F] font-manrope font-bold text-sm text-white px-5 py-2.5 rounded-xl hover:bg-[#8E0A82]">
+          Browse Properties
+        </Link>
+      </EmptyState>
+    );
+  }
+  return <div className="-mx-6"><PropertiesGrid properties={saved} onToggleSave={toggle} /></div>;
+};
 
-      if (Object.keys(payload).length === 0) { toast.info('No changes to save.'); setSaving(false); return; }
+// ── Enquiries received on my properties ───────────────────────────────────────
 
-      const { data } = await userAPI.updateProfile(payload);
-      if (data.success) {
-        if (data.user) updateUser(data.user);
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        toast.success('Profile updated.');
-      } else {
-        toast.error(data.message || 'Update failed.');
-      }
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Update failed. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
+const EnquiriesTab: React.FC = () => {
+  const [enquiries, setEnquiries] = useState<ReceivedEnquiry[] | null>(null);
 
+  useEffect(() => {
+    enquiriesAPI.received()
+      .then(({ data }) => setEnquiries(data.data))
+      .catch(() => { setEnquiries([]); toast.error('Failed to load enquiries.'); });
+  }, []);
+
+  if (!enquiries) return <div className="h-40 bg-white border border-[#E8E1EA] rounded-2xl animate-pulse" />;
+  if (!enquiries.length) return <EmptyState icon="forum" text="No enquiries yet. Buyers' messages about your properties appear here." />;
   return (
-    <form onSubmit={handleSaveProfile} className="max-w-lg space-y-8">
-      {/* Profile */}
-      <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6">
-        <h3 className="font-syne font-bold text-base text-[#1A0A1E] mb-5">Profile</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="font-manrope text-xs font-semibold text-[#4B5563] mb-1.5 block">Full Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-[#E8E1EA] rounded-xl px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:border-[#A3078F] transition-[border-color]"
-              placeholder="Your name"
-            />
+    <div className="space-y-3">
+      {enquiries.map((e) => (
+        <div key={e.id} className="bg-white border border-[#E8E1EA] rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="font-manrope font-bold text-sm text-[#1A0A1E]">
+              {e.from_user?.name || 'A user'}{' '}
+              <span className="font-normal text-[#64748B]">
+                about {e.property ? `Khata ${e.property.khata_number}, Khasra ${e.property.khasra_number} (${LISTING_TYPE_LABELS[e.property.listing_type]})` : 'a deleted property'}
+              </span>
+            </p>
+            {e.message && <p className="font-manrope text-sm text-[#374151] mt-1">“{e.message}”</p>}
+            <p className="font-manrope text-xs text-[#9CA3AF] mt-1">{formatDate(e.created_at)}</p>
           </div>
-          <div>
-            <label className="font-manrope text-xs font-semibold text-[#4B5563] mb-1.5 block">Email</label>
-            <input
-              type="email"
-              value={user?.email ?? ''}
-              disabled
-              className="w-full border border-[#E8E1EA] rounded-xl px-4 py-2.5 font-manrope text-sm text-[#9CA3AF] bg-[#FAF8FB] cursor-not-allowed"
-            />
-            <p className="font-manrope text-[11px] text-[#9CA3AF] mt-1">Email cannot be changed.</p>
-          </div>
+          {e.from_user?.mobile && (
+            <div className="flex gap-2 shrink-0">
+              <a href={`tel:${e.from_user.mobile}`} className="font-manrope font-semibold text-xs text-white bg-[#A3078F] px-4 py-2 rounded-lg hover:bg-[#8E0A82]">
+                Call {e.from_user.mobile}
+              </a>
+              {e.property && (
+                <Link to={`/property/${e.property.id}`} className="font-manrope font-semibold text-xs text-[#1A0A1E] border border-[#E8E1EA] px-4 py-2 rounded-lg hover:border-[#A3078F] hover:text-[#A3078F]">
+                  View
+                </Link>
+              )}
+            </div>
+          )}
         </div>
-      </section>
-
-      {/* Password */}
-      <section className="bg-white border border-[#E8E1EA] rounded-2xl p-6">
-        <h3 className="font-syne font-bold text-base text-[#1A0A1E] mb-1">Change Password</h3>
-        <p className="font-manrope text-xs text-[#9CA3AF] mb-5">Leave blank to keep your current password.</p>
-        <div className="space-y-4">
-          <div>
-            <label className="font-manrope text-xs font-semibold text-[#4B5563] mb-1.5 block">Current Password</label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full border border-[#E8E1EA] rounded-xl px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:border-[#A3078F] transition-[border-color]"
-              placeholder="••••••••"
-              autoComplete="current-password"
-            />
-          </div>
-          <div>
-            <label className="font-manrope text-xs font-semibold text-[#4B5563] mb-1.5 block">New Password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border border-[#E8E1EA] rounded-xl px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:border-[#A3078F] transition-[border-color]"
-              placeholder="Min 8 characters"
-              autoComplete="new-password"
-            />
-          </div>
-          <div>
-            <label className="font-manrope text-xs font-semibold text-[#4B5563] mb-1.5 block">Confirm New Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border border-[#E8E1EA] rounded-xl px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] focus:outline-none focus:border-[#A3078F] transition-[border-color]"
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
-          </div>
-        </div>
-      </section>
-
-      <button
-        type="submit"
-        disabled={saving}
-        className="bg-[#A3078F] font-manrope font-bold text-sm text-white px-6 py-2.5 rounded-xl hover:bg-[#8E0A82] transition-[background-color] disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {saving ? 'Saving…' : 'Save Changes'}
-      </button>
-    </form>
+      ))}
+    </div>
   );
 };
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Notifications ─────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'settings';
+const NotificationsTab: React.FC = () => {
+  const [items, setItems] = useState<AppNotification[] | null>(null);
 
-const DashboardPage: React.FC = () => {
+  useEffect(() => {
+    notificationsAPI.list()
+      .then(({ data }) => setItems(data.data))
+      .catch(() => { setItems([]); toast.error('Failed to load notifications.'); });
+  }, []);
+
+  const markRead = (n: AppNotification) => {
+    if (n.is_read) return;
+    setItems((prev) => (prev || []).map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+    notificationsAPI.markRead(n.id).catch(() => {});
+  };
+
+  if (!items) return <div className="h-40 bg-white border border-[#E8E1EA] rounded-2xl animate-pulse" />;
+  if (!items.length) return <EmptyState icon="notifications_none" text="No notifications yet." />;
+  return (
+    <div className="space-y-2">
+      {items.map((n) => {
+        const link = n.type === 'NEW_ENQUIRY' ? '/enquiries' : n.reference_id ? `/property/${n.reference_id}` : null;
+        const body = (
+          <div className={`bg-white border rounded-2xl p-4 ${n.is_read ? 'border-[#E8E1EA]' : 'border-[#A3078F]/40 shadow-sm'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-manrope font-bold text-sm text-[#1A0A1E]">
+                {!n.is_read && <span className="inline-block w-2 h-2 rounded-full bg-[#A3078F] mr-2 align-middle" />}
+                {n.title}
+              </p>
+              <span className="font-manrope text-xs text-[#9CA3AF] shrink-0">{formatDate(n.created_at)}</span>
+            </div>
+            {n.body && <p className="font-manrope text-sm text-[#4B5563] mt-1">{n.body}</p>}
+          </div>
+        );
+        return link
+          ? <Link key={n.id} to={link} onClick={() => markRead(n)} className="block">{body}</Link>
+          : <div key={n.id} onClick={() => markRead(n)}>{body}</div>;
+      })}
+    </div>
+  );
+};
+
+const EmptyState: React.FC<{ icon: string; text: string; children?: React.ReactNode }> = ({ icon, text, children }) => (
+  <div className="bg-white border border-[#E8E1EA] rounded-2xl p-10 text-center">
+    <span className="font-material-icons text-4xl text-[#A3078F]/40" aria-hidden="true">{icon}</span>
+    <p className="font-manrope text-sm text-[#4B5563] mt-3 mb-5">{text}</p>
+    {children}
+  </div>
+);
+
+type Tab = 'overview' | 'saved' | 'enquiries' | 'notifications';
+const TAB_LABELS: Record<Tab, string> = { overview: 'Overview', saved: 'Saved', enquiries: 'Enquiries', notifications: 'Notifications' };
+const TAB_PATHS: Record<Tab, string> = { overview: '/dashboard', saved: '/wishlist', enquiries: '/enquiries', notifications: '/notifications' };
+
+const DashboardPage: React.FC<{ tab?: Tab }> = ({ tab = 'overview' }) => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const activeTab = tab;
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [listings, setListings] = useState<ListingSummary[]>([]);
+  const [listingCounts, setListingCounts] = useState({ total: 0, live: 0 });
   const [fetchLoading, setFetchLoading] = useState(true);
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -215,8 +213,8 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      toast.error('Please sign in to view your dashboard.');
-      navigate('/signin', { replace: true });
+      toast.error('Please login to view your dashboard.');
+      navigate(`/signin?next=${encodeURIComponent(TAB_PATHS[tab])}`, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
@@ -224,9 +222,10 @@ const DashboardPage: React.FC = () => {
 
   const fetchData = useCallback(async () => {
     setFetchLoading(true);
-    const [aptRes, listRes] = await Promise.allSettled([
+    const [aptRes, listRes, liveRes] = await Promise.allSettled([
       appointmentsAPI.getByUser(),
-      userListingsAPI.getMyListings(),
+      propertiesAPI.mine({ limit: 1 }),
+      propertiesAPI.mine({ status: 'APPROVED', limit: 1 }),
     ]);
 
     if (aptRes.status === 'fulfilled') {
@@ -235,9 +234,10 @@ const DashboardPage: React.FC = () => {
       toast.error('Failed to load your appointments.');
     }
 
-    if (listRes.status === 'fulfilled') {
-      setListings(listRes.value.data.properties ?? listRes.value.data ?? []);
-    }
+    setListingCounts({
+      total: listRes.status === 'fulfilled' ? listRes.value.data.meta.total : 0,
+      live: liveRes.status === 'fulfilled' ? liveRes.value.data.meta.total : 0,
+    });
 
     setFetchLoading(false);
   }, []);
@@ -268,13 +268,11 @@ const DashboardPage: React.FC = () => {
   // ── Derived stats ───────────────────────────────────────────
 
   const upcomingCount = appointments.filter(isUpcoming).length;
-  const liveListings = listings.filter((l) => l.status === 'active').length;
-
   const stats = [
-    { label: 'Upcoming Viewings', value: upcomingCount, icon: 'event' },
-    { label: 'Total Appointments', value: appointments.length, icon: 'calendar_month' },
-    { label: 'My Listings', value: listings.length, icon: 'home_work' },
-    { label: 'Live Listings', value: liveListings, icon: 'verified' },
+    { label: 'Upcoming Site Visits', value: upcomingCount, icon: 'event' },
+    { label: 'Total Site Visits', value: appointments.length, icon: 'calendar_month' },
+    { label: 'My Listings', value: listingCounts.total, icon: 'home_work' },
+    { label: 'Live Listings', value: listingCounts.live, icon: 'verified' },
   ];
 
   const sortedAppointments = [...appointments].sort(
@@ -294,28 +292,31 @@ const DashboardPage: React.FC = () => {
             Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
           </h1>
           <p className="font-manrope text-sm text-[#4B5563]">
-            Your appointments and property listings in one place.
+            +91 {user?.mobile?.replace(/^\+91/, '')}{user?.district?.name ? ` · ${user.district.name}, ${user.state?.name}` : ''} ·{' '}
+            <Link to="/profile" className="font-semibold text-[#A3078F] hover:underline">Edit profile</Link>
           </p>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-1 mb-8 border-b border-[#E8E1EA]">
-          {(['overview', 'settings'] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`font-manrope font-semibold text-sm px-5 py-2.5 -mb-px border-b-2 transition-[color,border-color] capitalize ${
-                activeTab === tab
+          {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
+            <Link
+              key={t}
+              to={TAB_PATHS[t]}
+              className={`font-manrope font-semibold text-sm px-5 py-2.5 -mb-px border-b-2 transition-[color,border-color] ${
+                activeTab === t
                   ? 'border-[#A3078F] text-[#A3078F]'
                   : 'border-transparent text-[#4B5563] hover:text-[#1A0A1E]'
               }`}
             >
-              {tab === 'overview' ? 'Overview' : 'Settings'}
-            </button>
+              {TAB_LABELS[t]}
+            </Link>
           ))}
         </div>
 
-        {activeTab === 'settings' && <SettingsTab />}
+        {activeTab === 'saved' && <SavedTab />}
+        {activeTab === 'enquiries' && <EnquiriesTab />}
+        {activeTab === 'notifications' && <NotificationsTab />}
 
         {activeTab === 'overview' && <>
         {/* Stat cards */}
@@ -358,7 +359,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Appointments */}
         <section>
-          <h2 className="font-syne font-bold text-xl text-[#1A0A1E] mb-4">My Appointments</h2>
+          <h2 className="font-syne font-bold text-xl text-[#1A0A1E] mb-4">My Site Visits</h2>
 
           {fetchLoading ? (
             <div className="space-y-3">
@@ -370,7 +371,7 @@ const DashboardPage: React.FC = () => {
             <div className="bg-white border border-[#E8E1EA] rounded-2xl p-10 text-center">
               <span className="font-material-icons text-4xl text-[#A3078F]/40" aria-hidden="true">event_busy</span>
               <p className="font-manrope text-sm text-[#4B5563] mt-3 mb-5">
-                No appointments yet. Book a viewing from any property page.
+                No site visits yet. Book one from any property page.
               </p>
               <Link
                 to="/properties"
@@ -390,9 +391,9 @@ const DashboardPage: React.FC = () => {
                     className="bg-white border border-[#E8E1EA] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4"
                   >
                     {/* Property thumbnail */}
-                    {apt.propertyId?.image?.[0] ? (
+                    {apt.propertyId?.images?.[0] ? (
                       <img
-                        src={apt.propertyId.image[0]}
+                        src={apt.propertyId.images[0].url}
                         alt={apt.propertyId.title}
                         className="w-full sm:w-20 h-32 sm:h-16 object-cover rounded-xl shrink-0"
                         loading="lazy"
@@ -416,11 +417,6 @@ const DashboardPage: React.FC = () => {
                           {status.label}
                         </span>
                       </div>
-                      {apt.propertyId?.location && (
-                        <p className="font-manrope text-xs text-[#64748B] mt-0.5 truncate">
-                          {apt.propertyId.location}
-                        </p>
-                      )}
                       <p className="font-manrope text-xs text-[#4B5563] mt-1 tabular-nums">
                         {formatDate(apt.date)} · {apt.time}
                       </p>

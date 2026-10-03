@@ -1,105 +1,95 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { userAPI, type SignUpData } from '../services/api';
+import {
+  authAPI, profileAPI, saveTokens, clearSessionStorage, TOKEN_KEY, USER_KEY,
+  type AppUser, type LoginResult, type ProfileInput,
+} from '../services/api';
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string | null;
-  state?: string | null;
-  district?: { id: string; name: string } | null;
-}
+// Website sign-in is the same as the app's (technical document 4.2): mobile
+// number + OTP. A new user then completes "Tell us about you" (/complete-profile).
 
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
+  user: AppUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  register: (data: SignUpData) => Promise<{ requiresVerification?: boolean }>;
+  /** Sends the OTP; returns the dev code when the server exposes one (development). */
+  sendOtp: (mobile: string) => Promise<{ devOtp?: string; resendAfter: number }>;
+  verifyOtp: (mobile: string, otp: string) => Promise<LoginResult>;
+  updateProfile: (data: ProfileInput) => Promise<AppUser>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
-  updateUser: (partial: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const readStoredUser = (): AppUser | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY) ? JSON.parse(localStorage.getItem(USER_KEY) || 'null') : null;
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('buildestate_token'));
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AppUser | null>(readStoredUser);
+  const [isLoading, setIsLoading] = useState(Boolean(localStorage.getItem(TOKEN_KEY)));
 
-  // On mount, check if token exists and is valid
+  const storeUser = useCallback((next: AppUser | null) => {
+    if (next) localStorage.setItem(USER_KEY, JSON.stringify(next));
+    else localStorage.removeItem(USER_KEY);
+    setUser(next);
+  }, []);
+
+  // Refresh the profile on load (the token may have expired or the account changed)
+  const refreshUser = useCallback(async () => {
+    if (!localStorage.getItem(TOKEN_KEY)) return;
+    try {
+      const { data } = await profileAPI.me();
+      storeUser(data.data);
+    } catch {
+      // A failed refresh logs out through the API client
+      if (!localStorage.getItem(TOKEN_KEY)) setUser(null);
+    }
+  }, [storeUser]);
+
   useEffect(() => {
-    const storedToken = localStorage.getItem('buildestate_token');
-    const storedUser = localStorage.getItem('buildestate_user');
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem('buildestate_token');
-        localStorage.removeItem('buildestate_user');
-      }
-    }
-    setIsLoading(false);
+    refreshUser().finally(() => setIsLoading(false));
+  }, [refreshUser]);
+
+  const sendOtp = useCallback(async (mobile: string) => {
+    const { data } = await authAPI.sendOtp(mobile);
+    return { devOtp: data.data.dev_otp, resendAfter: data.data.resend_after };
   }, []);
 
-  const login = useCallback(async (email: string, password: string, rememberMe: boolean = false) => {
-    const { data } = await userAPI.login({ email, password, rememberMe });
-    if (data.success && data.token) {
-      localStorage.setItem('buildestate_token', data.token);
-      localStorage.setItem('buildestate_user', JSON.stringify(data.user));
-      setToken(data.token);
-      setUser(data.user);
-    } else {
-      throw new Error(data.message || 'Login failed');
-    }
-  }, []);
+  const verifyOtp = useCallback(async (mobile: string, otp: string) => {
+    const { data } = await authAPI.verifyOtp(mobile, otp);
+    saveTokens(data.data);
+    storeUser(data.data.user);
+    return data.data;
+  }, [storeUser]);
 
-  const register = useCallback(async (signUp: SignUpData) => {
-    const { data } = await userAPI.register(signUp);
-    if (data.success && data.requiresVerification) {
-      return { requiresVerification: true };
-    }
-    if (data.success && data.token) {
-      localStorage.setItem('buildestate_token', data.token);
-      localStorage.setItem('buildestate_user', JSON.stringify(data.user));
-      setToken(data.token);
-      setUser(data.user);
-      return {};
-    }
-    throw new Error(data.message || 'Registration failed');
-  }, []);
+  const updateProfile = useCallback(async (input: ProfileInput) => {
+    const { data } = await profileAPI.update(input);
+    storeUser(data.data);
+    return data.data;
+  }, [storeUser]);
 
   const logout = useCallback(() => {
-    // Fire-and-forget — revokes the httpOnly refresh cookie server-side
-    userAPI.logout().catch(() => {});
-    localStorage.removeItem('buildestate_token');
-    localStorage.removeItem('buildestate_user');
-    setToken(null);
+    // Revokes this device's refresh token; local session is cleared either way
+    authAPI.logout().catch(() => {}).finally(clearSessionStorage);
     setUser(null);
-  }, []);
-
-  const updateUser = useCallback((partial: Partial<User>) => {
-    setUser((prev) => {
-      if (!prev) return prev;
-      const next = { ...prev, ...partial };
-      localStorage.setItem('buildestate_user', JSON.stringify(next));
-      return next;
-    });
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        token,
-        isAuthenticated: !!token && !!user,
+        isAuthenticated: Boolean(user),
         isLoading,
-        login,
-        register,
+        sendOtp,
+        verifyOtp,
+        updateProfile,
+        refreshUser,
         logout,
-        updateUser,
       }}
     >
       {children}

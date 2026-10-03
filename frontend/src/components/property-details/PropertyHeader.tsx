@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface PropertyHeaderProps {
   status?: 'available' | 'sold' | 'pending';
@@ -19,11 +20,11 @@ const statusDot: Record<string, string> = {
   sold: 'bg-[#6B7280]',
   pending: 'bg-amber-400',
 };
-const statusLabel: Record<string, string> = {
-  available: 'Available',
-  sold: 'Sold',
-  pending: 'Pending',
-};
+const statusLabel = {
+  available: 'details.statusAvailable',
+  sold: 'details.statusSold',
+  pending: 'details.statusPending',
+} as const;
 
 const PropertyHeader: React.FC<PropertyHeaderProps> = ({
   status = 'available',
@@ -35,6 +36,7 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
   sqft = 0,
   specs,
 }) => {
+  const { t } = useI18n();
   return (
     <div className="max-w-[1280px] mx-auto px-6 lg:px-8 pt-8 pb-0">
       {/* Status + ref */}
@@ -42,7 +44,7 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
         <div className="flex items-center gap-1.5">
           <div className={`w-2 h-2 rounded-full ${statusDot[status]}`} />
           <span className="font-manrope text-xs font-medium text-[#6B7280] uppercase tracking-wider">
-            {statusLabel[status]}
+            {t(statusLabel[status])}
           </span>
         </div>
         {refNumber && (

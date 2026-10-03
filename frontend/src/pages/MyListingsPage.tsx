@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
-import { listingsAPI, type UserListing } from '../services/api';
+import { propertiesAPI, apiErrorMessage, type PropertyCardData, type PropertyStatus } from '../services/api';
+import { LISTING_TYPE_LABELS, CLOSED_LABEL_FOR_TYPE, areaLabel } from '../utils/propertyDisplay';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import {
@@ -18,37 +19,20 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-// Listings posted with the "Register your property" form (same API as the mobile app)
-type Listing = UserListing;
+// The user's own properties (GET /v1/list-property/my), every status
+type Listing = PropertyCardData;
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  pending: {
-    label: 'Under Review',
-    bg: 'bg-amber-100',
-    text: 'text-amber-800',
-    dot: 'bg-amber-400',
-  },
-  active: {
-    label: 'Live',
-    bg: 'bg-green-100',
-    text: 'text-green-800',
-    dot: 'bg-green-500',
-  },
-  rejected: {
-    label: 'Rejected',
-    bg: 'bg-red-100',
-    text: 'text-red-800',
-    dot: 'bg-red-500',
-  },
-  inactive: {
-    label: 'Hidden',
-    bg: 'bg-gray-100',
-    text: 'text-gray-600',
-    dot: 'bg-gray-400',
-  },
-} as const;
+const CLOSED = { label: '', bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' };
+const STATUS_CONFIG: Record<PropertyStatus, { label: string; bg: string; text: string; dot: string }> = {
+  PENDING: { label: 'Under Review', bg: 'bg-amber-100', text: 'text-amber-800', dot: 'bg-amber-400' },
+  APPROVED: { label: 'Live', bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
+  REJECTED: { label: 'Rejected', bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-500' },
+  SOLD: { ...CLOSED, label: 'Sold' },
+  RENTED: { ...CLOSED, label: 'Rented' },
+  LEASED: { ...CLOSED, label: 'Leased' },
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -70,13 +54,14 @@ const MyListingsPage: React.FC = () => {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [closingId, setClosingId] = useState<string | null>(null);
 
   // ── Auth guard ──────────────────────────────────────────────
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      toast.error('Please sign in to view your listings.');
-      navigate('/signin', { replace: true });
+      toast.error('Please login to view your listings.');
+      navigate('/signin?next=/my-listings', { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
@@ -85,7 +70,7 @@ const MyListingsPage: React.FC = () => {
   const fetchListings = useCallback(async () => {
     setFetchLoading(true);
     try {
-      const res = await listingsAPI.mine();
+      const res = await propertiesAPI.mine({ limit: 50 });
       setListings(res.data.data ?? []);
     } catch {
       toast.error('Failed to load your listings. Please try again.');
@@ -104,15 +89,31 @@ const MyListingsPage: React.FC = () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await listingsAPI.delete(deleteTarget.id);
+      await propertiesAPI.remove(deleteTarget.id);
       setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id));
       toast.success('Listing deleted successfully.');
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to delete listing.';
-      toast.error(msg);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Failed to delete listing.'));
     } finally {
       setDeleting(false);
       setDeleteTarget(null);
+    }
+  };
+
+  // ── Mark sold / rented / leased (approved properties only) ──
+
+  const markClosed = async (listing: Listing) => {
+    const status = CLOSED_LABEL_FOR_TYPE[listing.listing_type];
+    if (!window.confirm(`Mark "${listing.title}" as ${status.toLowerCase()}? It will no longer be shown to buyers.`)) return;
+    setClosingId(listing.id);
+    try {
+      const { data } = await propertiesAPI.markClosed(listing.id, status.toUpperCase() as 'SOLD' | 'RENTED' | 'LEASED');
+      setListings((prev) => prev.map((l) => (l.id === listing.id ? { ...l, status: data.data.status } : l)));
+      toast.success(`Marked as ${status.toLowerCase()}`);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Could not update the listing.'));
+    } finally {
+      setClosingId(null);
     }
   };
 
@@ -172,12 +173,13 @@ const MyListingsPage: React.FC = () => {
 
   // ── Main view ───────────────────────────────────────────────
 
+  const closedStatuses: PropertyStatus[] = ['SOLD', 'RENTED', 'LEASED'];
   const counts = {
     all: listings.length,
-    active: listings.filter((l) => l.status === 'active').length,
-    pending: listings.filter((l) => l.status === 'pending').length,
-    rejected: listings.filter((l) => l.status === 'rejected').length,
-    inactive: listings.filter((l) => l.status === 'inactive').length,
+    APPROVED: listings.filter((l) => l.status === 'APPROVED').length,
+    PENDING: listings.filter((l) => l.status === 'PENDING').length,
+    REJECTED: listings.filter((l) => l.status === 'REJECTED').length,
+    CLOSED: listings.filter((l) => closedStatuses.includes(l.status)).length,
   };
 
   return (
@@ -207,8 +209,8 @@ const MyListingsPage: React.FC = () => {
 
         {/* ── Stats bar ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-          {(['active', 'pending', 'rejected', 'inactive'] as const).map((status) => {
-            const cfg = STATUS_CONFIG[status];
+          {(['APPROVED', 'PENDING', 'REJECTED', 'CLOSED'] as const).map((status) => {
+            const cfg = status === 'CLOSED' ? { ...CLOSED, label: 'Sold / Rented / Leased' } : STATUS_CONFIG[status];
             return (
               <div key={status} className="bg-white border border-[#E8E1EA] rounded-xl p-4">
                 <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-manrope font-medium ${cfg.bg} ${cfg.text} mb-2`}>
@@ -224,9 +226,9 @@ const MyListingsPage: React.FC = () => {
         {/* ── Listing cards ── */}
         <div className="space-y-4">
           {listings.map((listing) => {
-            const cfg = STATUS_CONFIG[listing.status] ?? STATUS_CONFIG.pending;
-            const coverImage = listing.coverImage;
-            const place = [listing.address, listing.district?.name, listing.district?.state].filter(Boolean).join(', ');
+            const cfg = STATUS_CONFIG[listing.status] ?? STATUS_CONFIG.PENDING;
+            const coverImage = listing.thumbnail_url;
+            const place = [listing.district?.name, listing.state?.name].filter(Boolean).join(', ');
 
             return (
               <div
@@ -276,31 +278,30 @@ const MyListingsPage: React.FC = () => {
                     </p>
 
                     <div className="flex flex-wrap gap-x-3 gap-y-1 font-manrope text-sm text-[#374151]">
-                      <span className="font-semibold text-[#A3078F]">{listing.priceLabel}</span>
-                      {listing.unitPriceLabel && <span className="text-[#6B7280]">({listing.unitPriceLabel})</span>}
+                      <span className="font-semibold text-[#A3078F]">{listing.price.label}</span>
                       <span>·</span>
-                      <span>{listing.area.label}</span>
-                      {listing.khataNo && <><span>·</span><span>Khata {listing.khataNo}</span></>}
-                      {listing.khasraNo && <><span>·</span><span>Khasra {listing.khasraNo}</span></>}
+                      <span>{areaLabel(listing.area)}</span>
+                      <span>·</span><span>Khata {listing.khata_number}</span>
+                      <span>·</span><span>Khasra {listing.khasra_number}</span>
                       <span>·</span>
-                      <span>{listing.typeLabel}</span>
+                      <span>{LISTING_TYPE_LABELS[listing.listing_type]}</span>
                     </div>
                   </div>
 
                   {/* Rejection reason */}
-                  {listing.status === 'rejected' && listing.rejectionReason && (
+                  {listing.status === 'REJECTED' && listing.rejection_reason && (
                     <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
                       <svg className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div>
                         <p className="font-manrope text-xs font-semibold text-red-700 mb-0.5">Rejection Reason</p>
-                        <p className="font-manrope text-xs text-red-600">{listing.rejectionReason}</p>
+                        <p className="font-manrope text-xs text-red-600">{listing.rejection_reason}</p>
                       </div>
                     </div>
                   )}
 
-                  {listing.status === 'pending' && (
+                  {listing.status === 'PENDING' && (
                     <p className="font-manrope text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       Waiting for admin approval — it will appear on the website once approved.
                     </p>
@@ -309,20 +310,35 @@ const MyListingsPage: React.FC = () => {
                   {/* Footer: date + actions */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[#F3EDF4]">
                     <p className="font-manrope text-xs text-[#9CA3AF]">
-                      Listed {formatDate(listing.createdAt)}
+                      Listed {formatDate(listing.created_at)}
                     </p>
 
                     <div className="flex items-center gap-2">
-                      {/* View live listing (active only) */}
-                      {listing.status === 'active' && (
+                      <Link
+                        to={`/property/${listing.id}`}
+                        className="font-manrope text-xs font-medium text-[#A3078F] hover:underline"
+                      >
+                        {listing.status === 'APPROVED' ? 'View Live' : 'Preview'}
+                      </Link>
+
+                      {/* Edit (an approved property goes back to review) */}
+                      {!closedStatuses.includes(listing.status) && (
                         <Link
-                          to={`/property/${listing.id}`}
-                          className="font-manrope text-xs font-medium text-[#A3078F] hover:underline"
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          to={`/add-property?edit=${listing.id}`}
+                          className="font-manrope text-xs font-semibold text-[#374151] border border-[#E8E1EA] px-3 py-1.5 rounded-lg hover:border-[#A3078F] hover:text-[#A3078F]"
                         >
-                          View Live
+                          Edit
                         </Link>
+                      )}
+
+                      {listing.status === 'APPROVED' && (
+                        <button
+                          onClick={() => markClosed(listing)}
+                          disabled={closingId === listing.id}
+                          className="font-manrope text-xs font-semibold text-[#374151] border border-[#E8E1EA] px-3 py-1.5 rounded-lg hover:border-[#A3078F] hover:text-[#A3078F] disabled:opacity-60"
+                        >
+                          Mark {CLOSED_LABEL_FOR_TYPE[listing.listing_type].toLowerCase()}
+                        </button>
                       )}
 
                       {/* Delete */}
@@ -350,8 +366,8 @@ const MyListingsPage: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this listing?</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong className="text-[#1A0A1E]">{deleteTarget?.title}</strong> will be permanently
-              removed. This action cannot be undone.
+              <strong className="text-[#1A0A1E]">{deleteTarget?.title}</strong> will be removed from
+              Bhumi Bazar and your listings.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

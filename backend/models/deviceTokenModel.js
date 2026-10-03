@@ -1,18 +1,16 @@
 import mongoose from 'mongoose';
 
-// Firebase Cloud Messaging token per device. Linked to the login session so
-// logging out a device stops its pushes.
+// device_tokens — technical document 5.2. Firebase Cloud Messaging token per device.
 const DeviceTokenSchema = new mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'AppUser', required: true },
-    session: { type: mongoose.Schema.Types.ObjectId, ref: 'AppSession' },
-    fcmToken: { type: String, required: true, unique: true, maxlength: 4096 },
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    fcm_token: { type: String, required: true, unique: true, maxlength: 4096 },
     platform: { type: String, enum: ['android', 'ios', 'web'], required: true },
 }, {
-    timestamps: true
+    collection: 'device_tokens',
+    timestamps: { createdAt: false, updatedAt: 'updated_at' },
 });
 
-DeviceTokenSchema.index({ user: 1 });
-DeviceTokenSchema.index({ session: 1 });
+DeviceTokenSchema.index({ user_id: 1 });
 
 const DeviceToken = mongoose.model('DeviceToken', DeviceTokenSchema);
 

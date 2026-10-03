@@ -23,7 +23,7 @@ const CTASection: React.FC = () => {
           Join thousands of satisfied homeowners who found their perfect property with Bhumi Bazar's AI-powered platform.
         </p>
         <div className="flex gap-4 justify-center">
-          <Link to="/signup" className="bg-white text-[#7A0A74] font-manrope font-bold text-lg px-10 py-4 rounded-xl shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1)] hover:shadow-2xl transition-all inline-block">
+          <Link to="/signin" className="bg-white text-[#7A0A74] font-manrope font-bold text-lg px-10 py-4 rounded-xl shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1)] hover:shadow-2xl transition-all inline-block">
             Get Started
           </Link>
           <Link to="/contact" className="border-2 border-white text-white font-manrope font-bold text-lg px-10 py-4 rounded-xl hover:bg-white hover:text-[#7A0A74] transition-all inline-block">

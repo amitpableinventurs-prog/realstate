@@ -5,16 +5,14 @@ import { motion } from 'framer-motion';
 import apiClient from '../services/apiClient';
 import ListingForm from '../components/ListingForm';
 
-// Admin "Add Property" — same fields as the mobile app / website listing form.
-// Listings added by the admin are live immediately (the admin is the approver).
+// Admin "Add Property" — POST /api/v1/list-property, the same API the mobile app and
+// website use. Listings added by the admin are live immediately (the admin is the approver).
 const AddListing = () => {
   const navigate = useNavigate();
   const [formKey, setFormKey] = useState(0);
 
-  const handleSubmit = async (formData) => {
-    await apiClient.post('/api/admin/listings', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+  const handleSubmit = async (body) => {
+    await apiClient.post('/api/v1/list-property', body);
     toast.success('Property added — it is live on the website and app', {
       action: { label: 'View all', onClick: () => navigate('/list') },
     });
@@ -27,7 +25,7 @@ const AddListing = () => {
       <div className="max-w-3xl mx-auto">
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-3xl font-bold text-[#17131A] mb-1">Add Property</h1>
-          <p className="text-[#5A5856]">Register a property with the same details as the Bhumi Bazar app. It goes live immediately.</p>
+          <p className="text-[#5A5856]">Add a property for an owner, by their mobile number. It goes live immediately and shows in the owner&apos;s My Listings.</p>
         </motion.div>
         <ListingForm key={formKey} onSubmit={handleSubmit} submitLabel="Register Property" />
       </div>

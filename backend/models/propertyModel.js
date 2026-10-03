@@ -1,131 +1,96 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const propertySchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-    },
-    location: {
-      type: String,
-      required: true,
+// properties — technical document 5.2 / 5.3. Land listings for SELL, RENT and
+// LEASE. Enum values are stored exactly as the API sends them (SELL, KATHA,
+// PENDING, ...).
+
+export const LISTING_TYPES = ['SELL', 'RENT', 'LEASE'];
+export const UNITS = ['KATHA', 'DISMIL'];
+export const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SOLD', 'RENTED', 'LEASED'];
+// Marking an approved property closed: the word depends on its type
+export const CLOSED_STATUS_FOR_TYPE = { SELL: 'SOLD', RENT: 'RENTED', LEASE: 'LEASED' };
+
+const ImageSchema = new mongoose.Schema({
+    url: { type: String, required: true },
+    is_primary: { type: Boolean, default: false },
+    sort_order: { type: Number, default: 0 },
+}, { _id: false });
+
+const PointSchema = new mongoose.Schema({
+    type: { type: String, enum: ['Point'], required: true },
+    coordinates: { type: [Number], required: true }, // [lng, lat]
+}, { _id: false });
+
+const PropertySchema = new mongoose.Schema({
+    owner_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    listing_type: { type: String, enum: LISTING_TYPES, required: true },
+    khata_number: { type: String, required: true, trim: true, maxlength: 50 },
+    khasra_number: { type: String, required: true, trim: true, maxlength: 50 },
+    area: {
+        value: { type: Number, required: true, min: [0.0001, 'Area must be greater than 0'] },
+        unit: { type: String, enum: UNITS, required: true },
     },
     price: {
-      type: Number,
-      required: true,
+        amount: { type: Number, required: true, min: [0, 'Price must be a positive number'] },
+        per_unit: { type: String, enum: UNITS, required: true },
     },
-    // Stored as plain URLs. Admin-panel listings use this directly.
-    // User-submitted listings also store URLs here for full compatibility.
-    image: {
-      type: [String],
-      required: true,
-    },
-    beds: {
-      type: Number,
-      required: true,
-    },
-    baths: {
-      type: Number,
-      required: true,
-    },
-    sqft: {
-      type: Number,
-      required: true,
-    },
-    type: {
-      type: String,
-      required: true,
-    },
-    availability: {
-      type: String,
-      required: true,
-    },
-    description: {
-      type: String,
-      required: true,
-    },
-    amenities: {
-      type: Array,
-      required: true,
-    },
-    phone: {
-      type: String,
-      required: true,
-    },
-    googleMapLink: {
-      type: String,
-      default: "",
-    },
+    // price.amount × area.value when both are in the same unit (set on save)
+    estimated_total: { type: Number },
+    description: { type: String, trim: true, maxlength: 3000 },
+    // Village / mohalla / landmark, as written by the owner (not in the document's 5.2 list; added on request)
+    address: { type: String, trim: true, maxlength: 300 },
+    images: { type: [ImageSchema], default: [] },
+    location: { type: PointSchema, default: undefined },
+    state_id: { type: mongoose.Schema.Types.ObjectId, ref: 'State' },
+    district_id: { type: mongoose.Schema.Types.ObjectId, ref: 'District' },
+    status: { type: String, enum: STATUSES, default: 'PENDING' },
+    rejection_reason: { type: String, trim: true, maxlength: 500 },
+    approved_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
+    approved_at: { type: Date },
+    is_deleted: { type: Boolean, default: false },
+}, {
+    collection: 'properties',
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+    toJSON: { virtuals: true }, // `title` in populated appointments
+});
 
-    // ── User listing fields ──────────────────────────────────────────────────
-    // Listings added via the admin panel leave these at their defaults.
-    // Listings submitted by users go through an approval workflow.
+// 5.3 Indexes
+PropertySchema.index({ status: 1, listing_type: 1, created_at: -1 });
+PropertySchema.index({ status: 1, state_id: 1, district_id: 1, 'price.amount': 1 });
+PropertySchema.index({ owner_id: 1, status: 1 });
+PropertySchema.index({ location: '2dsphere' }, { sparse: true });
+PropertySchema.index({ khata_number: 'text', khasra_number: 'text', description: 'text' });
+PropertySchema.index({ khata_number: 1, khasra_number: 1 });
 
-    // 'pending'  — awaiting admin review (default for user submissions)
-    // 'active'   — approved and visible on the site
-    // 'rejected' — not approved; rejectionReason is set
-    // 'expired'  — was active but passed expiresAt date
-    // Admin-panel listings are saved directly as 'active' (no review needed).
-    status: {
-      type: String,
-      enum: ["pending", "active", "rejected", "expired"],
-      default: "active", // admin-added properties go live immediately
-    },
+PropertySchema.pre('validate', function () {
+    const sameUnit = this.area?.unit && this.area.unit === this.price?.per_unit;
+    this.estimated_total = sameUnit && this.price.amount != null && this.area.value != null
+        ? Math.round(this.price.amount * this.area.value)
+        : undefined;
+    // The first photo is the primary one, in display order
+    this.images.forEach((image, i) => {
+        image.sort_order = i;
+        image.is_primary = i === 0;
+    });
+});
 
-    // Reference to the User who submitted this listing (null for admin entries)
-    postedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
+// Display name for emails and logs (not stored)
+PropertySchema.virtual('title').get(function () {
+    return `${this.listing_type || ''} land — Khata ${this.khata_number}, Khasra ${this.khasra_number}`.trim();
+});
 
-    // Filled by admin when status is set to 'rejected'
-    rejectionReason: {
-      type: String,
-      default: "",
-    },
+// Soft-deleted properties are left out of reads. Pass { withDeleted: true } via
+// setOptions (queries) or the aggregate's options to include them.
+const QUERY_HOOKS = ['find', 'findOne', 'countDocuments', 'findOneAndUpdate', 'distinct'];
+PropertySchema.pre(QUERY_HOOKS, function () {
+    if (this.getOptions().withDeleted || 'is_deleted' in this.getFilter()) return;
+    this.where({ is_deleted: { $ne: true } });
+});
+PropertySchema.pre('aggregate', function () {
+    if (this.options?.withDeleted) return;
+    this.pipeline().unshift({ $match: { is_deleted: { $ne: true } } });
+});
 
-    // District (city) the listing belongs to — decides which district admin
-    // reviews it. null = unassigned (older listings); only the super admin sees those.
-    district: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "District",
-      default: null,
-    },
-
-    // Last approve/reject decision (admin email + time)
-    reviewedBy: {
-      type: String,
-      default: "",
-    },
-    reviewedAt: {
-      type: Date,
-      default: null,
-    },
-
-    // When the listing should automatically expire (null = never, for admin entries)
-    expiresAt: {
-      type: Date,
-      default: null,
-    },
-  },
-  {
-    // Adds createdAt and updatedAt fields automatically
-    timestamps: true,
-  }
-);
-
-// Database indexes for common query patterns
-propertySchema.index({ status: 1 }); // Status filtering (active, pending, etc.)
-propertySchema.index({ createdAt: -1 }); // Sorting by creation date
-propertySchema.index({ postedBy: 1 }); // User's own listings
-propertySchema.index({ status: 1, createdAt: -1 }); // Compound: status + sort
-propertySchema.index({ postedBy: 1, createdAt: -1 }); // Compound: user listings + sort
-propertySchema.index({ expiresAt: 1 }); // Expiry cleanup queries
-propertySchema.index({ district: 1, status: 1, createdAt: 1 }); // District review queue
-propertySchema.index({ location: "text", title: "text", description: "text" }); // Text search
-propertySchema.index({ price: 1, beds: 1, type: 1, location: 1 }); // Property filters
-
-const Property = mongoose.model("Property", propertySchema);
+const Property = mongoose.model('Property', PropertySchema);
 
 export default Property;

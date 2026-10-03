@@ -57,26 +57,26 @@ Browser (localStorage: buildestate_github_key, buildestate_firecrawl_key)
 
 ### Auth Flow
 
-- JWT stored in `localStorage` as `buildestate_token`
-- Frontend attaches token via Axios request interceptor (`frontend/src/services/api.ts`)
-- Auto-logout on 401 response
-- Admin login via `POST /api/users/admin` (separate from user login)
-- Email verification required after registration (5-layer fake email protection)
+- Users (app and website) log in with mobile number + OTP: `POST /api/v1/auth/send-otp` → `/verify-otp` (creates the user on first login) → "Tell us about you" via `PUT /api/v1/users/me`. There are no passwords or email accounts for users.
+- Website keeps `buildestate_token` (access) and `buildestate_refresh` (refresh) in `localStorage`; the Axios interceptor (`frontend/src/services/api.ts`) refreshes on 401 via `/api/v1/auth/refresh-token`
+- Admin login via `POST /api/v1/admin/auth/login` (email + password, `admins` collection); refresh token in an httpOnly cookie (`/api/v1/admin/auth/refresh`)
+- Tokens carry `typ: 'user'` or `typ: 'admin'`, so one kind can't be used on the other's endpoints
 
 ### Backend Structure
 
 ```
 backend/
 ├── server.js              — Entry: Helmet, CORS, rate limiter, route mounting
-├── routes/                — Express routers (productRoutes, userRoutes, appointmentRoutes, adminRoutes, propertyRoutes, aiRoutes)
+├── routes/                — Express routers (v1Routes = the document API; adminRoutes, appointmentRoutes, propertyRoutes = AI search, blog, careers, forms, news)
 ├── controller/            — Route handler logic
-├── models/                — Mongoose schemas (Property, User, Appointment, Stats, SearchCache, AdminActivityLog)
+├── models/                — Mongoose schemas (document 5.2: User, Admin, Property, State, District, Wishlist, Enquiry, Notification, DeviceToken, RefreshToken; plus Appointment, Otp, PendingUpload, Stats, SearchCache, AdminActivityLog)
 ├── services/
 │   ├── firecrawlService.js — Multi-source scraping with exponential backoff retry
 │   └── aiService.js        — GPT-4.1 property ranking + location trends
-├── middleware/            — authMiddleware, multer, rateLimitMiddleware, statsMiddleware, requestIdMiddleware
+├── middleware/            — authMiddleware (admin), userAuthMiddleware (OTP users), multer, rateLimitMiddleware, statsMiddleware, requestIdMiddleware
 ├── config/                — mongodb.js, imagekit.js, nodemailer.js
-└── utils/                 — logger.js (Winston), expireListings.js, autoUnsuspend.js, AI response validator
+├── scripts/               — migrateToDocSchema.js, seedDistricts.js, createAdmin.js
+└── utils/                 — logger.js (Winston), v1.js (API responses + serializers), districts.js, AI response validator
 ```
 
 ### Frontend Component Organization
@@ -97,12 +97,15 @@ frontend/src/
 
 - **User-owned API keys**: Firecrawl + GitHub Models keys live in `localStorage` only, forwarded as request headers. The backend creates per-request service instances from these headers.
 - **Search caching**: MongoDB `SearchCache` model deduplicates identical AI searches (saves ~25s and API credits). Cache key is built from all search params.
-- **Image storage**: ImageKit CDN. Images uploaded via `multer` to backend then pushed to ImageKit.
+- **Image storage**: S3 pre-signed uploads when configured; otherwise uploads go to `PUT /api/v1/uploads/:id` and are stored on ImageKit (or local disk in development). Properties keep only the URL (`images[{ url, is_primary, sort_order }]`).
 - **Frontend is TypeScript, admin is JavaScript** — don't add TypeScript to the admin app.
 - **Structured logging**: Winston logger with request correlation IDs (`X-Request-ID` header). Log format is JSON in production.
 - **Health checks**: `GET /health` (liveness) and `GET /health/ready` (readiness with DB connectivity check).
-- **Two mobile/web APIs on the same data**: `/api/v1` (`routes/v1Routes.js`, `controller/v1/`, docs `/api-docs/v1`) follows the Bhoomi Bazar technical document — snake_case fields, `SELL/RENT/LEASE`, `KATHA/DISMIL`, `PENDING/APPROVED/...`, `{ success, data, meta }` / `errorCode`. It maps onto the same `Listing`/`AppUser` models as the older `/api/v1/app` API (`utils/v1.js` holds the enum mapping and serializers). Keep both working when changing those models.
-- **Soft delete**: `Listing` query middleware hides `isDeleted` documents; pass `.setOptions({ withDeleted: true })` to include them.
+- **Database = technical document section 5.2**: collections `users`, `admins`, `properties`, `states`, `districts` (with `state_id`), `wishlists`, `enquiries`, `notifications`, `device_tokens`, `refresh_tokens`, with the snake_case fields, enums (`SELL/RENT/LEASE`, `KATHA/DISMIL`, `PENDING/APPROVED/REJECTED/SOLD/RENTED/LEASED`) and 5.3 indexes stored exactly as the API uses them. Land only — no property types, other units or rent/lease extras. Don't add fields the document doesn't list without asking. Older data: `npm run migrate:doc-schema` (backs up to `legacy_*` collections).
+- **One API for every client**: `/api/v1` (`routes/v1Routes.js`, `controller/v1/`, docs `/api-docs`) — section 6 of the document, `{ success, data, meta }` / `errorCode`. The mobile app, website and admin panel all use it; `/api/admin` only keeps activity logs, appointments and AI models.
+- **One create API for properties**: `POST /api/v1/list-property` (`listing_type` SELL/RENT/LEASE). The document's owner endpoints `/properties`, `/properties/my`, `/properties/:id`, `/properties/:id/status` and the public `GET /listings` are named `/list-property…` here (`GET /list-property` = all approved listings), at the user's request (`/properties/:id/enquiries` keeps its name). is the only way to add a listing. Photos are uploaded first with `/api/v1/uploads/presign` and sent as `image_urls`. A user token adds a PENDING property; an admin token adds one for an owner by `owner_mobile` (APPROVED). `userOrAdminProtect` picks the guard from the token. Don't add per-type or per-client create endpoints.
+- **District admins**: `admins.role = district_admin` with `district_id` review only their district (`reviewerProtect` + `utils/districts.js`).
+- **Soft delete**: `Property` query middleware hides `is_deleted` documents; pass `.setOptions({ withDeleted: true })` to include them.
 
 ## Deployment
 

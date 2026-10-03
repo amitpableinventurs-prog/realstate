@@ -11,8 +11,9 @@
     "build": "echo 'Build completed'",
     "render-build": "npm install",
     "test": "echo 'No tests specified' && exit 0",
-    "seed:demo": "node scripts/seedDemoData.js",
-    "seed:districts": "node scripts/seedDistricts.js"
+    "seed:districts": "node scripts/seedDistricts.js",
+    "migrate:doc-schema": "node scripts/migrateToDocSchema.js",
+    "create-admin": "node scripts/createAdmin.js"
   },
   "author": "Aayush Vaghela",
   "license": "ISC",

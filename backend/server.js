@@ -10,28 +10,20 @@ import connectdb from './config/mongodb.js';
 import { trackAPIStats } from './middleware/statsMiddleware.js';
 import { requestIdMiddleware } from './middleware/requestIdMiddleware.js';
 import logger from './utils/logger.js';
-import propertyrouter from './routes/productRoutes.js';
-import userrouter from './routes/userRoutes.js';
 import formrouter from './routes/formRoutes.js';
 import newsrouter from './routes/newsRoutes.js';
 import appointmentRouter from './routes/appointmentRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 import propertyRoutes from './routes/propertyRoutes.js';
 import healthRouter from './routes/healthRoutes.js';
-import appRouter from './routes/appRoutes.js';
 import v1Router from './routes/v1Routes.js';
 import blogRouter from './routes/blogRoutes.js';
 import careerRouter from './routes/careerRoutes.js';
-import districtRouter from './routes/districtRoutes.js';
 import swaggerUi from 'swagger-ui-express';
-import openapiSpec from './docs/openapi.js';
 import openapiV1Spec from './docs/openapiV1.js';
 import { LOCAL_MEDIA_DIR, LOCAL_MEDIA_ROUTE } from './services/mediaStorageService.js';
 import getStatusPage from './serverweb.js';
-import { startExpireListingsJob } from './utils/expireListings.js';
-import { startAutoUnsuspendJob } from './utils/autoUnsuspend.js';
 import { printBanner } from './utils/banner.js';
-import { syncStatesFromDistricts } from './utils/states.js';
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: './.env.local' });
@@ -159,9 +151,6 @@ app.use(cors({
 // Database connection
 connectdb().then(() => {
   if (process.env.NODE_ENV === 'production') logger.info('Database connected successfully');
-  startExpireListingsJob();
-  startAutoUnsuspendJob();
-  syncStatesFromDistricts();
   printBanner({
     port: process.env.PORT || 4000,
     env: process.env.NODE_ENV || 'development',
@@ -180,9 +169,6 @@ connectdb().then(() => {
     setTimeout(() => {
       connectdb().then(() => {
         logger.info('Database reconnected successfully');
-        startExpireListingsJob();
-        startAutoUnsuspendJob();
-        syncStatesFromDistricts();
       }).catch((retryErr) => {
         logger.error('Database retry failed', { error: retryErr.message });
       });
@@ -195,34 +181,27 @@ connectdb().then(() => {
 app.use('/health', healthRouter);
 
 // API Routes
-app.use('/api/products', propertyrouter);
-app.use('/api/users', userrouter);
 app.use('/api/forms', formrouter);
 app.use('/api/news', newsrouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/blog', blogRouter);
 app.use('/api/careers', careerRouter);
-app.use('/api/districts', districtRouter);
 app.use('/api', propertyRoutes);
 
-// Mobile app API + Swagger docs. Docs are on by default outside production;
-// set SWAGGER_ENABLED=true/false to override.
-app.use('/api/v1/app', appRouter);
-// Bhoomi Bazar API from the technical document (section 6); docs at /api-docs/v1
+// Bhoomi Bazar API from the technical document (section 6) — used by the
+// mobile app, the website and the admin panel. Swagger docs are on by default
+// outside production; set SWAGGER_ENABLED=true/false to override.
 app.use('/api/v1', v1Router);
 const swaggerEnabled = process.env.SWAGGER_ENABLED
   ? process.env.SWAGGER_ENABLED === 'true'
   : process.env.NODE_ENV !== 'production';
 if (swaggerEnabled) {
-  app.get('/api-docs.json', (req, res) => res.json(openapiSpec));
-  app.get('/api-docs/v1.json', (req, res) => res.json(openapiV1Spec));
-  app.use('/api-docs/v1', swaggerUi.serveFiles(openapiV1Spec), swaggerUi.setup(openapiV1Spec, {
+  app.get(['/api-docs.json', '/api-docs/v1.json'], (req, res) => res.json(openapiV1Spec));
+  // /api-docs/v1 is the older address of the same page
+  app.get(['/api-docs/v1', '/api-docs/v1/'], (req, res) => res.redirect(301, '/api-docs/'));
+  app.use('/api-docs', swaggerUi.serveFiles(openapiV1Spec), swaggerUi.setup(openapiV1Spec, {
     customSiteTitle: 'Bhoomi Bazar API v1',
-    swaggerOptions: { persistAuthorization: true },
-  }));
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, {
-    customSiteTitle: 'Bhumi Bazar API',
     swaggerOptions: { persistAuthorization: true },
   }));
 }

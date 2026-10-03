@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, Lock, Shield, ArrowRight, Loader2, Building2, Users,
 import { toast } from "sonner";
 import apiClient from "../services/apiClient";
 import { cn } from "../lib/utils";
-import { getAdminSession, homePathFor } from "../lib/adminSession";
+import { getAdminSession, homePathFor, saveAdminSession } from "../lib/adminSession";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,14 +20,13 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/api/users/admin', {
+      const response = await apiClient.post('/api/v1/admin/auth/login', {
         email,
         password,
       });
 
       if (response.data.success) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("isAdmin", "true");
+        saveAdminSession(response.data.data);
         const session = getAdminSession();
         toast.success(`Welcome back, ${session?.name || "Admin"}!`);
         navigate(homePathFor(session));

@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 
 // <option>s for a district <select>, grouped by state (districts come sorted
-// by state, then name, from /api/admin/districts). Inactive districts are
+// by state, then name, from lib/districts.js). Inactive districts are
 // skipped unless `keepId` is one of them (the value currently selected).
 const DistrictOptions = ({ districts, keepId }) => {
   const groups = new Map();

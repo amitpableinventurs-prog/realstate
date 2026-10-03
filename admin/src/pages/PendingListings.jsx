@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Check, X, Building2, MapPin, BedDouble, Bath,
-  Maximize, User, Mail, Phone, Clock, RefreshCw, Search,
-  ChevronLeft, ChevronRight, Images, Landmark,
+  Check, X, Building2, MapPin,
+  Maximize, User, Phone, Clock, RefreshCw, Search,
+  ChevronLeft, ChevronRight, Images, Landmark, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../services/apiClient";
-import { cn, formatPrice, formatDate } from "../lib/utils";
+import { cn, formatDate } from "../lib/utils";
 import { getAdminSession } from "../lib/adminSession";
 import DistrictOptions from "../components/DistrictOptions";
+import { fetchDistricts } from "../lib/districts";
 
 // ─── Image Gallery + Lightbox ─────────────────────────────────────────────────
 const ImageGallery = ({ images, title }) => {
@@ -195,7 +196,7 @@ const ImageGallery = ({ images, title }) => {
 };
 
 // ─── Reject Modal ─────────────────────────────────────────────────────────────
-const RejectModal = ({ listing, onClose, onConfirm, loading, emailsOwner }) => {
+const RejectModal = ({ listing, onClose, onConfirm, loading }) => {
   const [reason, setReason] = useState("");
 
   return (
@@ -242,7 +243,7 @@ const RejectModal = ({ listing, onClose, onConfirm, loading, emailsOwner }) => {
                 autoFocus
               />
               <p className="text-xs text-[#9B9B99] mt-1">
-                {emailsOwner ? "This will be emailed to the listing owner." : "The owner sees this reason in the app."}
+                The owner is notified and sees this reason in My Listings.
               </p>
             </div>
             <div className="flex gap-3 pt-1">
@@ -266,104 +267,62 @@ const RejectModal = ({ listing, onClose, onConfirm, loading, emailsOwner }) => {
   );
 };
 
-// ─── Listing sources ──────────────────────────────────────────────────────────
-// Website listings (Property) and mobile app listings (Listing) have different
-// shapes and endpoints; both are mapped to one card model.
+// ─── Properties (GET /api/v1/admin/properties) ────────────────────────────────
 
-const toDistrict = (d) => (d ? { id: d.id || d._id, name: d.name } : null);
+const TYPE_LABELS = { SELL: "For Sale", RENT: "For Rent", LEASE: "For Lease" };
+const UNIT_LABELS = { KATHA: "Katha", DISMIL: "Dismil" };
 
-const fromWebsite = (p) => ({
-  id: p._id,
+const toCard = (p) => ({
+  id: p.id,
   title: p.title,
-  images: p.image,
-  location: p.location,
-  price: formatPrice(p.price),
-  typeLabel: p.type,
-  availability: p.availability,
+  images: (p.images || []).map((i) => i.url),
+  location: [p.address, p.district?.name, p.state?.name].filter(Boolean).join(", ") || "—",
+  price: p.price?.label,
+  typeLabel: TYPE_LABELS[p.listing_type],
   specs: [
-    { icon: BedDouble, text: `${p.beds} bed` },
-    { icon: Bath, text: `${p.baths} bath` },
-    { icon: Maximize, text: `${p.sqft?.toLocaleString()} sqft` },
+    { icon: Maximize, text: `${p.area.value} ${UNIT_LABELS[p.area.unit] || p.area.unit}` },
+    { icon: FileText, text: `Khata ${p.khata_number} · Khasra ${p.khasra_number}` },
   ],
+  estimatedTotal: p.estimated_total,
   description: p.description,
-  submitter: p.postedBy?.name ?? "Unknown",
-  contact: p.postedBy?.email,
-  contactIcon: Mail,
-  createdAt: p.createdAt,
-  district: toDistrict(p.district),
+  submitter: p.owner?.name || "Owner",
+  contact: p.owner?.mobile,
+  createdAt: p.created_at,
+  district: p.district,
   status: p.status,
-  rejectionReason: p.rejectionReason,
-  reviewedBy: p.reviewedBy,
-  reviewedAt: p.reviewedAt,
+  rejectionReason: p.rejection_reason,
+  approvedAt: p.approved_at,
 });
 
-const fromApp = (l) => ({
-  id: l.id,
-  title: l.title,
-  images: (l.media || []).filter((m) => m.type === "image").map((m) => m.url),
-  location: [l.address, l.city, l.state, l.pincode].filter(Boolean).join(", ") || "—",
-  price: l.priceLabel,
-  typeLabel: l.typeLabel,
-  availability: null,
-  specs: l.area?.label ? [{ icon: Maximize, text: l.area.label }] : [],
-  description: l.description,
-  submitter: l.owner?.name || l.postedBy?.label || "Unknown",
-  contact: l.owner?.email ? `${l.owner.phone} · ${l.owner.email}` : l.owner?.phone,
-  postedFrom: l.postedFrom,
-  contactIcon: Phone,
-  createdAt: l.createdAt,
-  district: toDistrict(l.district),
-  status: l.status,
-  rejectionReason: l.rejectionReason,
-  reviewedBy: l.reviewedBy,
-  reviewedAt: l.reviewedAt,
-});
-
-const SOURCES = {
-  website: {
-    label: "Admin-added properties",
-    emailsOwner: true,
-    list: async (params) => {
-      const { data } = await apiClient.get("/api/admin/properties/pending", { params });
-      return { items: (data.properties || []).map(fromWebsite), total: data.pagination?.totalProperties ?? 0, totalPages: data.pagination?.totalPages ?? 1 };
-    },
-    approve: (id) => apiClient.put(`/api/admin/properties/${id}/approve`, {}),
-    reject: (id, reason) => apiClient.put(`/api/admin/properties/${id}/reject`, { reason }),
-    assignDistrict: (id, district) => apiClient.put(`/api/admin/properties/${id}/district`, { district }),
+const api = {
+  list: async (params) => {
+    const { data } = await apiClient.get("/api/v1/admin/properties", { params });
+    return { items: (data.data || []).map(toCard), total: data.meta?.total ?? 0, totalPages: data.meta?.totalPages ?? 1 };
   },
-  app: {
-    label: "Listings (App + Website)",
-    emailsOwner: false,
-    list: async (params) => {
-      const { data } = await apiClient.get("/api/v1/app/admin/listings", { params });
-      return { items: (data.data || []).map(fromApp), total: data.pagination?.total ?? 0, totalPages: data.pagination?.totalPages ?? 1 };
-    },
-    approve: (id) => apiClient.patch(`/api/v1/app/admin/listings/${id}`, { status: "active" }),
-    reject: (id, reason) => apiClient.patch(`/api/v1/app/admin/listings/${id}`, { status: "rejected", rejectionReason: reason }),
-    assignDistrict: (id, district) => apiClient.put(`/api/admin/app-listings/${id}/district`, { district }),
-  },
+  approve: (id) => apiClient.patch(`/api/v1/admin/properties/${id}/approve`),
+  reject: (id, reason) => apiClient.patch(`/api/v1/admin/properties/${id}/reject`, { rejection_reason: reason }),
+  moveDistrict: (id, districtId) => apiClient.put(`/api/v1/admin/properties/${id}`, { district_id: districtId }),
 };
 
 const STATUS_TABS = [
-  { value: "pending", label: "Pending" },
-  { value: "active", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
+  { value: "PENDING", label: "Pending" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
 ];
 
 const STATUS_BADGE = {
-  pending: { label: "Under Review", className: "text-amber-700 bg-amber-50 border-amber-200/60" },
-  active: { label: "Approved", className: "text-emerald-700 bg-emerald-50 border-emerald-200/60" },
-  rejected: { label: "Rejected", className: "text-red-700 bg-red-50 border-red-200/60" },
+  PENDING: { label: "Under Review", className: "text-amber-700 bg-amber-50 border-amber-200/60" },
+  APPROVED: { label: "Approved", className: "text-emerald-700 bg-emerald-50 border-emerald-200/60" },
+  REJECTED: { label: "Rejected", className: "text-red-700 bg-red-50 border-red-200/60" },
 };
 
 const PAGE_SIZE = 15;
 
 // ─── Listing Card ─────────────────────────────────────────────────────────────
 const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, onAssignDistrict }) => {
-  const badge = STATUS_BADGE[listing.status] || STATUS_BADGE.pending;
-  const canApprove = listing.status === "pending" || listing.status === "rejected";
-  const canReject = listing.status === "pending" || listing.status === "active";
-  const ContactIcon = listing.contactIcon;
+  const badge = STATUS_BADGE[listing.status] || STATUS_BADGE.PENDING;
+  const canApprove = listing.status === "PENDING" || listing.status === "REJECTED";
+  const canReject = listing.status === "PENDING" || listing.status === "APPROVED";
 
   return (
     <motion.div
@@ -385,11 +344,6 @@ const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, o
             {listing.title}
           </h3>
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {listing.postedFrom && (
-              <span className="text-xs font-medium text-[#7A0A74] bg-[#FAF1F9] border border-[#EBC9E6] px-2 py-0.5 rounded-full">
-                {listing.postedFrom === "website" ? "Website" : "App"}
-              </span>
-            )}
             {listing.typeLabel && (
               <span className="text-xs font-medium text-[#6B6B6A] bg-[#F5F5F3] border border-[#E8E7E5] px-2 py-0.5 rounded-full">
                 {listing.typeLabel}
@@ -409,15 +363,14 @@ const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, o
               <Landmark className="w-3.5 h-3.5 text-[#A3078F]" />
               <select
                 value={listing.district?.id || ""}
-                onChange={(e) => onAssignDistrict(listing, e.target.value || null)}
+                onChange={(e) => e.target.value && onAssignDistrict(listing, e.target.value)}
                 disabled={!!actionLoading}
                 className={cn(
                   "text-xs font-medium border rounded-full px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-[#A3078F]/20",
-                  listing.district ? "text-[#7A0A74] bg-[#FAF1F9] border-[#EBC9E6]" : "text-amber-800 bg-amber-50 border-amber-200"
+                  "text-[#7A0A74] bg-[#FAF1F9] border-[#EBC9E6]"
                 )}
-                title="District that reviews this listing"
+                title="District that reviews this property"
               >
-                <option value="">Unassigned</option>
                 <DistrictOptions districts={districts} keepId={listing.district?.id} />
               </select>
             </label>
@@ -445,9 +398,9 @@ const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, o
               <Icon className="w-3.5 h-3.5" /> {text}
             </span>
           ))}
-          {listing.availability && (
-            <span className="text-xs text-[#9B9B99] bg-[#F5F5F3] px-2 py-0.5 rounded-full capitalize">
-              {listing.availability}
+          {listing.estimatedTotal != null && (
+            <span className="text-xs text-[#9B9B99] bg-[#F5F5F3] px-2 py-0.5 rounded-full">
+              Est. total ₹{listing.estimatedTotal.toLocaleString("en-IN")}
             </span>
           )}
         </div>
@@ -460,16 +413,13 @@ const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, o
         )}
 
         {/* Rejection reason / last decision */}
-        {listing.status === "rejected" && listing.rejectionReason && (
+        {listing.status === "REJECTED" && listing.rejectionReason && (
           <p className="text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-3">
             <span className="font-semibold">Reason:</span> {listing.rejectionReason}
           </p>
         )}
-        {listing.status !== "pending" && listing.reviewedBy && (
-          <p className="text-xs text-[#9B9B99] mb-3">
-            {listing.status === "active" ? "Approved" : "Rejected"} by {listing.reviewedBy}
-            {listing.reviewedAt && ` on ${formatDate(listing.reviewedAt)}`}
-          </p>
+        {listing.status === "APPROVED" && listing.approvedAt && (
+          <p className="text-xs text-[#9B9B99] mb-3">Approved on {formatDate(listing.approvedAt)}</p>
         )}
 
         {/* Submitter row */}
@@ -480,7 +430,7 @@ const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, o
           </div>
           {listing.contact && (
             <div className="flex items-center gap-1.5 text-xs text-[#9B9B99]">
-              <ContactIcon className="w-3.5 h-3.5" />
+              <Phone className="w-3.5 h-3.5" />
               <span>{listing.contact}</span>
             </div>
           )}
@@ -525,7 +475,7 @@ const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, o
               ) : (
                 <X className="w-4 h-4" />
               )}
-              {listing.status === "active" ? "Disapprove" : "Reject"}
+              {listing.status === "APPROVED" ? "Disapprove" : "Reject"}
             </button>
           )}
         </div>
@@ -539,13 +489,11 @@ const PendingListings = () => {
   const session = getAdminSession();
   const isSuperAdmin = session?.isSuperAdmin !== false;
 
-  // Source, status and district filter live in the URL so the Districts page can link here
+  // Status and district filter live in the URL so the Districts page can link here
   const [searchParams, setSearchParams] = useSearchParams();
-  // Default tab: user listings (mobile app + website form); "website" = admin-added properties
-  const sourceKey = searchParams.get("source") === "website" ? "website" : "app";
-  const status = STATUS_TABS.some((t) => t.value === searchParams.get("status")) ? searchParams.get("status") : "pending";
+  const requestedStatus = (searchParams.get("status") || "").toUpperCase();
+  const status = STATUS_TABS.some((t) => t.value === requestedStatus) ? requestedStatus : "PENDING";
   const districtFilter = isSuperAdmin ? searchParams.get("district") || "" : "";
-  const source = SOURCES[sourceKey];
 
   const [listings, setListings] = useState([]);
   const [total, setTotal] = useState(0);
@@ -568,8 +516,8 @@ const PendingListings = () => {
   const fetchListings = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { status, page, limit: PAGE_SIZE, ...(districtFilter && { district: districtFilter }) };
-      const result = await source.list(params);
+      const params = { status, page, limit: PAGE_SIZE, ...(districtFilter && { district_id: districtFilter }) };
+      const result = await api.list(params);
       setListings(result.items);
       setTotal(result.total);
       setTotalPages(Math.max(1, result.totalPages));
@@ -579,15 +527,13 @@ const PendingListings = () => {
     } finally {
       setLoading(false);
     }
-  }, [source, status, page, districtFilter]);
+  }, [status, page, districtFilter]);
 
   useEffect(() => { fetchListings(); }, [fetchListings]);
 
   useEffect(() => {
     if (!isSuperAdmin) return;
-    apiClient.get("/api/admin/districts")
-      .then(({ data }) => setDistricts(data.districts || []))
-      .catch(() => setDistricts([]));
+    fetchDistricts().then(setDistricts).catch(() => setDistricts([]));
   }, [isSuperAdmin]);
 
   // A decided listing no longer matches the current status tab
@@ -599,7 +545,7 @@ const PendingListings = () => {
   const handleApprove = async (listing) => {
     setActionLoading(`approve-${listing.id}`);
     try {
-      await source.approve(listing.id);
+      await api.approve(listing.id);
       removeListing(listing.id);
       toast.success("Listing approved and is now live!");
     } catch (err) {
@@ -614,9 +560,9 @@ const PendingListings = () => {
     const id = rejectTarget.id;
     setActionLoading(`reject-${id}`);
     try {
-      await source.reject(id, reason);
+      await api.reject(id, reason);
       removeListing(id);
-      toast.success(source.emailsOwner ? "Listing rejected. Owner has been notified." : "Listing rejected.");
+      toast.success("Listing rejected. The owner has been notified.");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to reject listing.");
     } finally {
@@ -628,11 +574,11 @@ const PendingListings = () => {
   const handleAssignDistrict = async (listing, districtId) => {
     setActionLoading(`district-${listing.id}`);
     try {
-      const { data } = await source.assignDistrict(listing.id, districtId);
-      const leavesFilter = districtFilter && districtFilter !== (districtId || "unassigned");
-      if (leavesFilter) removeListing(listing.id);
-      else setListings((prev) => prev.map((l) => (l.id === listing.id ? { ...l, district: toDistrict(data.district) } : l)));
-      toast.success(data.district ? `Moved to ${data.district.name}` : "District removed");
+      const { data } = await api.moveDistrict(listing.id, districtId);
+      const updated = toCard(data.data);
+      if (districtFilter && districtFilter !== districtId) removeListing(listing.id);
+      else setListings((prev) => prev.map((l) => (l.id === listing.id ? updated : l)));
+      toast.success(`Moved to ${updated.district?.name}`);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to change district.");
     } finally {
@@ -647,7 +593,8 @@ const PendingListings = () => {
       l.title?.toLowerCase().includes(q) ||
       l.location?.toLowerCase().includes(q) ||
       l.submitter?.toLowerCase().includes(q) ||
-      l.contact?.toLowerCase().includes(q)
+      l.contact?.toLowerCase().includes(q) ||
+      l.specs.some((spec) => spec.text.toLowerCase().includes(q))
     );
   });
 
@@ -662,15 +609,8 @@ const PendingListings = () => {
   const filterBar = (
     <div className="flex flex-wrap items-center gap-3 mb-5">
       <div className="flex gap-1 p-1 bg-[#EBEBEA]/60 rounded-xl">
-        {Object.entries(SOURCES).map(([key, s]) => (
-          <button key={key} onClick={() => setFilter("source", key, "app")} className={tabClass(key === sourceKey)}>
-            {s.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-1 p-1 bg-[#EBEBEA]/60 rounded-xl">
         {STATUS_TABS.map((t) => (
-          <button key={t.value} onClick={() => setFilter("status", t.value, "pending")} className={tabClass(t.value === status)}>
+          <button key={t.value} onClick={() => setFilter("status", t.value, "PENDING")} className={tabClass(t.value === status)}>
             {t.label}
           </button>
         ))}
@@ -682,7 +622,6 @@ const PendingListings = () => {
           className="ml-auto px-3 py-2 bg-white border border-[#E8E7E5] rounded-lg text-sm text-[#0F0C11] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/20 focus:border-[#A3078F]"
         >
           <option value="">All districts</option>
-          <option value="unassigned">Unassigned</option>
           {/* keepId: the filter may point at an inactive district */}
           <DistrictOptions districts={districts || []} keepId={districtFilter} />
         </select>
@@ -750,7 +689,7 @@ const PendingListings = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by title, location, or submitter…"
+              placeholder="Search by khata, district, owner or mobile…"
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E8E7E5] rounded-xl text-sm text-[#0F0C11] focus:outline-none focus:ring-2 focus:ring-[#A3078F]/20 focus:border-[#A3078F] transition-all"
             />
           </div>
@@ -763,14 +702,14 @@ const PendingListings = () => {
               {searchQuery ? <Search className="w-7 h-7 text-emerald-500" /> : <Check className="w-7 h-7 text-emerald-500" />}
             </div>
             <h3 className="font-semibold text-[#0F0C11] mb-1">
-              {searchQuery ? "No results found" : status === "pending" ? "All clear!" : "Nothing here"}
+              {searchQuery ? "No results found" : status === "PENDING" ? "All clear!" : "Nothing here"}
             </h3>
             <p className="text-sm text-[#9B9B99]">
               {searchQuery
                 ? `No listings match "${searchQuery}"`
-                : status === "pending"
+                : status === "PENDING"
                   ? "No listings waiting for review right now."
-                  : `No ${statusLabel} ${source.label.toLowerCase()} listings.`}
+                  : `No ${statusLabel} listings.`}
             </p>
           </div>
         )}
@@ -822,7 +761,6 @@ const PendingListings = () => {
             onClose={() => setRejectTarget(null)}
             onConfirm={handleRejectConfirm}
             loading={actionLoading === `reject-${rejectTarget.id}`}
-            emailsOwner={source.emailsOwner}
           />
         )}
       </div>

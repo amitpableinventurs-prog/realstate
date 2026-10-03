@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Images } from 'lucide-react';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface PropertyHeroImageProps {
   images?: string[];
@@ -113,6 +114,7 @@ const Lightbox: React.FC<{
 
 // ── Adaptive gallery ─────────────────────────────────────────────────────────
 const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], image, propertyName }) => {
+  const { t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Normalize to array, de-dupe
@@ -244,7 +246,7 @@ const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], imag
           className="absolute bottom-4 right-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A0A1E] font-manrope font-semibold text-sm px-4 py-2 rounded-xl shadow-md transition-all active:scale-[0.96]"
         >
           <Images className="w-4 h-4" />
-          Show all {imgs.length} photos
+          {t('details.showAll', { count: imgs.length })}
         </button>
       </div>
 

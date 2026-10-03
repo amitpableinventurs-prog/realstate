@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
-import State from '../models/stateModel.js';
-import { formatArea, formatPriceINR } from './areaUnits.js';
+import { LISTING_TYPES, UNITS, STATUSES } from '../models/propertyModel.js';
+import { UNIT_LABELS, formatArea, formatPriceINR } from './areaUnits.js';
 
-// Shared pieces of the /api/v1 API (Bhoomi Bazar technical document, section 6):
-// response format, enum mapping between the API (SELL, KATHA, APPROVED, ...)
-// and the stored listing values (sell, kattha, active, ...), and serializers.
+// Shared pieces of the /api/v1 API (technical document 4.8 and section 6):
+// response format, enum parsing and serializers. Stored values already use the
+// API's enums (SELL, KATHA, PENDING, ...), so records are returned as stored.
 
 // ── Responses ────────────────────────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ const ERROR_CODE_BY_STATUS = {
 /**
  * Router middleware: every error response from /api/v1 (including ones from
  * shared middleware and the global error handler) gets an `errorCode`.
- * Older handlers send `code`; it is renamed.
+ * Handlers that send `code` have it renamed.
  */
 export const errorFormat = (req, res, next) => {
     const json = res.json.bind(res);
@@ -69,184 +69,146 @@ export const isObjectId = (id) => typeof id === 'string' && mongoose.isValidObje
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
-export const LISTING_TYPES = { SELL: 'sell', RENT: 'rent', LEASE: 'lease' };
-const LISTING_TYPE_OUT = { sell: 'SELL', rent: 'RENT', lease: 'LEASE' };
+export { LISTING_TYPES, UNITS, STATUSES };
 
-// Units the API accepts. Older listings may also use BIGHA, ACRE, SQFT or a TOTAL price.
-export const UNITS = { KATHA: 'kattha', DISMIL: 'decimal' };
-const UNIT_OUT = { kattha: 'KATHA', decimal: 'DISMIL', bigha: 'BIGHA', acre: 'ACRE', sqft: 'SQFT', total: 'TOTAL' };
-
-// Marking a listing sold/rented/leased stores it as 'inactive'; which word
-// applies follows from its type.
-const CLOSED_STATUS = { sell: 'SOLD', rent: 'RENTED', lease: 'LEASED' };
-export const STATUS_FILTERS = {
-    PENDING: { status: 'pending' },
-    APPROVED: { status: 'active' },
-    REJECTED: { status: 'rejected' },
-    SOLD: { status: 'inactive', listingType: 'sell' },
-    RENTED: { status: 'inactive', listingType: 'rent' },
-    LEASED: { status: 'inactive', listingType: 'lease' },
-};
-export const CLOSED_STATUS_FOR_TYPE = CLOSED_STATUS;
-
-export const statusOut = (listing) => ({
-    pending: 'PENDING',
-    active: 'APPROVED',
-    rejected: 'REJECTED',
-    inactive: CLOSED_STATUS[listing.listingType],
-})[listing.status];
-
-export const listingTypeOut = (type) => LISTING_TYPE_OUT[type];
-
-const PERIOD_OUT = { total: 'TOTAL', month: 'MONTH', year: 'YEAR' };
-
-/** Parses an upper-case enum value (case-insensitive). Returns undefined when absent, null when invalid. */
-export const parseEnum = (value, map) => {
+/** Case-insensitive enum value. Returns undefined when absent, null when invalid. */
+export const parseEnum = (value, allowed) => {
     if (value === undefined || value === null || value === '') return undefined;
     const key = String(value).trim().toUpperCase();
-    return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
+    return allowed.includes(key) ? key : null;
 };
 
-export const enumList = (map) => Object.keys(map).join(', ');
-
-// ── States (by name on districts/listings, by id in the API) ─────────────────
-
-/** Map of lower-cased state name → State, loaded once per request. */
-export const loadStateIndex = async () => {
-    const states = await State.find().select('name isActive').lean();
-    return new Map(states.map((s) => [s.name.toLowerCase(), s]));
-};
-
-const stateRef = (stateIndex, name) => {
-    if (!name) return null;
-    const state = stateIndex?.get(name.toLowerCase());
-    return state ? { id: state._id, name: state.name } : { id: null, name };
-};
+export const enumList = (allowed) => allowed.join(', ');
 
 // ── Serializers ──────────────────────────────────────────────────────────────
 
-const thumbnailUrl = (media) => (media.storage === 'imagekit' ? `${media.url}?tr=w-400` : media.url);
-
-const images = (listing) => listing.media
-    .filter((m) => m.type === 'image')
-    .map((m, i) => ({ id: m._id, url: m.url, thumbnail_url: thumbnailUrl(m), is_primary: i === 0, sort_order: i }));
-
-const districtRef = (district) => {
-    if (!district) return null;
-    return district.name !== undefined ? { id: district._id, name: district.name } : { id: district, name: null };
+/** { id, name } for a populated reference, { id, name: null } for a bare id, or null. */
+export const refOut = (value) => {
+    if (!value) return null;
+    return value.name !== undefined ? { id: value._id, name: value.name } : { id: value, name: null };
 };
 
-const UNIT_LABEL = { kattha: 'Katha', decimal: 'Dismil', bigha: 'Bigha', acre: 'Acre', sqft: 'sq ft' };
-const PERIOD_LABEL = { month: ' / month', year: ' / year' };
+const refId = (value) => value?._id ?? value ?? null;
 
-// e.g. { amount: 250000, per_unit: 'KATHA', period: 'TOTAL', label: '₹2.50 Lakhs / Katha' }
-const priceOut = (listing) => {
-    const unit = listing.priceUnit || 'total';
-    const amount = unit === 'total' ? listing.price : listing.unitPrice;
+const imagekitHost = () => {
+    try {
+        return process.env.IMAGEKIT_URL_ENDPOINT ? new URL(process.env.IMAGEKIT_URL_ENDPOINT).host : null;
+    } catch {
+        return null;
+    }
+};
+
+// ImageKit resizes on the fly; other storage serves the original
+export const thumbnailUrl = (url) => {
+    const host = imagekitHost();
+    try {
+        return host && new URL(url).host === host ? `${url}?tr=w-400` : url;
+    } catch {
+        return url;
+    }
+};
+
+const imagesOut = (property) => property.images.map((image) => ({
+    url: image.url,
+    thumbnail_url: thumbnailUrl(image.url),
+    is_primary: image.is_primary,
+    sort_order: image.sort_order,
+}));
+
+// e.g. { amount: 250000, per_unit: 'KATHA', label: '₹2.50 Lakhs / Katha' }
+const priceOut = (price) => ({
+    amount: price.amount,
+    per_unit: price.per_unit,
+    label: `${formatPriceINR(price.amount)} / ${UNIT_LABELS[price.per_unit] || price.per_unit}`,
+});
+
+// Display title (not stored): "5.00 Katha land in Darbhanga"
+const titleFor = (property) => {
+    const place = property.district_id?.name;
+    return `${formatArea(property.area.value, property.area.unit)} land${place ? ` in ${place}` : ''}`;
+};
+
+/** Card for list screens (GET /listings, /properties/my, /wishlist). Expects state_id and district_id populated. */
+export const propertyCard = (property, { savedIds } = {}) => {
+    const primary = property.images[0];
     return {
-        amount: amount ?? null,
-        per_unit: UNIT_OUT[unit],
-        period: PERIOD_OUT[listing.pricePeriod || 'total'],
-        label: amount == null
-            ? 'Price on request'
-            : `${formatPriceINR(amount)}${UNIT_LABEL[unit] ? ` / ${UNIT_LABEL[unit]}` : ''}${PERIOD_LABEL[listing.pricePeriod] || ''}`,
-    };
-};
-
-const titleFor = (listing) => {
-    if (listing.title) return listing.title;
-    const place = listing.district?.name || listing.city || listing.address;
-    return `${formatArea(listing.area.value, listing.area.unit)} land${place ? ` in ${place}` : ''}`;
-};
-
-/** Card for list screens (GET /listings, /properties/my, /wishlist). */
-export const propertyCard = (listing, { stateIndex, savedIds } = {}) => {
-    const imgs = images(listing);
-    return {
-        id: listing._id,
-        listing_type: listingTypeOut(listing.listingType),
-        status: statusOut(listing),
-        title: titleFor(listing),
-        khata_number: listing.khataNo || null,
-        khasra_number: listing.khasraNo || null,
-        area: { value: listing.area.value, unit: UNIT_OUT[listing.area.unit] },
-        price: priceOut(listing),
-        estimated_total: listing.price ?? null,
-        thumbnail_url: imgs[0]?.thumbnail_url || null,
-        image_count: imgs.length,
-        state: stateRef(stateIndex, listing.state),
-        district: districtRef(listing.district),
-        is_saved: savedIds ? savedIds.has(String(listing._id)) : false,
-        created_at: listing.createdAt,
+        id: property._id,
+        listing_type: property.listing_type,
+        status: property.status,
+        title: titleFor(property),
+        khata_number: property.khata_number,
+        khasra_number: property.khasra_number,
+        area: { value: property.area.value, unit: property.area.unit },
+        price: priceOut(property.price),
+        estimated_total: property.estimated_total ?? null,
+        address: property.address || null,
+        thumbnail_url: primary ? thumbnailUrl(primary.url) : null,
+        image_count: property.images.length,
+        state: refOut(property.state_id),
+        district: refOut(property.district_id),
+        is_saved: savedIds ? savedIds.has(String(property._id)) : false,
+        created_at: property.created_at,
     };
 };
 
 /**
- * Full property. `viewer` is the signed-in app user (or undefined); the owner
- * also sees the review fields, and signed-in users see the owner's number.
- * `admin` adds everything the admin review page needs.
+ * Full property. `viewer` is the signed-in user (or undefined): signed-in users
+ * see the owner's mobile number (Call / WhatsApp); the owner also sees the
+ * review fields. `admin` adds everything the admin review page needs.
+ * Expects owner_id, state_id and district_id populated.
  */
-export const propertyDetail = (listing, { stateIndex, savedIds, viewer, admin = false } = {}) => {
-    const ownerId = listing.owner?._id ?? listing.owner ?? listing.websiteOwner?._id ?? listing.websiteOwner ?? null;
+export const propertyDetail = (property, { savedIds, viewer, admin = false } = {}) => {
+    const ownerId = refId(property.owner_id);
     const isOwner = Boolean(viewer && ownerId && String(ownerId) === String(viewer._id));
-    const [lng, lat] = listing.location?.coordinates || [];
-    const approved = listing.status === 'active' && listing.reviewedAt;
+    const [lng, lat] = property.location?.coordinates || [];
     return {
-        ...propertyCard(listing, { stateIndex, savedIds }),
+        ...propertyCard(property, { savedIds }),
         owner_id: ownerId,
-        description: listing.description || null,
-        images: images(listing),
-        location: lat !== undefined ? { latitude: lat, longitude: lng } : null,
-        state_id: stateRef(stateIndex, listing.state)?.id ?? null,
-        district_id: listing.district?._id ?? listing.district ?? null,
-        posted_by: {
-            type: listing.postedByType,
-            name: listing.postedByType === 'owner' ? (listing.postedByName || 'Owner') : (listing.postedByName || 'Agent'),
-            ...((viewer || admin) && { mobile: listing.contactPhone }),
+        owner: {
+            name: property.owner_id?.name || null,
+            ...((viewer || admin) && { mobile: property.owner_id?.mobile || null }),
         },
+        description: property.description || null,
+        images: imagesOut(property),
+        location: lat !== undefined ? { latitude: lat, longitude: lng } : null,
+        state_id: refId(property.state_id),
+        district_id: refId(property.district_id),
         is_owner: isOwner,
-        updated_at: listing.updatedAt,
+        updated_at: property.updated_at,
         ...((isOwner || admin) && {
-            rejection_reason: listing.rejectionReason || null,
-            approved_by: approved ? listing.reviewedBy : null,
-            approved_at: approved ? listing.reviewedAt : null,
-            stats: { views: listing.views, contact_views: listing.contactViews, saves: listing.saves, enquiries: listing.enquiries },
+            rejection_reason: property.rejection_reason || null,
+            approved_by: property.approved_by ?? null,
+            approved_at: property.approved_at ?? null,
         }),
-        ...(admin && {
-            posted_from: listing.websiteOwner ? 'WEBSITE' : listing.postedByAdmin ? 'ADMIN' : 'APP',
-            reviewed_by: listing.reviewedBy || null,
-            reviewed_at: listing.reviewedAt || null,
-            is_deleted: Boolean(listing.isDeleted),
-            deleted_at: listing.deletedAt || null,
-        }),
+        ...(admin && { is_deleted: Boolean(property.is_deleted) }),
     };
 };
 
-export const userOut = (user, stateIndex) => {
-    const district = user.district
-        ? { id: user.district._id ?? user.district, name: user.district.name ?? null }
-        : null;
-    const state = stateRef(stateIndex, user.state);
-    return {
-        id: user._id,
-        mobile: user.phone,
-        name: user.name || null,
-        email: user.email || null,
-        state_id: state?.id ?? null,
-        state,
-        district_id: district?.id ?? null,
-        district,
-        profile_complete: Boolean(user.name && user.district),
-        created_at: user.createdAt,
-    };
-};
+/** Expects state_id and district_id populated. */
+export const userOut = (user) => ({
+    id: user._id,
+    mobile: user.mobile,
+    name: user.name || null,
+    email: user.email || null,
+    state_id: refId(user.state_id),
+    state: refOut(user.state_id),
+    district_id: refId(user.district_id),
+    district: refOut(user.district_id),
+    profile_complete: Boolean(user.name && user.district_id),
+    created_at: user.created_at,
+});
 
 export const notificationOut = (n) => ({
     id: n._id,
     title: n.title,
     body: n.body || null,
     type: n.type,
-    reference_id: n.referenceId || null,
-    is_read: n.isRead,
-    created_at: n.createdAt,
+    reference_id: n.reference_id || null,
+    is_read: n.is_read,
+    created_at: n.created_at,
 });
+
+export const PLACE_POPULATE = [
+    { path: 'state_id', select: 'name' },
+    { path: 'district_id', select: 'name' },
+];

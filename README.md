@@ -590,14 +590,15 @@ npm run dev   # Starts admin panel on http://localhost:5174
 
 <br/>
 
+The app, website and admin panel use `/api/v1` (technical document section 6). Full reference: `/api-docs`.
+
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | /api/users/register | Register new user |
-| POST | /api/users/login | Login (returns JWT) |
-| POST | /api/users/admin | Admin login |
-| GET | /api/users/me | Get current user (JWT required) |
-| POST | /api/users/forgot | Send password reset email |
-| POST | /api/users/reset/:token | Reset password |
+| POST | /api/v1/auth/send-otp | Send OTP to a mobile number (login and sign-up) |
+| POST | /api/v1/auth/verify-otp | Verify OTP, create the user if new, return tokens |
+| POST | /api/v1/auth/refresh-token | New access token (refresh token rotates) |
+| GET / PUT | /api/v1/users/me | Profile ("Tell us about you": name, email, state_id, district_id) |
+| POST | /api/v1/admin/auth/login | Admin login (email + password) |
 
 </details>
 
@@ -608,11 +609,14 @@ npm run dev   # Starts admin panel on http://localhost:5174
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | /api/products/list | List all properties |
-| GET | /api/products/single/:id | Get property by ID |
-| POST | /api/products/add | Add property with images (admin) |
-| POST | /api/products/update | Update property (admin) |
-| POST | /api/products/remove | Delete property (admin) |
+| POST | /api/v1/list-property | **List a property — the one create API** for the app, website and admin (`listing_type`: SELL / RENT / LEASE) |
+| GET | /api/v1/list-property | All listings — approved properties: search, filters, sort, pagination |
+| GET | /api/v1/list-property/:id | Property detail |
+| GET | /api/v1/list-property/my | My properties with status |
+| PUT / DELETE | /api/v1/list-property/:id | Edit / delete own property |
+| PATCH | /api/v1/list-property/:id/status | Mark SOLD / RENTED / LEASED |
+| POST | /api/v1/uploads/presign | Photo upload URLs |
+| GET / PATCH / PUT / DELETE | /api/v1/admin/properties… | Admin review: approve, reject, edit, delete, restore |
 
 </details>
 

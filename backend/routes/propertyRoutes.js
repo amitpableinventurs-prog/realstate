@@ -1,12 +1,9 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { searchProperties, getLocationTrends, getLocalitySuggestions, createUserListing, getUserListings, updateUserListing, deleteUserListing, validateApiKeys, getCacheStats } from '../controller/propertyController.js';
+import { searchProperties, getLocationTrends, getLocalitySuggestions, validateApiKeys, getCacheStats } from '../controller/propertyController.js';
 import { getPublicModels } from '../controller/aiModelController.js';
 import { transformAISearchRequest } from '../middleware/transformRequest.js';
-import { protect, adminProtect } from '../middleware/authMiddleware.js';
-import upload from '../middleware/multer.js';
-import { uploadListingMedia } from '../middleware/appUploadMiddleware.js';
-import { createListing, getWebsiteUserListings, deleteWebsiteUserListing } from '../controller/appListingController.js';
+import { adminProtect } from '../middleware/authMiddleware.js';
 import { createDistributedRateLimiter } from '../utils/distributedRateLimiter.js';
 
 const router = express.Router();
@@ -47,21 +44,6 @@ router.get('/ai/models', getPublicModels);
 
 // Location trends — same rate limit (shares the 10/hr budget)
 router.get('/locations/:city/trends', aiLimiter, getLocationTrends);
-
-// ── User listing routes (auth required) ──────────────────────────────────────
-// Website "List Your Property" — same fields and listing model as the mobile app
-// (khata/khasra, area unit, price per kattha/dismil, media, location, sale/rent/lease).
-// Reviewed in the admin Review Queue; shown on the website once approved.
-const wrap = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
-router.post('/user/listings', protect, uploadListingMedia, wrap(createListing));
-router.get('/user/listings', protect, wrap(getWebsiteUserListings));
-router.delete('/user/listings/:id', protect, wrap(deleteWebsiteUserListing));
-
-// Older beds/baths form (kept for existing website properties)
-router.post('/user/properties', protect, upload.array('images', 4), createUserListing);
-router.get('/user/properties', protect, getUserListings);
-router.put('/user/properties/:id', protect, upload.array('images', 4), updateUserListing);
-router.delete('/user/properties/:id', protect, deleteUserListing);
 
 // ── Rate limiter stats (for monitoring) ──────────────────────────────────────
 router.get('/rate-limit/stats', adminProtect, async (req, res) => {

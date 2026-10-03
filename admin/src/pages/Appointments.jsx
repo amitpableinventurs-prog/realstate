@@ -91,7 +91,7 @@ const Appointments = () => {
 
   const filteredAppointments = appointments.filter((apt) => {
     const clientName = apt.userId?.name || apt.guestInfo?.name || "";
-    const clientEmail = apt.userId?.email || apt.guestInfo?.email || "";
+    const clientEmail = [apt.userId?.email, apt.userId?.mobile, apt.guestInfo?.email, apt.guestInfo?.phone].filter(Boolean).join(" ");
     const matchesSearch =
       !searchTerm ||
       apt.propertyId?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -193,9 +193,13 @@ const Appointments = () => {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-[#17131A] line-clamp-1">
-                              {appointment.propertyId.title}
+                              {appointment.propertyId?.title || "Property no longer available"}
                             </p>
-                            <p className="text-xs text-[#9CA3AF]">{appointment.propertyId.location}</p>
+                            {appointment.propertyId?.area && (
+                              <p className="text-xs text-[#9CA3AF]">
+                                {appointment.propertyId.area.value} {appointment.propertyId.area.unit === "KATHA" ? "Katha" : "Dismil"}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -211,7 +215,7 @@ const Appointments = () => {
                               {appointment.userId?.name || appointment.guestInfo?.name || "Unknown"}
                             </p>
                             <p className="text-xs text-[#9CA3AF]">
-                              {appointment.userId?.email || appointment.guestInfo?.email || "—"}
+                              {appointment.userId?.mobile || appointment.userId?.email || appointment.guestInfo?.phone || appointment.guestInfo?.email || "—"}
                             </p>
                             {!appointment.userId && appointment.guestInfo && (
                               <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full font-medium">Guest</span>

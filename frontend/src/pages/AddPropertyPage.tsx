@@ -1,41 +1,55 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  listingsAPI, districtsAPI,
-  type District, type IndianState, type ListingMeta,
+  propertiesAPI, uploadsAPI, propertyErrorsToForm, apiErrorMessage, apiFieldErrors,
+  PHOTO_TYPES, MAX_PHOTO_MB, type ListingType, type Unit,
 } from '../services/api';
+import { useStates, useDistricts } from '../hooks/useMasterData';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 
-// Same fields and API as the mobile "Register your property" screen: the
-// listing goes to the admin Review Queue and is public once approved.
+// Add / edit a land property (technical document 4.4 and 6.8): Sell / Rent /
+// Lease, khata and khasra numbers, area and price per Katha or Dismil, photos,
+// description and an optional current location. Same API as the mobile app
+// (POST /v1/list-property); the property is public once the admin approves it.
+// Editing: /add-property?edit=<id> (PUT /v1/list-property/:id).
 
-const MAX_FILES = 10;
+const MAX_PHOTOS = 10;
 
 const inputClass =
   'w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] bg-white focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] disabled:opacity-60';
 const labelClass = 'block font-manrope text-sm font-medium text-[#374151] mb-1';
 const sectionClass = 'bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5';
 
-const LISTING_TYPE_LABELS: Record<string, string> = { sell: 'For Sale', rent: 'For Rent', lease: 'For Lease' };
+const LISTING_TYPES: { value: ListingType; label: string }[] = [
+  { value: 'SELL', label: 'For Sale' },
+  { value: 'RENT', label: 'For Rent' },
+  { value: 'LEASE', label: 'For Lease' },
+];
+const UNITS: { value: Unit; label: string }[] = [
+  { value: 'KATHA', label: 'Katha' },
+  { value: 'DISMIL', label: 'Dismil' },
+];
+const TYPE_FROM_QUERY: Record<string, ListingType> = { sell: 'SELL', sale: 'SELL', rent: 'RENT', lease: 'LEASE' };
 
 interface FormState {
-  listingType: 'sell' | 'rent' | 'lease';
-  propertyType: string;
-  khataNo: string;
-  khasraNo: string;
-  area: string;
-  areaUnit: string;
-  price: string;
-  priceUnit: string;
-  pricePeriod: 'month' | 'year';
+  listing_type: ListingType;
+  khata_number: string;
+  khasra_number: string;
+  area_value: string;
+  area_unit: Unit;
+  price_amount: string;
+  price_unit: Unit;
   description: string;
   address: string;
-  contactPhone: string;
-  district: string;
+  state_id: string;
+  district_id: string;
 }
+
+// A photo in display order: already uploaded (url) or to upload (file)
+interface Photo { url?: string; file?: File; preview?: string }
 
 const Required = () => <span className="text-red-500">*</span>;
 
@@ -45,125 +59,116 @@ const FieldError: React.FC<{ message?: string }> = ({ message }) =>
 const formatINR = (n: number) =>
   n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(2)} Lakhs` : `₹${Math.round(n).toLocaleString('en-IN')}`;
 
+const photoProblem = (file: File) => {
+  if (!PHOTO_TYPES.includes(file.type)) return `${file.name}: only JPG, PNG or WEBP photos`;
+  if (file.size > MAX_PHOTO_MB * 1024 * 1024) return `${file.name}: larger than ${MAX_PHOTO_MB} MB`;
+  return null;
+};
+
 const AddPropertyPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
   const { user, isAuthenticated, isLoading } = useAuth();
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast.error('Please sign in to add a property listing.');
-      navigate('/signin', { replace: true });
-    }
-  }, [isAuthenticated, isLoading, navigate]);
-
-  const [meta, setMeta] = useState<ListingMeta | null>(null);
   const [form, setForm] = useState<FormState>({
-    listingType: 'sell',
-    propertyType: 'land',
-    khataNo: '',
-    khasraNo: '',
-    area: '',
-    areaUnit: 'decimal',
-    price: '',
-    priceUnit: 'kattha',
-    pricePeriod: 'month',
+    listing_type: TYPE_FROM_QUERY[(searchParams.get('type') || '').toLowerCase()] || 'SELL',
+    khata_number: '',
+    khasra_number: '',
+    area_value: '',
+    area_unit: 'KATHA',
+    price_amount: '',
+    price_unit: 'KATHA',
     description: '',
     address: '',
-    contactPhone: '',
-    district: '',
+    state_id: '',
+    district_id: '',
   });
-  const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<{ url: string; isVideo: boolean }[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState<null | 'created' | 'updated'>(null);
+  const [loadingEdit, setLoadingEdit] = useState(Boolean(editId));
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const states = useStates();
+  const { districts, loading: loadingDistricts } = useDistricts(form.state_id);
 
-  // State narrows the district list; the chosen district's admin reviews the listing
-  const [states, setStates] = useState<IndianState[] | null>(null);
-  const [selectedState, setSelectedState] = useState('');
-  const [districts, setDistricts] = useState<District[]>([]);
-  const [loadingDistricts, setLoadingDistricts] = useState(false);
-
+  // Sign in first, and finish "Tell us about you" (it gives the default district)
   useEffect(() => {
-    listingsAPI.meta()
-      .then((res) => {
-        const m = res.data.data;
-        setMeta(m);
-        setForm((prev) => ({ ...prev, areaUnit: m.defaultAreaUnit, priceUnit: m.defaultPriceUnit }));
-      })
-      .catch(() => toast.error('Could not load the form options. Please refresh the page.'));
-    districtsAPI.states()
-      .then((res) => setStates(res.data.states))
-      .catch(() => setStates([]));
-  }, []);
-
-  // Start with the state/district from the user's profile
-  useEffect(() => {
-    if (user?.state && !selectedState) setSelectedState(user.state);
-  }, [user?.state]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!selectedState) {
-      setDistricts([]);
-      return;
+    if (isLoading) return;
+    const here = `/add-property${window.location.search}`;
+    if (!isAuthenticated) {
+      toast.error('Please login to list a property.');
+      navigate(`/signin?next=${encodeURIComponent(here)}`, { replace: true });
+    } else if (!user?.profile_complete) {
+      navigate(`/complete-profile?next=${encodeURIComponent(here)}`, { replace: true });
     }
-    let cancelled = false;
-    setLoadingDistricts(true);
-    districtsAPI.list({ state: selectedState })
-      .then((res) => {
-        if (cancelled) return;
-        setDistricts(res.data.districts);
-        // Keep the profile district when it is in this state
-        setForm((prev) => ({
-          ...prev,
-          district: res.data.districts.some((d) => d.id === (prev.district || user?.district?.id))
-            ? (prev.district || user?.district?.id || '')
-            : '',
-        }));
+  }, [isAuthenticated, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // New property: state and district default to the profile
+  useEffect(() => {
+    if (!editId && user && !form.state_id) {
+      setForm((prev) => ({ ...prev, state_id: user.state_id || '', district_id: user.district_id || '' }));
+    }
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Editing: load the property
+  useEffect(() => {
+    if (!editId || !isAuthenticated) return;
+    propertiesAPI.getById(editId)
+      .then(({ data }) => {
+        const p = data.data;
+        if (!p.is_owner) throw new Error('You can only edit your own properties');
+        setForm({
+          listing_type: p.listing_type,
+          khata_number: p.khata_number,
+          khasra_number: p.khasra_number,
+          area_value: String(p.area.value),
+          area_unit: p.area.unit,
+          price_amount: String(p.price.amount),
+          price_unit: p.price.per_unit,
+          description: p.description || '',
+          address: p.address || '',
+          state_id: p.state_id || '',
+          district_id: p.district_id || '',
+        });
+        setPhotos(p.images.map((i) => ({ url: i.url })));
+        setCoords(p.location);
       })
-      .catch(() => { if (!cancelled) setDistricts([]); })
-      .finally(() => { if (!cancelled) setLoadingDistricts(false); });
-    return () => { cancelled = true; };
-  }, [selectedState]); // eslint-disable-line react-hooks/exhaustive-deps
+      .catch((err) => {
+        toast.error(apiErrorMessage(err, err.message || 'Could not load the property'));
+        navigate('/my-listings', { replace: true });
+      })
+      .finally(() => setLoadingEdit(false));
+  }, [editId, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Release preview object URLs
-  useEffect(() => () => previews.forEach((p) => URL.revokeObjectURL(p.url)), []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Handlers ──────────────────────────────────────────────
+  useEffect(() => () => photos.forEach((p) => p.preview && URL.revokeObjectURL(p.preview)), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    setErrors((prev) => {
-      if (!prev[key]) return prev;
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [key]: value, ...(key === 'state_id' && { district_id: '' }) }));
+    setErrors((prev) => ({ ...prev, [key]: '' }));
   };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    set(e.target.name as keyof FormState, e.target.value as never);
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files || []);
-    const room = MAX_FILES - files.length;
-    if (picked.length > room) toast.error(`You can add up to ${MAX_FILES} photos and videos.`);
-    const allowed = picked.slice(0, Math.max(0, room));
-    setFiles((prev) => [...prev, ...allowed]);
-    setPreviews((prev) => [
-      ...prev,
-      ...allowed.map((f) => ({ url: URL.createObjectURL(f), isVideo: f.type.startsWith('video/') })),
-    ]);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    const problem = picked.map(photoProblem).find(Boolean);
+    if (problem) toast.error(problem);
+    const ok = picked.filter((f) => !photoProblem(f));
+    const room = MAX_PHOTOS - photos.length;
+    if (ok.length > room) toast.error(`You can add up to ${MAX_PHOTOS} photos.`);
+    setPhotos((prev) => [...prev, ...ok.slice(0, Math.max(0, room)).map((file) => ({ file, preview: URL.createObjectURL(file) }))]);
+    setErrors((prev) => ({ ...prev, image_urls: '' }));
   };
 
-  const removeFile = (index: number) => {
-    URL.revokeObjectURL(previews[index].url);
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => {
+      const preview = prev[index].preview;
+      if (preview) URL.revokeObjectURL(preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const getLocation = () => {
@@ -174,10 +179,7 @@ const AddPropertyPage: React.FC = () => {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoords({
-          latitude: Number(pos.coords.latitude.toFixed(6)),
-          longitude: Number(pos.coords.longitude.toFixed(6)),
-        });
+        setCoords({ latitude: Number(pos.coords.latitude.toFixed(6)), longitude: Number(pos.coords.longitude.toFixed(6)) });
         setLocating(false);
       },
       () => {
@@ -188,68 +190,55 @@ const AddPropertyPage: React.FC = () => {
     );
   };
 
-  // Live total for a price quoted per unit, e.g. 2.5 Dismil at ₹1,50,000 per Kattha
+  // The server calculates the estimated total when both units are the same
   const totalPreview = (() => {
-    if (!meta || form.priceUnit === 'total') return null;
-    const area = Number(form.area);
-    const price = Number(form.price);
-    const areaSqft = meta.areaUnits.find((u) => u.value === form.areaUnit)?.sqft;
-    const unitSqft = meta.priceUnits.find((u) => u.value === form.priceUnit)?.sqft;
-    if (!(area > 0) || !(price > 0) || !areaSqft || !unitSqft) return null;
-    return formatINR((price * area * areaSqft) / unitSqft);
+    const area = Number(form.area_value);
+    const price = Number(form.price_amount);
+    if (!(area > 0) || !(price > 0) || form.area_unit !== form.price_unit) return null;
+    return formatINR(price * area);
   })();
-
-  const isLand = form.propertyType === 'land';
-  const priceRequired = form.listingType !== 'sell';
-  const needsPhone = !user?.phone;
-  const periodSuffix = form.listingType === 'rent' ? ' / month' : form.listingType === 'lease' ? ` / ${form.pricePeriod}` : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const fd = new FormData();
-    fd.append('listingType', form.listingType);
-    fd.append('propertyType', form.propertyType);
-    if (form.khataNo.trim()) fd.append('khataNo', form.khataNo.trim());
-    if (form.khasraNo.trim()) fd.append('khasraNo', form.khasraNo.trim());
-    fd.append('area', form.area);
-    fd.append('areaUnit', form.areaUnit);
-    if (form.price) {
-      fd.append('price', form.price);
-      fd.append('priceUnit', form.priceUnit);
+    if (!photos.length) {
+      setErrors({ image_urls: 'Add at least 1 photo' });
+      return;
     }
-    if (form.listingType === 'lease') fd.append('pricePeriod', form.pricePeriod);
-    fd.append('description', form.description.trim());
-    fd.append('district', form.district);
-    if (selectedState) fd.append('state', selectedState);
-    if (form.address.trim()) fd.append('address', form.address.trim());
-    if (coords) {
-      fd.append('latitude', String(coords.latitude));
-      fd.append('longitude', String(coords.longitude));
-    }
-    if (needsPhone) fd.append('contactPhone', form.contactPhone);
-    files.forEach((file) => fd.append('media', file));
-
     setSubmitting(true);
     setErrors({});
     try {
-      await listingsAPI.create(fd);
-      setSubmitted(true);
+      // Upload new photos, keeping the display order (the first is the cover)
+      const newUrls = await uploadsAPI.uploadPhotos(photos.filter((p) => p.file).map((p) => p.file as File));
+      let next = 0;
+      const imageUrls = photos.map((p) => p.url || newUrls[next++]);
+      setPhotos(imageUrls.map((url) => ({ url })));
+
+      const body = {
+        listing_type: form.listing_type,
+        khata_number: form.khata_number.trim(),
+        khasra_number: form.khasra_number.trim(),
+        area: { value: Number(form.area_value), unit: form.area_unit },
+        price: { amount: Number(form.price_amount), per_unit: form.price_unit },
+        description: form.description.trim(),
+        address: form.address.trim() || (editId ? null : undefined),
+        image_urls: imageUrls,
+        location: coords,
+        ...(form.district_id && { state_id: form.state_id, district_id: form.district_id }),
+      };
+      if (editId) await propertiesAPI.update(editId, body);
+      else await propertiesAPI.create(body);
+      setSubmitted(editId ? 'updated' : 'created');
       window.scrollTo(0, 0);
-    } catch (err: any) {
-      const data = err.response?.data;
-      if (data?.errors) {
-        setErrors(data.errors);
-        toast.error(data.message || 'Please fix the highlighted fields.');
-      } else {
-        toast.error(data?.message || 'Failed to submit listing. Please try again.');
-      }
+    } catch (err) {
+      const fieldErrors = apiFieldErrors(err);
+      setErrors(propertyErrorsToForm(fieldErrors));
+      toast.error(apiErrorMessage(err, (err as Error).message || 'Could not save the property. Please try again.'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || loadingEdit) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAF8FB]">
         <div className="w-12 h-12 border-4 border-[#A3078F] border-t-transparent rounded-full animate-spin" />
@@ -269,22 +258,20 @@ const AddPropertyPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="font-fraunces text-3xl font-bold text-[#1A0A1E] mb-3">Listing Submitted!</h2>
+          <h2 className="font-fraunces text-3xl font-bold text-[#1A0A1E] mb-3">
+            {submitted === 'created' ? 'Property submitted!' : 'Property updated!'}
+          </h2>
           <p className="font-manrope text-[#6B7280] mb-8">
-            Your property is under review by the admin for your district. It will appear on Bhumi Bazar once
-            approved, and we'll email you the decision.
+            Your property is under review by the admin for its district. It will appear on Bhumi Bazar once approved —
+            you'll get a notification with the decision.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              to="/my-listings"
-              className="bg-[#A3078F] text-white font-manrope font-semibold px-6 py-3 rounded-lg hover:bg-[#8E0A82] transition-[background-color]"
-            >
+            <Link to="/my-listings"
+              className="bg-[#A3078F] text-white font-manrope font-semibold px-6 py-3 rounded-lg hover:bg-[#8E0A82] transition-[background-color]">
               View My Listings
             </Link>
-            <Link
-              to="/properties"
-              className="border border-[#A3078F] text-[#A3078F] font-manrope font-semibold px-6 py-3 rounded-lg hover:bg-[#A3078F] hover:text-white transition-[background-color,color]"
-            >
+            <Link to="/properties"
+              className="border border-[#A3078F] text-[#A3078F] font-manrope font-semibold px-6 py-3 rounded-lg hover:bg-[#A3078F] hover:text-white transition-[background-color,color]">
               Browse Properties
             </Link>
           </div>
@@ -302,282 +289,178 @@ const AddPropertyPage: React.FC = () => {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
         <div className="mb-10">
-          <p className="font-manrope text-sm text-[#A3078F] font-semibold mb-1">You're listing</p>
-          <h1 className="font-fraunces text-4xl font-bold text-[#1A0A1E] mb-2">Register your property</h1>
+          <p className="font-manrope text-sm text-[#A3078F] font-semibold mb-1">{editId ? 'Editing' : "You're listing"}</p>
+          <h1 className="font-fraunces text-4xl font-bold text-[#1A0A1E] mb-2">{editId ? 'Edit your property' : 'Register your property'}</h1>
           <p className="font-manrope text-[#6B7280]">
-            Add land details so buyers can find and verify this listing. It goes live after the admin approves it.
+            {editId
+              ? 'Changes to an approved property are reviewed again before they go live.'
+              : 'Add land details so buyers can find and verify this listing. It goes live after the admin approves it.'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8" noValidate={false}>
+        <form onSubmit={handleSubmit} className="space-y-8">
 
           {/* ── Type ── */}
           <section className={sectionClass}>
             <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Listing type</h2>
-
             <fieldset>
               <legend className={labelClass}>Listing for <Required /></legend>
               <div className="grid grid-cols-3 gap-3" role="radiogroup">
-                {(meta?.listingTypes.map((t) => t.value) ?? ['sell', 'rent', 'lease']).map((value) => (
-                  <label
-                    key={value}
+                {LISTING_TYPES.map(({ value, label }) => (
+                  <label key={value}
                     className={`cursor-pointer text-center rounded-lg border px-3 py-2.5 font-manrope text-sm font-semibold transition-colors ${
-                      form.listingType === value
-                        ? 'border-[#A3078F] bg-[#A3078F] text-white'
-                        : 'border-[#E8E1EA] text-[#374151] hover:border-[#A3078F]'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="listingType"
-                      value={value}
-                      checked={form.listingType === value}
-                      onChange={() => set('listingType', value as FormState['listingType'])}
-                      className="sr-only"
-                    />
-                    {LISTING_TYPE_LABELS[value] ?? value}
+                      form.listing_type === value ? 'border-[#A3078F] bg-[#A3078F] text-white' : 'border-[#E8E1EA] text-[#374151] hover:border-[#A3078F]'
+                    }`}>
+                    <input type="radio" name="listing_type" value={value} checked={form.listing_type === value}
+                      onChange={() => set('listing_type', value)} className="sr-only" />
+                    {label}
                   </label>
                 ))}
               </div>
+              <FieldError message={errors.listing_type} />
             </fieldset>
-
-            <div>
-              <label htmlFor="propertyType" className={labelClass}>Property type <Required /></label>
-              <select id="propertyType" name="propertyType" value={form.propertyType} onChange={handleChange} className={inputClass}>
-                {(meta?.propertyTypes ?? [{ value: 'land', label: 'Land' }]).map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-              <FieldError message={errors.propertyType} />
-            </div>
           </section>
 
-          {/* ── Land records & area ── */}
+          {/* ── Land details ── */}
           <section className={sectionClass}>
             <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Land details</h2>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="khataNo" className={labelClass}>Khata No. {isLand && <Required />}</label>
-                <input id="khataNo" name="khataNo" value={form.khataNo} onChange={handleChange}
-                  required={isLand} maxLength={50} placeholder="KH-10245" className={inputClass} />
-                <FieldError message={errors.khataNo} />
+                <label htmlFor="khata" className={labelClass}>Khata number <Required /></label>
+                <input id="khata" value={form.khata_number} onChange={(e) => set('khata_number', e.target.value)} required maxLength={50}
+                  placeholder="e.g. 123" className={inputClass} />
+                <FieldError message={errors.khata_number} />
               </div>
               <div>
-                <label htmlFor="khasraNo" className={labelClass}>Khasra Number {isLand && <Required />}</label>
-                <input id="khasraNo" name="khasraNo" value={form.khasraNo} onChange={handleChange}
-                  required={isLand} maxLength={50} placeholder="123/2" className={inputClass} />
-                <FieldError message={errors.khasraNo} />
+                <label htmlFor="khasra" className={labelClass}>Khasra number <Required /></label>
+                <input id="khasra" value={form.khasra_number} onChange={(e) => set('khasra_number', e.target.value)} required maxLength={50}
+                  placeholder="e.g. 45/2" className={inputClass} />
+                <FieldError message={errors.khasra_number} />
               </div>
             </div>
-
             <div>
               <label htmlFor="area" className={labelClass}>Area <Required /></label>
               <div className="flex gap-2">
-                <input id="area" name="area" type="number" inputMode="decimal" min="0" step="any"
-                  value={form.area} onChange={handleChange} required placeholder="2.50" className={inputClass} />
-                <select name="areaUnit" value={form.areaUnit} onChange={handleChange} aria-label="Area unit"
-                  className={`${inputClass} w-40 flex-shrink-0`}>
-                  {(meta?.areaUnits ?? []).map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+                <input id="area" type="number" min="0" step="any" value={form.area_value} onChange={(e) => set('area_value', e.target.value)}
+                  required placeholder="5" className={inputClass} />
+                <select value={form.area_unit} onChange={(e) => set('area_unit', e.target.value as Unit)} aria-label="Area unit"
+                  className={`${inputClass} w-36 shrink-0`}>
+                  {UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
                 </select>
               </div>
-              <FieldError message={errors.area || errors.areaUnit} />
+              <FieldError message={errors.area} />
             </div>
           </section>
 
           {/* ── Price ── */}
           <section className={sectionClass}>
             <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Price</h2>
-
             <div>
-              <label htmlFor="price" className={labelClass}>
-                Price (₹) {priceRequired ? <Required /> : <span className="text-[#6B7280] font-normal">(optional — leave empty for "Price on request")</span>}
-              </label>
+              <label htmlFor="price" className={labelClass}>Price per unit (₹) <Required /></label>
               <div className="flex gap-2">
-                <input id="price" name="price" type="number" inputMode="numeric" min="0"
-                  value={form.price} onChange={handleChange} required={priceRequired} placeholder="150000" className={inputClass} />
-                <select name="priceUnit" value={form.priceUnit} onChange={handleChange} aria-label="Price per"
-                  className={`${inputClass} w-44 flex-shrink-0`}>
-                  {(meta?.priceUnits ?? []).map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+                <input id="price" type="number" min="0" value={form.price_amount} onChange={(e) => set('price_amount', e.target.value)}
+                  required placeholder="250000" className={inputClass} />
+                <select value={form.price_unit} onChange={(e) => set('price_unit', e.target.value as Unit)} aria-label="Price per"
+                  className={`${inputClass} w-40 shrink-0`}>
+                  {UNITS.map((u) => <option key={u.value} value={u.value}>Per {u.label}</option>)}
                 </select>
               </div>
-              {form.listingType === 'lease' && (
-                <div className="mt-3">
-                  <label htmlFor="pricePeriod" className={labelClass}>Lease amount is per</label>
-                  <select id="pricePeriod" name="pricePeriod" value={form.pricePeriod} onChange={handleChange} className={`${inputClass} sm:w-60`}>
-                    {(meta?.leasePricePeriods ?? [{ value: 'month', label: 'Per month' }, { value: 'year', label: 'Per year' }]).map((p) => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
               {totalPreview && (
-                <p className="font-manrope text-sm text-[#374151] mt-2">
-                  Total: <strong className="text-[#A3078F]">≈ {totalPreview}{periodSuffix}</strong>
-                </p>
+                <p className="font-manrope text-sm text-[#6B7280] mt-2">Estimated total: <strong className="text-[#A3078F]">{totalPreview}</strong></p>
               )}
-              {form.listingType === 'rent' && !totalPreview && (
-                <p className="font-manrope text-xs text-[#6B7280] mt-1">Rent is per month.</p>
-              )}
-              <FieldError message={errors.price || errors.priceUnit || errors.pricePeriod} />
+              <FieldError message={errors.price} />
             </div>
           </section>
 
-          {/* ── Photos & videos ── */}
+          {/* ── Photos ── */}
           <section className={sectionClass}>
             <div>
-              <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Photos &amp; Videos</h2>
+              <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Photos <Required /></h2>
               <p className="font-manrope text-sm text-[#6B7280] mt-1">
-                Up to {MAX_FILES} photos or videos (JPG, PNG, WebP, HEIC, MP4, MOV). The first one is the cover.
+                At least one photo, up to {MAX_PHOTOS} (JPG, PNG or WEBP, {MAX_PHOTO_MB} MB each). The first one is the cover.
               </p>
             </div>
-
-            {previews.length > 0 && (
+            {photos.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                {previews.map((p, idx) => (
-                  <div key={p.url} className="relative group rounded-lg overflow-hidden aspect-square border border-[#E8E1EA] bg-[#F3EDF4]">
-                    {p.isVideo
-                      ? <video src={p.url} className="w-full h-full object-cover" muted />
-                      : <img src={p.url} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />}
-                    <button
-                      type="button"
-                      onClick={() => removeFile(idx)}
-                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center"
-                      aria-label={`Remove file ${idx + 1}`}
-                    >
-                      ×
-                    </button>
-                    {idx === 0 && (
-                      <span className="absolute bottom-1 left-1 bg-[#A3078F] text-white font-manrope text-xs px-2 py-0.5 rounded">Cover</span>
-                    )}
+                {photos.map((p, i) => (
+                  <div key={p.url || p.preview} className="relative aspect-square rounded-lg overflow-hidden border border-[#E8E1EA] bg-[#F5F0F6]">
+                    <img src={p.url || p.preview} alt="" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => removePhoto(i)} aria-label="Remove photo"
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center">✕</button>
+                    {i === 0 && <span className="absolute bottom-1 left-1 font-manrope text-[10px] font-semibold bg-black/70 text-white px-1.5 py-0.5 rounded">Cover</span>}
                   </div>
                 ))}
               </div>
             )}
-
-            {files.length < MAX_FILES && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 border-2 border-dashed border-[#A3078F]/40 rounded-lg px-6 py-4 text-[#A3078F] font-manrope text-sm hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-[border-color,background-color]"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add photos or videos ({files.length}/{MAX_FILES})
+            {photos.length < MAX_PHOTOS && (
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-[#A3078F]/40 rounded-xl px-6 py-5 font-manrope text-sm font-medium text-[#A3078F] hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-colors">
+                Add photos ({photos.length}/{MAX_PHOTOS})
               </button>
             )}
-            <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="sr-only" onChange={handleFiles} />
-            <FieldError message={errors.media} />
+            <input ref={fileInputRef} type="file" accept={PHOTO_TYPES.join(',')} multiple className="sr-only" onChange={handleFiles} />
+            <FieldError message={errors.image_urls} />
           </section>
 
           {/* ── Location ── */}
           <section className={sectionClass}>
-            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Property location</h2>
-
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Location</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="state" className={labelClass}>State <Required /></label>
-                <select id="state" value={selectedState} onChange={(e) => setSelectedState(e.target.value)}
-                  required disabled={states === null} className={inputClass}>
-                  <option value="">{states === null ? 'Loading states…' : 'Choose state'}</option>
-                  {states?.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
+                <label htmlFor="state" className={labelClass}>State</label>
+                <select id="state" value={form.state_id} onChange={(e) => set('state_id', e.target.value)} className={inputClass}>
+                  <option value="">Choose state</option>
+                  {states.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="district" className={labelClass}>District <Required /></label>
-                <select id="district" name="district" value={form.district} onChange={handleChange}
-                  required disabled={!selectedState || loadingDistricts} className={inputClass}>
-                  <option value="">
-                    {!selectedState ? 'Choose a state first' : loadingDistricts ? 'Loading districts…' : 'Choose district'}
-                  </option>
+                <label htmlFor="district" className={labelClass}>District</label>
+                <select id="district" value={form.district_id} onChange={(e) => set('district_id', e.target.value)}
+                  disabled={!form.state_id || loadingDistricts} className={inputClass}>
+                  <option value="">{!form.state_id ? 'Choose a state first' : loadingDistricts ? 'Loading…' : 'Choose district'}</option>
                   {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
-                <FieldError message={errors.district} />
+                <FieldError message={errors.district_id} />
               </div>
             </div>
-
+            <p className="font-manrope text-xs text-[#9CA3AF] -mt-2">Defaults to the district on your profile. That district's admin reviews the property.</p>
             <div>
-              <span className={labelClass}>Current location <span className="text-[#6B7280] font-normal">(optional)</span></span>
-              <button
-                type="button"
-                onClick={getLocation}
-                disabled={locating}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 border border-[#E8E1EA] rounded-lg px-5 py-2.5 font-manrope text-sm font-semibold text-[#1A0A1E] hover:border-[#A3078F] hover:text-[#A3078F] disabled:opacity-60"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="3" strokeWidth={2} />
-                  <path strokeLinecap="round" strokeWidth={2} d="M12 2v3m0 14v3m10-10h-3M5 12H2" />
-                </svg>
-                {locating ? 'Getting location…' : coords ? 'Update property location' : 'Get property location'}
-              </button>
-              <p className="font-manrope text-xs text-[#6B7280] mt-1.5 tabular-nums">
-                {coords ? `Latitude ${coords.latitude}, Longitude ${coords.longitude}` : 'Latitude and longitude will appear here'}
-                {coords && (
-                  <button type="button" onClick={() => setCoords(null)} className="ml-2 text-[#A3078F] hover:underline">Remove</button>
-                )}
-              </p>
-              <FieldError message={errors.location || errors.latitude || errors.longitude} />
-            </div>
-
-            <div>
-              <label htmlFor="address" className={labelClass}>Address <span className="text-[#6B7280] font-normal">(optional)</span></label>
-              <input id="address" name="address" value={form.address} onChange={handleChange} maxLength={300}
-                placeholder="Google Maps / nearby landmark" className={inputClass} />
+              <label htmlFor="address" className={labelClass}>Address <span className="font-normal text-[#9CA3AF]">(optional)</span></label>
+              <input id="address" value={form.address} onChange={(e) => set('address', e.target.value)} maxLength={300}
+                placeholder="Village / mohalla / landmark" className={inputClass} />
               <FieldError message={errors.address} />
             </div>
-          </section>
-
-          {/* ── Description & contact ── */}
-          <section className={sectionClass}>
-            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Description</h2>
             <div>
-              <label htmlFor="description" className={labelClass}>Description <Required /></label>
-              <textarea id="description" name="description" value={form.description} onChange={handleChange}
-                required rows={4} maxLength={3000} placeholder="Land is located near main road…"
-                className={`${inputClass} resize-none`} />
-              <FieldError message={errors.description} />
-            </div>
-
-            {needsPhone && (
-              <div>
-                <label htmlFor="contactPhone" className={labelClass}>Contact mobile number <Required /></label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 border border-r-0 border-[#E8E1EA] rounded-l-lg font-manrope text-sm text-[#374151] bg-[#FAF8FB]">+91</span>
-                  <input id="contactPhone" name="contactPhone" type="tel" inputMode="numeric" required
-                    value={form.contactPhone}
-                    onChange={(e) => set('contactPhone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="9876543210" className={`${inputClass} rounded-l-none`} />
-                </div>
-                <FieldError message={errors.contactPhone} />
+              <span className={labelClass}>Current location <span className="font-normal text-[#9CA3AF]">(optional)</span></span>
+              <div className="flex flex-wrap items-center gap-3">
+                <button type="button" onClick={getLocation} disabled={locating}
+                  className="font-manrope text-sm font-semibold px-4 py-2.5 rounded-lg border border-[#E8E1EA] text-[#1A0A1E] hover:border-[#A3078F] hover:text-[#A3078F] disabled:opacity-60">
+                  {locating ? 'Getting location…' : coords ? 'Update location' : 'Use my current location'}
+                </button>
+                {coords && (
+                  <button type="button" onClick={() => setCoords(null)} className="font-manrope text-xs text-[#6B7280] underline hover:text-red-600">
+                    Remove location
+                  </button>
+                )}
               </div>
-            )}
+              <p className="font-manrope text-xs text-[#9CA3AF] mt-1.5 tabular-nums">
+                {coords ? `Latitude ${coords.latitude}, Longitude ${coords.longitude}` : 'Only asked when you tap the button.'}
+              </p>
+              <FieldError message={errors.location} />
+            </div>
           </section>
 
-          {/* ── Approval notice ── */}
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="font-manrope text-sm text-amber-800">
-              Your listing is reviewed by the admin for your district before it appears publicly. You'll get an
-              email once it's approved or if something needs fixing.
-            </p>
-          </div>
+          {/* ── Description ── */}
+          <section className={sectionClass}>
+            <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Description <span className="font-manrope text-sm font-normal text-[#9CA3AF]">(optional)</span></h2>
+            <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={4} maxLength={3000}
+              placeholder="Road-facing land, close to the main market…" aria-label="Description" className={`${inputClass} resize-none`} />
+            <FieldError message={errors.description} />
+          </section>
 
-          <button
-            type="submit"
-            disabled={submitting || !meta}
-            className="w-full bg-[#A3078F] text-white font-manrope font-semibold text-base py-3.5 rounded-xl hover:bg-[#8E0A82] transition-[background-color] disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {submitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Submitting…
-              </span>
-            ) : (
-              'Register Property'
-            )}
+          <button type="submit" disabled={submitting}
+            className="w-full bg-[#A3078F] text-white font-manrope font-bold py-3.5 rounded-xl hover:bg-[#8E0A82] transition-[background-color] disabled:opacity-60">
+            {submitting ? 'Saving…' : editId ? 'Save changes' : 'Submit for review'}
           </button>
         </form>
       </div>

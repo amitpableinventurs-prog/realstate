@@ -44,7 +44,7 @@ export function printBanner({ port, env, db, imagekit, nvidia }) {
     line('NVIDIA NIM', `${nvidia ? `${G}key set${R}` : `\x1b[33mnot configured${R}`}`),
     line('Started', `${D}${t}${R}`),
     '',
-    `  ${D}Crons  expire-listings 00:05 · auto-unsuspend 00:10${R}`,
+    `  ${D}API    /api/v1 · docs /api-docs${R}`,
     sep,
     '',
   ];

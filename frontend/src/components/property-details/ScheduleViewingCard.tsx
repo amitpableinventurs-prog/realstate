@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { appointmentsAPI } from '../../services/api';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface ScheduleViewingCardProps {
   property: { name: string; id: string };
@@ -13,6 +14,7 @@ const INPUT = "w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 fo
 const LABEL = "block font-manrope text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5";
 
 const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, price }) => {
+  const { t } = useI18n();
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', date: '', timeSlot: '' });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -36,22 +38,22 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
         message: `Viewing request for ${property.name}`,
       });
       setSuccess(true);
-      toast.success('Visit Scheduled!', { description: "We'll confirm within 24 hours." });
+      toast.success(t('schedule.done'), { description: t('schedule.doneText') });
       setForm({ fullName: '', email: '', phone: '', date: '', timeSlot: '' });
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to schedule. Please try again.';
+      const msg = err.response?.data?.message || t('schedule.failedText');
       setError(msg);
-      toast.error('Scheduling Failed', { description: msg });
+      toast.error(t('schedule.failed'), { description: msg });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="sticky top-24 bg-[#1A0A1E] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
+    <div className="bg-[#1A0A1E] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
       {/* Price header */}
       <div className="px-6 pt-6 pb-5 border-b border-white/10">
-        <p className="font-manrope text-xs text-white/50 uppercase tracking-wider mb-1">Listed Price</p>
+        <p className="font-manrope text-xs text-white/50 uppercase tracking-wider mb-1">{t('schedule.price')}</p>
         {price && (
           <p className="font-fraunces text-3xl font-bold text-[#A3078F] tabular-nums leading-none">
             {price}
@@ -70,41 +72,41 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
               className="text-center py-8"
             >
               <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
-              <h3 className="font-fraunces text-xl text-white mb-2">Visit Scheduled!</h3>
+              <h3 className="font-fraunces text-xl text-white mb-2">{t('schedule.done')}</h3>
               <p className="font-manrope text-sm text-white/50 mb-6">
-                We'll confirm your appointment within 24 hours.
+                {t('schedule.doneText')}
               </p>
               <button
                 onClick={() => setSuccess(false)}
                 className="font-manrope text-sm text-[#A3078F] hover:text-[#D65FCB] transition-colors"
               >
-                Schedule another visit
+                {t('schedule.another')}
               </button>
             </motion.div>
           ) : (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="flex items-center gap-2 mb-5">
                 <Calendar className="w-4 h-4 text-[#A3078F]" />
-                <h3 className="font-manrope font-semibold text-sm text-white">Schedule a Viewing</h3>
+                <h3 className="font-manrope font-semibold text-sm text-white">{t('schedule.title')}</h3>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
-                  <label className={LABEL}>Full Name</label>
+                  <label className={LABEL}>{t('schedule.name')}</label>
                   <input
                     type="text" name="fullName" value={form.fullName} onChange={handleChange}
-                    placeholder="Your full name" className={INPUT} required
+                    placeholder={t('schedule.namePh')} className={INPUT} required
                   />
                 </div>
                 <div>
-                  <label className={LABEL}>Email</label>
+                  <label className={LABEL}>{t('schedule.email')}</label>
                   <input
                     type="email" name="email" value={form.email} onChange={handleChange}
                     placeholder="your@email.com" className={INPUT} required
                   />
                 </div>
                 <div>
-                  <label className={LABEL}>Phone</label>
+                  <label className={LABEL}>{t('schedule.phone')}</label>
                   <input
                     type="tel" name="phone" value={form.phone} onChange={handleChange}
                     placeholder="+91 98765 43210" className={INPUT} required
@@ -112,19 +114,19 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={LABEL}>Date</label>
+                    <label className={LABEL}>{t('schedule.date')}</label>
                     <input
                       type="date" name="date" value={form.date} onChange={handleChange}
                       className={INPUT + ' [color-scheme:dark]'} required
                     />
                   </div>
                   <div>
-                    <label className={LABEL}>Time</label>
+                    <label className={LABEL}>{t('schedule.time')}</label>
                     <select
                       name="timeSlot" value={form.timeSlot} onChange={handleChange}
                       className={INPUT + ' appearance-none cursor-pointer'} required
                     >
-                      <option value="" className="bg-[#1A0A1E]">Pick time</option>
+                      <option value="" className="bg-[#1A0A1E]">{t('schedule.pickTime')}</option>
                       {['09:00','10:00','11:00','14:00','15:00','16:00'].map(t => (
                         <option key={t} value={t} className="bg-[#1A0A1E]">
                           {t.replace('09:','9:')}
@@ -144,11 +146,11 @@ const ScheduleViewingCard: React.FC<ScheduleViewingCardProps> = ({ property, pri
                   disabled={submitting}
                   className="w-full mt-2 bg-[#A3078F] hover:bg-[#7A0A74] disabled:opacity-50 text-white font-manrope font-bold text-sm py-3.5 rounded-xl transition-all active:scale-[0.98] shadow-lg"
                 >
-                  {submitting ? 'Scheduling…' : 'Schedule Visit'}
+                  {submitting ? t('schedule.submitting') : t('schedule.submit')}
                 </button>
 
                 <p className="text-center font-manrope text-xs text-white/30 pt-1">
-                  Confirmed within 24 hours · No spam
+                  {t('schedule.note')}
                 </p>
               </form>
             </motion.div>

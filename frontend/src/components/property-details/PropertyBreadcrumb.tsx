@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface PropertyBreadcrumbProps {
   city?: string;
@@ -11,6 +12,7 @@ const PropertyBreadcrumb: React.FC<PropertyBreadcrumbProps> = ({
   city = 'Properties',
   propertyName = '',
 }) => {
+  const { t } = useI18n();
   return (
     <div className="bg-[#FAF8FB] border-b border-[#E8E1EA]">
       <div className="max-w-[1280px] mx-auto px-6 lg:px-8 py-3">
@@ -29,7 +31,7 @@ const PropertyBreadcrumb: React.FC<PropertyBreadcrumbProps> = ({
             to="/properties"
             className="hover:text-[#A3078F] transition-colors duration-150"
           >
-            Properties
+            {t('breadcrumb.properties')}
           </Link>
 
           {city && (
