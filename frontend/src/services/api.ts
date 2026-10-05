@@ -477,6 +477,14 @@ export const appointmentsAPI = {
     apiClient.put(`/appointments/cancel/${id}`, { reason }),
 };
 
+export const appFeedbackAPI = {
+  rate: (data: { rating: number; message?: string; name?: string; email?: string }) =>
+    apiClient.post('/app-rating', data),
+
+  share: (data: { message: string; name?: string; email?: string }) =>
+    apiClient.post('/app-feedback', data),
+};
+
 // AI-Powered Property Search
 // AI keys are server-side — users only supply their Firecrawl key.
 export const aiAPI = {

@@ -10,6 +10,8 @@ import * as activity from '../controller/v1/activityController.js';
 import * as master from '../controller/v1/masterController.js';
 import * as uploads from '../controller/v1/uploadController.js';
 import * as admin from '../controller/v1/adminController.js';
+import * as appFeedback from '../controller/v1/appFeedbackController.js';
+import { appFeedbackLimiter } from '../middleware/rateLimitMiddleware.js';
 
 // Bhoomi Bazar API, mounted at /api/v1 — section 6 of the Development &
 // Technical Document. Used by the mobile app, the website and the admin panel.
@@ -64,6 +66,11 @@ router.post('/properties/:id/enquiries', userProtect, wrap(activity.createEnquir
 router.get('/enquiries/received', userProtect, wrap(activity.receivedEnquiries));
 router.get('/notifications', userProtect, wrap(activity.listNotifications));
 router.patch('/notifications/:id/read', userProtect, wrap(activity.markNotificationRead));
+
+// App rating and general feedback (guests and signed-in users)
+router.post('/app-rating', userOptionalAuth, appFeedbackLimiter, wrap(appFeedback.submitAppRating));
+router.post('/app-feedback', userOptionalAuth, appFeedbackLimiter, wrap(appFeedback.submitAppFeedback));
+router.get('/admin/app-feedback', adminProtect, wrap(appFeedback.listAppFeedback));
 
 // 6.7 Admin. Review endpoints accept district admins (scoped to their district);
 // editing, deleting, users and master data are super admin only.

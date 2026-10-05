@@ -108,7 +108,7 @@ const spec = {
     servers: [{ url: '/api/v1' }],
     tags: [
         { name: 'Auth' }, { name: 'Profile' }, { name: 'Property' }, { name: 'Uploads' },
-        { name: 'Master data' }, { name: 'Wishlist' }, { name: 'Enquiries' }, { name: 'Notifications' },
+        { name: 'Master data' }, { name: 'Wishlist' }, { name: 'Enquiries' }, { name: 'Notifications' }, { name: 'App feedback' },
         { name: 'Admin' }, { name: 'Admin: master data' },
     ],
     components: {
@@ -214,6 +214,16 @@ const spec = {
                 property: obj({ id: str(), listing_type: TYPE, khata_number: str(), khasra_number: str(), thumbnail_url: str({ nullable: true }) }),
                 from_user: obj({ id: str(), name: str({ nullable: true }), mobile: str() }),
                 message: str({ nullable: true }),
+                created_at: date,
+            }),
+            AppFeedback: obj({
+                id: str(),
+                type: str({ enum: ['APP_RATING', 'FEEDBACK'] }),
+                user: { allOf: [obj({ id: str(), name: str({ nullable: true }), mobile: str({ nullable: true }), email: str({ nullable: true }) })], nullable: true },
+                name: str({ nullable: true }),
+                email: str({ nullable: true }),
+                rating: { type: 'integer', minimum: 1, maximum: 5, nullable: true },
+                message: str({ nullable: true, maxLength: 2000 }),
                 created_at: date,
             }),
             State: obj({ id: str(), name: str(), is_active: bool, district_count: int }),
@@ -429,6 +439,31 @@ const spec = {
                 tags: ['Enquiries'], summary: 'Enquiries received on own properties', security: user,
                 parameters: pageParams,
                 responses: { 200: list('Enquiries, newest first', ref('Enquiry')), 401: common[401] },
+            },
+        },
+        '/app-rating': {
+            post: {
+                tags: ['App feedback'], summary: 'Rate the app',
+                description: 'Guests and signed-in users may submit a rating. Limited to 10 submissions per hour per IP.',
+                security: optionalUser,
+                requestBody: body(obj({ rating: { type: 'integer', minimum: 1, maximum: 5 }, message: str({ maxLength: 2000 }), name: str({ maxLength: 80 }), email: str({ format: 'email', maxLength: 254 }) }, ['rating']), { rating: 5, message: 'Easy to find properties', name: 'A user', email: 'user@example.com' }),
+                responses: { 201: ok('Rating saved', obj({ id: str(), type: str({ enum: ['APP_RATING'] }), rating: int, message: str({ nullable: true }), created_at: date })), ...common, 429: err('Too many feedback submissions') },
+            },
+        },
+        '/app-feedback': {
+            post: {
+                tags: ['App feedback'], summary: 'Share feedback about the app',
+                description: 'Guests and signed-in users may send feedback. Limited to 10 submissions per hour per IP.',
+                security: optionalUser,
+                requestBody: body(obj({ message: str({ minLength: 1, maxLength: 2000 }), name: str({ maxLength: 80 }), email: str({ format: 'email', maxLength: 254 }) }, ['message']), { message: 'Please add a district filter to property search.', name: 'A user', email: 'user@example.com' }),
+                responses: { 201: ok('Feedback saved', obj({ id: str(), type: str({ enum: ['FEEDBACK'] }), rating: { type: 'integer', nullable: true }, message: str({ nullable: true }), created_at: date })), ...common, 429: err('Too many feedback submissions') },
+            },
+        },
+        '/admin/app-feedback': {
+            get: {
+                tags: ['App feedback'], summary: 'Admin: view ratings and feedback', security: adminAuth,
+                parameters: [query('type', str({ enum: ['APP_RATING', 'FEEDBACK'] })), ...pageParams],
+                responses: { 200: list('App feedback, newest first', ref('AppFeedback')), 401: err('Admin login required'), 403: err('Admin access required') },
             },
         },
         '/notifications': {

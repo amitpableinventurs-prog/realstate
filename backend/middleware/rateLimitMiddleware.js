@@ -174,3 +174,18 @@ export const jobApplicationLimiter = rateLimit({
   skipFailedRequests: true, // validation errors don't use up the allowance
   keyGenerator: (req) => req.ip,
 });
+
+/** App rating and feedback submissions: 10 per hour per IP. */
+export const appFeedbackLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    message: 'Too many feedback submissions. Please try again later.',
+    retryAfter: '1 hour',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipFailedRequests: true,
+  keyGenerator: (req) => req.ip,
+});
