@@ -108,7 +108,7 @@ const spec = {
     servers: [{ url: '/api/v1' }],
     tags: [
         { name: 'Auth' }, { name: 'Profile' }, { name: 'Property' }, { name: 'Uploads' },
-        { name: 'Master data' }, { name: 'Wishlist' }, { name: 'Enquiries' }, { name: 'Notifications' }, { name: 'App feedback' },
+        { name: 'Master data' }, { name: 'Wishlist' }, { name: 'Enquiries' }, { name: 'Notifications' }, { name: 'App feedback' }, { name: 'Bookings' },
         { name: 'Admin' }, { name: 'Admin: master data' },
     ],
     components: {
@@ -225,6 +225,16 @@ const spec = {
                 rating: { type: 'integer', minimum: 1, maximum: 5, nullable: true },
                 message: str({ nullable: true, maxLength: 2000 }),
                 created_at: date,
+            }),
+            PropertyBooking: obj({
+                id: str(),
+                property: ref('Property'),
+                user: { allOf: [obj({ id: str(), name: str({ nullable: true }), email: str({ nullable: true }), phone: str({ nullable: true }) })], nullable: true },
+                customer: obj({ name: str(), email: str({ nullable: true }), phone: str() }),
+                message: str({ nullable: true }),
+                status: str({ enum: ['PENDING', 'CONTACTED', 'CONFIRMED', 'REJECTED', 'CANCELLED', 'COMPLETED'] }),
+                created_at: date,
+                updated_at: date,
             }),
             State: obj({ id: str(), name: str(), is_active: bool, district_count: int }),
             District: obj({ id: str(), name: str(), state_id: str(), state: ref('Ref'), is_active: bool, pending_count: { type: 'integer', description: 'GET /admin/districts only: PENDING properties' }, admin_count: { type: 'integer', description: 'GET /admin/districts only: district admins' } }),
@@ -464,6 +474,35 @@ const spec = {
                 tags: ['App feedback'], summary: 'Admin: view ratings and feedback', security: adminAuth,
                 parameters: [query('type', str({ enum: ['APP_RATING', 'FEEDBACK'] })), ...pageParams],
                 responses: { 200: list('App feedback, newest first', ref('AppFeedback')), 401: err('Admin login required'), 403: err('Admin access required') },
+            },
+        },
+        '/bookings': {
+            post: {
+                tags: ['Bookings'], summary: 'Book a property',
+                description: 'Creates a booking request for an approved property. Guests may book; signed-in users are linked automatically. Every new booking starts as PENDING and is confirmed by an admin. Limited to 5 requests per hour per IP.',
+                security: optionalUser,
+                requestBody: body(obj({ property_id: str(), name: str({ minLength: 2, maxLength: 80 }), email: str({ format: 'email', maxLength: 254 }), phone: str({ maxLength: 25 }), message: str({ maxLength: 1000 }) }, ['property_id']), { property_id: '66f1a2b3c4d5e6f7a8b9c0d1', name: 'Ramesh Kumar', email: 'ramesh@example.com', phone: '+919876543210', message: 'I would like to discuss this property.' }),
+                responses: { 201: ok('Booking request submitted', ref('PropertyBooking')), 400: common[400], 404: err('Approved property not found'), 429: err('Too many booking requests') },
+            },
+        },
+        '/bookings/my': {
+            get: {
+                tags: ['Bookings'], summary: 'My property booking requests', security: user, parameters: pageParams,
+                responses: { 200: list('My bookings, newest first', ref('PropertyBooking')), 401: common[401] },
+            },
+        },
+        '/admin/bookings': {
+            get: {
+                tags: ['Bookings'], summary: 'Admin: list property booking requests', security: adminAuth,
+                parameters: [query('status', str({ enum: ['PENDING', 'CONTACTED', 'CONFIRMED', 'REJECTED', 'CANCELLED', 'COMPLETED'] })), ...pageParams],
+                responses: { 200: list('Property bookings, newest first', ref('PropertyBooking')), 401: err('Admin login required'), 403: err('Admin access required') },
+            },
+        },
+        '/admin/bookings/{id}/status': {
+            patch: {
+                tags: ['Bookings'], summary: 'Admin: update booking status', security: adminAuth, parameters: [id()],
+                requestBody: body(obj({ status: str({ enum: ['PENDING', 'CONTACTED', 'CONFIRMED', 'REJECTED', 'CANCELLED', 'COMPLETED'] }) }, ['status']), { status: 'CONFIRMED' }),
+                responses: { 200: ok('Booking status updated', ref('PropertyBooking')), ...common, 404: err('Booking not found') },
             },
         },
         '/notifications': {

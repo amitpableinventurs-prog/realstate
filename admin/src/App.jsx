@@ -21,6 +21,7 @@ import PropertyListings from "./pages/List";
 import Add from "./pages/Add";
 import Update from "./pages/Update";
 import Appointments from "./pages/Appointments";
+import PropertyBookings from "./pages/PropertyBookings";
 import PendingListings from "./pages/PendingListings";
 import Districts from "./pages/Districts";
 import Users from "./pages/Users";
@@ -91,6 +92,7 @@ const AppLayout = () => {
                   <Route path="/add" element={<Add />} />
                   <Route path="/update/:id" element={<Update />} />
                   <Route path="/appointments" element={<Appointments />} />
+                  <Route path="/bookings" element={<PropertyBookings />} />
                   <Route path="/districts" element={<Districts />} />
                   <Route path="/users" element={<Users />} />
                   <Route path="/users/:id" element={<UserDetails />} />

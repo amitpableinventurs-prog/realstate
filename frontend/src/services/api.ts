@@ -485,6 +485,16 @@ export const appFeedbackAPI = {
     apiClient.post('/app-feedback', data),
 };
 
+export type PropertyBookingStatus = 'PENDING' | 'CONTACTED' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+
+export const propertyBookingsAPI = {
+  create: (data: { property_id: string; name?: string; email?: string; phone?: string; message?: string }) =>
+    apiClient.post('/bookings', data),
+
+  getMine: (params: { page?: number; limit?: number } = {}) =>
+    apiClient.get('/bookings/my', { params }),
+};
+
 // AI-Powered Property Search
 // AI keys are server-side — users only supply their Firecrawl key.
 export const aiAPI = {

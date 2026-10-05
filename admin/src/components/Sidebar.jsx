@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   List,
   Calendar,
+  ClipboardCheck,
   LogOut,
   LayoutDashboard,
   Bell,
@@ -73,6 +74,7 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, setIsCollapsed }) => {
         { path: '/districts', label: 'Districts & Admins', icon: MapPin },
         { path: '/users', label: 'Users', icon: Users },
         { path: '/appointments', label: 'Appointments', icon: Calendar },
+        { path: '/bookings', label: 'Property Bookings', icon: ClipboardCheck },
       ],
     },
     {

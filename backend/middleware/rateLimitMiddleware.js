@@ -189,3 +189,18 @@ export const appFeedbackLimiter = rateLimit({
   skipFailedRequests: true,
   keyGenerator: (req) => req.ip,
 });
+
+/** Property booking requests: 5 per hour per IP. */
+export const propertyBookingLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: {
+    success: false,
+    message: 'Too many booking requests. Please try again later.',
+    retryAfter: '1 hour',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipFailedRequests: true,
+  keyGenerator: (req) => req.ip,
+});

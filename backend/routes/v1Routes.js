@@ -11,7 +11,8 @@ import * as master from '../controller/v1/masterController.js';
 import * as uploads from '../controller/v1/uploadController.js';
 import * as admin from '../controller/v1/adminController.js';
 import * as appFeedback from '../controller/v1/appFeedbackController.js';
-import { appFeedbackLimiter } from '../middleware/rateLimitMiddleware.js';
+import * as propertyBookings from '../controller/v1/propertyBookingController.js';
+import { appFeedbackLimiter, propertyBookingLimiter } from '../middleware/rateLimitMiddleware.js';
 
 // Bhoomi Bazar API, mounted at /api/v1 — section 6 of the Development &
 // Technical Document. Used by the mobile app, the website and the admin panel.
@@ -71,6 +72,12 @@ router.patch('/notifications/:id/read', userProtect, wrap(activity.markNotificat
 router.post('/app-rating', userOptionalAuth, appFeedbackLimiter, wrap(appFeedback.submitAppRating));
 router.post('/app-feedback', userOptionalAuth, appFeedbackLimiter, wrap(appFeedback.submitAppFeedback));
 router.get('/admin/app-feedback', adminProtect, wrap(appFeedback.listAppFeedback));
+
+// Property purchase / lease booking requests
+router.post('/bookings', userOptionalAuth, propertyBookingLimiter, wrap(propertyBookings.createPropertyBooking));
+router.get('/bookings/my', userProtect, wrap(propertyBookings.listMyPropertyBookings));
+router.get('/admin/bookings', adminProtect, wrap(propertyBookings.listPropertyBookingsForAdmin));
+router.patch('/admin/bookings/:id/status', adminProtect, wrap(propertyBookings.updatePropertyBookingStatus));
 
 // 6.7 Admin. Review endpoints accept district admins (scoped to their district);
 // editing, deleting, users and master data are super admin only.
