@@ -123,7 +123,7 @@ Server initializes and binds to `http://localhost:4000`
 
 Everything from section 6 of the technical document — mobile + OTP login, profile,
 properties (one create API for SELL / RENT / LEASE), public listing with filters,
-wishlist, enquiries, notifications, photo uploads and the admin API. Used by the
+wishlist, enquiries, notifications, photo/video uploads and the admin API. Used by the
 mobile app, the website and the admin panel. Interactive reference: `/api-docs`.
 
 Data lives in the collections of section 5.2 (`users`, `admins`, `properties`,

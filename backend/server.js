@@ -24,6 +24,7 @@ import openapiV1Spec from './docs/openapiV1.js';
 import { LOCAL_MEDIA_DIR, LOCAL_MEDIA_ROUTE } from './services/mediaStorageService.js';
 import getStatusPage from './serverweb.js';
 import { printBanner } from './utils/banner.js';
+import { startUploadCleanup } from './utils/cleanupUploads.js';
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: './.env.local' });
@@ -151,6 +152,8 @@ app.use(cors({
 // Database connection
 connectdb().then(() => {
   if (process.env.NODE_ENV === 'production') logger.info('Database connected successfully');
+  // Deletes photos/videos uploaded for a property form that was never submitted
+  if (process.env.NODE_ENV !== 'test') startUploadCleanup();
   printBanner({
     port: process.env.PORT || 4000,
     env: process.env.NODE_ENV || 'development',
@@ -206,9 +209,12 @@ if (swaggerEnabled) {
   }));
 }
 
-// Listing media stored on local disk when ImageKit isn't configured
+// Listing media stored on local disk when ImageKit isn't configured. File
+// names are random and never reused, so browsers may cache them for good.
+// express.static answers Range requests, so videos can be seeked.
 app.use(LOCAL_MEDIA_ROUTE, express.static(LOCAL_MEDIA_DIR, {
-  maxAge: '7d',
+  maxAge: '365d',
+  immutable: true,
   setHeaders: (res) => res.set('Cross-Origin-Resource-Policy', 'cross-origin'),
 }));
 
@@ -322,6 +328,9 @@ if (process.env.NODE_ENV !== 'test') {
       logger.info('Server running', { port, host: '0.0.0.0' });
     }
   });
+  // Node ends requests after 5 minutes by default; a large video upload
+  // (PUT /api/v1/uploads/:id) on a slow connection takes longer
+  server.requestTimeout = 60 * 60 * 1000;
 }
 
 export default app;

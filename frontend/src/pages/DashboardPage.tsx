@@ -27,8 +27,11 @@ import {
 interface AppointmentProperty {
   _id: string;
   title: string;
-  images?: { url: string }[];
+  images?: { url: string; type?: string }[];
 }
+
+// The first photo (a property can also have videos)
+const coverOf = (p?: AppointmentProperty | null) => p?.images?.find((m) => m.type !== 'VIDEO')?.url;
 
 interface Appointment {
   _id: string;
@@ -391,10 +394,10 @@ const DashboardPage: React.FC<{ tab?: Tab }> = ({ tab = 'overview' }) => {
                     className="bg-white border border-[#E8E1EA] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4"
                   >
                     {/* Property thumbnail */}
-                    {apt.propertyId?.images?.[0] ? (
+                    {coverOf(apt.propertyId) ? (
                       <img
-                        src={apt.propertyId.images[0].url}
-                        alt={apt.propertyId.title}
+                        src={coverOf(apt.propertyId)}
+                        alt={apt.propertyId?.title || ''}
                         className="w-full sm:w-20 h-32 sm:h-16 object-cover rounded-xl shrink-0"
                         loading="lazy"
                       />

@@ -615,7 +615,7 @@ The app, website and admin panel use `/api/v1` (technical document section 6). F
 | GET | /api/v1/list-property/my | My properties with status |
 | PUT / DELETE | /api/v1/list-property/:id | Edit / delete own property |
 | PATCH | /api/v1/list-property/:id/status | Mark SOLD / RENTED / LEASED |
-| POST | /api/v1/uploads/presign | Photo upload URLs |
+| POST | /api/v1/uploads/presign | Upload URLs for photos and videos (up to 500 MB each) |
 | GET / PATCH / PUT / DELETE | /api/v1/admin/properties… | Admin review: approve, reject, edit, delete, restore |
 
 </details>

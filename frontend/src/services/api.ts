@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { compressImage } from '../utils/compressImage';
 
 // API Base URL - uses env variable or falls back to localhost
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -175,8 +176,9 @@ export interface PropertyCardData {
   price: { amount: number; per_unit: Unit; label: string };
   estimated_total: number | null;
   address: string | null;
-  thumbnail_url: string | null;
+  thumbnail_url: string | null; // the cover photo
   image_count: number;
+  video_count: number;
   state: Ref | null;
   district: Ref | null;
   is_saved: boolean;
@@ -184,11 +186,22 @@ export interface PropertyCardData {
   rejection_reason?: string | null;
 }
 
+export type MediaType = 'IMAGE' | 'VIDEO';
+
+// Photos and videos in display order; the primary one is the cover photo
+export interface PropertyMedia {
+  url: string;
+  type: MediaType;
+  thumbnail_url: string | null; // for a video: a frame (ImageKit only), else null
+  is_primary: boolean;
+  sort_order: number;
+}
+
 export interface PropertyDetailData extends PropertyCardData {
   owner_id: string;
   owner: { name: string | null; mobile?: string | null };
   description: string | null;
-  images: { url: string; thumbnail_url: string; is_primary: boolean; sort_order: number }[];
+  images: PropertyMedia[];
   location: { latitude: number; longitude: number } | null;
   state_id: string | null;
   district_id: string | null;
@@ -252,22 +265,64 @@ const PROPERTY_ERROR_FIELDS: Record<string, string> = {
 export const propertyErrorsToForm = (errors: Record<string, string>) =>
   Object.fromEntries(Object.entries(errors).map(([key, message]) => [PROPERTY_ERROR_FIELDS[key] || key, message]));
 
-// 4.6 Photos: pre-signed upload URLs, then PUT each file to its URL
+// 4.6 Photos and videos: pre-signed upload URLs, then PUT each file to its URL
 export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-export const MAX_PHOTO_MB = 5;
+export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
+export const MAX_UPLOAD_MB = 500;
+
+/** Why the API would refuse `file`, or null. */
+export const mediaProblem = (file: File) => {
+  if (!PHOTO_TYPES.includes(file.type) && !VIDEO_TYPES.includes(file.type)) {
+    return `${file.name}: only JPG, PNG or WEBP photos and MP4, MOV or WEBM videos`;
+  }
+  if (file.size > MAX_UPLOAD_MB * 1024 * 1024) return `${file.name}: larger than ${MAX_UPLOAD_MB} MB`;
+  return null;
+};
+
+interface UploadTarget { upload_url: string; method: string; headers: Record<string, string>; file_url: string }
+
+// XHR rather than fetch: only XHR reports upload progress
+const putFile = (target: UploadTarget, file: File, onProgress: (bytes: number) => void) =>
+  new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(target.method || 'PUT', target.upload_url);
+    Object.entries(target.headers || {}).forEach(([name, value]) => xhr.setRequestHeader(name, value));
+    xhr.upload.onprogress = (e) => onProgress(e.loaded);
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300
+      ? resolve()
+      : reject(new Error(`Upload of ${file.name} failed`)));
+    xhr.onerror = () => reject(new Error(`Upload of ${file.name} failed. Check your connection and try again.`));
+    xhr.send(file);
+  });
+
+const PARALLEL_UPLOADS = 3;
 
 export const uploadsAPI = {
-  /** Uploads the files and returns their URLs, in the same order. */
-  uploadPhotos: async (files: File[]): Promise<string[]> => {
+  /**
+   * Uploads photos (shrunk first, see compressImage) and videos, a few at a
+   * time, and returns their URLs in the same order. `onProgress` gets 0..1
+   * for all the files together.
+   */
+  uploadMedia: async (files: File[], onProgress?: (fraction: number) => void): Promise<string[]> => {
     if (!files.length) return [];
-    const { data } = await apiClient.post<Envelope<{ upload_url: string; method: string; headers: Record<string, string>; file_url: string }[]>>(
+    const ready = await Promise.all(files.map(compressImage));
+    const { data } = await apiClient.post<Envelope<UploadTarget[]>>(
       '/v1/uploads/presign',
-      { files: files.map((f) => ({ content_type: f.type, size: f.size })) }
+      { files: ready.map((f) => ({ content_type: f.type, size: f.size })) }
     );
-    await Promise.all(data.data.map(async (target, i) => {
-      const res = await fetch(target.upload_url, { method: target.method || 'PUT', headers: target.headers, body: files[i] });
-      if (!res.ok) throw new Error(`Upload of ${files[i].name} failed`);
-    }));
+    const total = ready.reduce((sum, f) => sum + f.size, 0);
+    const sent = ready.map(() => 0);
+    const report = () => onProgress?.(sent.reduce((sum, n) => sum + n, 0) / total);
+    let next = 0;
+    const worker = async () => {
+      while (next < ready.length) {
+        const i = next++;
+        await putFile(data.data[i], ready[i], (bytes) => { sent[i] = bytes; report(); });
+        sent[i] = ready[i].size;
+        report();
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(PARALLEL_UPLOADS, ready.length) }, worker));
     return data.data.map((target) => target.file_url);
   },
 };

@@ -17,7 +17,9 @@ import {
 // (technical document 4.4, 4.7, 6.3-6.5)
 
 export const MIN_IMAGES = Number(process.env.PROPERTY_MIN_IMAGES ?? 1);
-export const MAX_IMAGES = Number(process.env.PROPERTY_MAX_IMAGES) || 10;
+export const MAX_IMAGES = Number(process.env.PROPERTY_MAX_IMAGES) || 10; // photos and videos together
+const MIN_PHOTOS_MESSAGE = `Add at least ${MIN_IMAGES} photo${MIN_IMAGES === 1 ? '' : 's'}`;
+const tooFewPhotos = (media) => media.filter((m) => m.type !== 'VIDEO').length < MIN_IMAGES;
 
 export const DETAIL_POPULATE = [...PLACE_POPULATE, { path: 'owner_id', select: 'name mobile' }];
 
@@ -112,11 +114,11 @@ const readPropertyBody = (body = {}, { partial }) => {
             errors.image_urls = 'image_urls must be an array of URLs';
         } else {
             result.imageUrls = [...new Set(urls)];
-            if (result.imageUrls.length < MIN_IMAGES) errors.image_urls = `Add at least ${MIN_IMAGES} photo${MIN_IMAGES === 1 ? '' : 's'}`;
-            else if (result.imageUrls.length > MAX_IMAGES) errors.image_urls = `At most ${MAX_IMAGES} photos`;
+            if (result.imageUrls.length < MIN_IMAGES) errors.image_urls = MIN_PHOTOS_MESSAGE;
+            else if (result.imageUrls.length > MAX_IMAGES) errors.image_urls = `At most ${MAX_IMAGES} photos and videos`;
         }
     } else if (!partial && MIN_IMAGES > 0) {
-        errors.image_urls = `Add at least ${MIN_IMAGES} photo${MIN_IMAGES === 1 ? '' : 's'}`;
+        errors.image_urls = MIN_PHOTOS_MESSAGE;
     }
 
     if (body.state_id !== undefined || body.district_id !== undefined) {
@@ -241,6 +243,7 @@ export const createProperty = async (req, res) => {
     if (!errors.image_urls && input.imageUrls) {
         images = await resolveImageUrls(req.admin ? req.admin.id : req.user._id, input.imageUrls);
         if (images.error) errors.image_urls = images.error;
+        else if (tooFewPhotos(images.images)) errors.image_urls = MIN_PHOTOS_MESSAGE;
     }
     if (Object.keys(errors).length) return validationFailed(res, errors);
 
@@ -284,8 +287,9 @@ export const applyPropertyEdit = async (req, res, property, { uploaderId }) => {
 
     let images;
     if (!errors.image_urls && input.imageUrls) {
-        images = await resolveImageUrls(uploaderId, input.imageUrls, property.images.map((i) => i.url));
+        images = await resolveImageUrls(uploaderId, input.imageUrls, property.images);
         if (images.error) errors.image_urls = images.error;
+        else if (tooFewPhotos(images.images)) errors.image_urls = MIN_PHOTOS_MESSAGE;
     }
     if (Object.keys(errors).length) {
         validationFailed(res, errors);

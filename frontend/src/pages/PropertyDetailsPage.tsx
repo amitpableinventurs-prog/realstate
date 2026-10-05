@@ -263,7 +263,7 @@ const PropertyDetailsPage: React.FC = () => {
 
       <Navbar />
       <PropertyBreadcrumb city={district} propertyName={title} />
-      <PropertyHeroImage images={property.image} propertyName={title} />
+      <PropertyHeroImage media={property.media} propertyName={title} />
 
       <PropertyHeader
         status={status}

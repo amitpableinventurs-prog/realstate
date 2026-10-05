@@ -3,7 +3,7 @@ import path from 'path';
 import logger from '../utils/logger.js';
 import { isS3Configured, s3PublicUrl, deleteS3Object } from './s3Service.js';
 
-// Property photos. With S3 configured, clients upload straight to S3 with
+// Property photos and videos. With S3 configured, clients upload straight to S3 with
 // pre-signed URLs. Otherwise uploads go through PUT /api/v1/uploads/:id and are
 // stored on ImageKit when it is configured, or on local disk (development),
 // served from /uploads/app-media.
@@ -41,25 +41,33 @@ export const expectedUrl = (filename) => (imagekitConfigured()
     ? `${process.env.IMAGEKIT_URL_ENDPOINT.replace(/\/$/, '')}/${IMAGEKIT_FOLDER}/${filename}`
     : `${publicBaseUrl()}${LOCAL_MEDIA_ROUTE}/${filename}`);
 
-// Stores an uploaded file body (PUT /api/v1/uploads/:id) under `filename`.
-export const storeBuffer = async (buffer, filename) => {
-    if (imagekitConfigured()) {
-        const imagekit = await getImagekit();
-        const result = await imagekit.upload({
-            file: buffer,
-            fileName: filename,
-            folder: IMAGEKIT_FOLDER,
-            useUniqueFileName: false,
-        });
-        return { url: result.url, storage: 'imagekit', storage_id: filename };
+// Uploads are streamed here first (same disk as LOCAL_MEDIA_DIR, so a move is a rename)
+export const UPLOAD_TMP_DIR = path.join(process.cwd(), 'uploads', 'tmp');
+
+// Stores an uploaded file (PUT /api/v1/uploads/:id, streamed to `tmpPath`)
+// under `filename`, streaming it on to ImageKit or moving it into place.
+export const storeFile = async (tmpPath, filename) => {
+    try {
+        if (imagekitConfigured()) {
+            const imagekit = await getImagekit();
+            const result = await imagekit.upload({
+                file: fs.createReadStream(tmpPath),
+                fileName: filename,
+                folder: IMAGEKIT_FOLDER,
+                useUniqueFileName: false,
+            });
+            return { url: result.url, storage: 'imagekit', storage_id: filename };
+        }
+        await fs.promises.mkdir(LOCAL_MEDIA_DIR, { recursive: true });
+        await fs.promises.rename(tmpPath, path.join(LOCAL_MEDIA_DIR, filename));
+        return { url: expectedUrl(filename), storage: 'local', storage_id: filename };
+    } finally {
+        await fs.promises.rm(tmpPath, { force: true });
     }
-    await fs.promises.mkdir(LOCAL_MEDIA_DIR, { recursive: true });
-    await fs.promises.writeFile(path.join(LOCAL_MEDIA_DIR, filename), buffer);
-    return { url: expectedUrl(filename), storage: 'local', storage_id: filename };
 };
 
 /**
- * Deletes a stored photo by its URL (properties keep only the URL). Best
+ * Deletes a stored photo or video by its URL (properties keep only the URL). Best
  * effort: a leftover file is not worth failing a request over.
  */
 export const deleteImageByUrl = async (url) => {
@@ -79,6 +87,6 @@ export const deleteImageByUrl = async (url) => {
             if (files[0]?.fileId) await imagekit.deleteFile(files[0].fileId);
         }
     } catch (error) {
-        logger.warn('Failed to delete property photo', { url, error: error.message });
+        logger.warn('Failed to delete property media', { url, error: error.message });
     }
 };

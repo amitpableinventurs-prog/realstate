@@ -46,10 +46,9 @@ router.put('/list-property/:id', userProtect, wrap(properties.updateProperty));
 router.delete('/list-property/:id', userProtect, wrap(properties.deleteProperty));
 router.patch('/list-property/:id/status', userProtect, wrap(properties.updatePropertyStatus));
 router.post('/uploads/presign', userOrAdminProtect, wrap(uploads.presign));
-// Upload target when S3 isn't configured; authorised by the signed URL
-router.put('/uploads/:id',
-    express.raw({ type: () => true, limit: uploads.MAX_IMAGE_BYTES }),
-    wrap(uploads.receiveUpload));
+// Upload target when S3 isn't configured; authorised by the signed URL. The
+// controller streams the body to disk (videos up to UPLOAD_MAX_MB).
+router.put('/uploads/:id', wrap(uploads.receiveUpload));
 
 // 6.4 Master data
 router.get('/master/states', wrap(master.listStates));

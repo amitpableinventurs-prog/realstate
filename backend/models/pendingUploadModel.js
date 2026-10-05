@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-// A photo slot handed out by POST /api/v1/uploads/presign. The client uploads
+// A photo or video slot handed out by POST /api/v1/uploads/presign. The client uploads
 // the file, then sends its URL in image_urls; only URLs issued to the same
 // uploader (a user, or an admin adding/editing a property) are accepted.
-// Unused slots expire after a day.
+// Unused slots expire after a day, and utils/cleanupUploads.js deletes their files.
 const PendingUploadSchema = new mongoose.Schema({
     uploader_id: { type: mongoose.Schema.Types.ObjectId, required: true },
     uploader_type: { type: String, enum: ['user', 'admin'], required: true },

@@ -1,4 +1,4 @@
-import type { PropertyCardData, PropertyDetailData, ListingType, PropertyStatus, Unit } from '../services/api';
+import type { PropertyCardData, PropertyDetailData, ListingType, PropertyStatus, Unit, MediaType } from '../services/api';
 import { formatPrice } from './formatPrice';
 
 // Land properties from the API (technical document 5.2), shaped for the
@@ -18,6 +18,9 @@ export const STATUS_LABELS: Record<PropertyStatus, string> = {
   LEASED: 'Leased',
 };
 
+// A gallery item; `poster` is a video's frame when the storage makes one
+export interface GalleryItem { url: string; type: MediaType; poster: string | null }
+
 export interface Property {
   _id: string;
   title: string;
@@ -31,7 +34,8 @@ export interface Property {
   stateName: string | null;
   address: string | null;
   location: string;
-  image: string[];
+  image: string[];          // photos, cover first
+  media: GalleryItem[];      // photos and videos for the gallery, cover first
   listingType: ListingType;
   status: PropertyStatus;
   priceLabel: string;                 // "₹2.50 Lakhs / Katha"
@@ -47,7 +51,16 @@ export const areaLabel = (area: { value: number; unit: Unit }) => `${area.value}
 
 /** Card or detail data from the API → the website's property shape. */
 export const toProperty = (p: PropertyCardData | PropertyDetailData): Property => {
-  const images = 'images' in p ? p.images.map((i) => i.url) : p.thumbnail_url ? [p.thumbnail_url] : [];
+  // The cover photo first, then the rest in the owner's order
+  const all = 'images' in p ? [...p.images].sort((a, b) => Number(b.is_primary) - Number(a.is_primary)) : [];
+  const media: GalleryItem[] = all.map((m) => ({
+    url: m.url,
+    type: m.type || 'IMAGE',
+    poster: m.type === 'VIDEO' ? m.thumbnail_url : null,
+  }));
+  const images = 'images' in p
+    ? media.filter((m) => m.type === 'IMAGE').map((m) => m.url)
+    : p.thumbnail_url ? [p.thumbnail_url] : [];
   return {
     _id: p.id,
     title: p.title,
@@ -61,6 +74,7 @@ export const toProperty = (p: PropertyCardData | PropertyDetailData): Property =
     address: p.address || null,
     location: [p.district?.name, p.state?.name].filter(Boolean).join(', '),
     image: images,
+    media,
     listingType: p.listing_type,
     status: p.status,
     priceLabel: p.price.label,

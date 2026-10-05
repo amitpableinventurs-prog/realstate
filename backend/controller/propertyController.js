@@ -145,6 +145,7 @@ async function resolveServices(req) {
     const firecrawlKey    = req.headers['x-firecrawl-key']?.trim() || null;
     const serverGithubKey = process.env.GITHUB_MODELS_API_KEY?.trim() || null;
     const serverNvidiaKey = process.env.NVIDIA_API_KEY?.trim()      || null;
+    const serverAnthropicKey = process.env.ANTHROPIC_API_KEY?.trim() || null;
 
     if (!firecrawlKey) {
         const err = new Error('Firecrawl API key is required for property search.');
@@ -153,7 +154,7 @@ async function resolveServices(req) {
         throw err;
     }
 
-    if (!serverGithubKey && !serverNvidiaKey) {
+    if (!serverGithubKey && !serverNvidiaKey && !serverAnthropicKey) {
         const err = new Error('AI service temporarily unavailable — please try again later.');
         err.statusCode = 503;
         err.code = 'SERVER_AI_UNAVAILABLE';
@@ -164,8 +165,9 @@ async function resolveServices(req) {
     // and honour the user's model choice by moving their slug to front.
     let githubModelsConfig = null;
     let nvidiaModelsConfig = null;
+    let anthropicModelsConfig = null;
     try {
-        const { github, nvidia } = await resolveModelsByProvider();
+        const { github, nvidia, anthropic } = await resolveModelsByProvider();
         const requestedSlug = req.body?.model || req.query?.model || null;
 
         const prioritise = (list) => {
@@ -181,12 +183,13 @@ async function resolveServices(req) {
 
         if (github.length)  githubModelsConfig = prioritise(github).map(({ modelId, slug, config }) => ({ modelId, slug, config }));
         if (nvidia.length)  nvidiaModelsConfig = prioritise(nvidia).map(({ modelId, slug, config }) => ({ modelId, slug, config }));
+        if (anthropic.length) anthropicModelsConfig = prioritise(anthropic).map(({ modelId, slug, config }) => ({ modelId, slug, config }));
     } catch (err) {
         logger.warn('Failed to load AI models from DB, falling back to defaults', { error: err.message });
     }
 
     return {
-        aiService:        createAIService(serverGithubKey, serverNvidiaKey, githubModelsConfig, nvidiaModelsConfig),
+        aiService:        createAIService(serverGithubKey, serverNvidiaKey, githubModelsConfig, nvidiaModelsConfig, serverAnthropicKey, anthropicModelsConfig),
         firecrawlService: createFirecrawlService(firecrawlKey),
     };
 }

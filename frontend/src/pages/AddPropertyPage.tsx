@@ -4,19 +4,19 @@ import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import {
   propertiesAPI, uploadsAPI, propertyErrorsToForm, apiErrorMessage, apiFieldErrors,
-  PHOTO_TYPES, MAX_PHOTO_MB, type ListingType, type Unit,
+  PHOTO_TYPES, VIDEO_TYPES, MAX_UPLOAD_MB, mediaProblem, type ListingType, type Unit,
 } from '../services/api';
 import { useStates, useDistricts } from '../hooks/useMasterData';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 
 // Add / edit a land property (technical document 4.4 and 6.8): Sell / Rent /
-// Lease, khata and khasra numbers, area and price per Katha or Dismil, photos,
-// description and an optional current location. Same API as the mobile app
+// Lease, khata and khasra numbers, area and price per Katha or Dismil, photos
+// and videos, description and an optional current location. Same API as the mobile app
 // (POST /v1/list-property); the property is public once the admin approves it.
 // Editing: /add-property?edit=<id> (PUT /v1/list-property/:id).
 
-const MAX_PHOTOS = 10;
+const MAX_MEDIA = 10; // photos and videos together
 
 const inputClass =
   'w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] bg-white focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] disabled:opacity-60';
@@ -48,8 +48,8 @@ interface FormState {
   district_id: string;
 }
 
-// A photo in display order: already uploaded (url) or to upload (file)
-interface Photo { url?: string; file?: File; preview?: string }
+// A photo or video in display order: already uploaded (url) or to upload (file)
+interface Photo { url?: string; file?: File; preview?: string; video?: boolean }
 
 const Required = () => <span className="text-red-500">*</span>;
 
@@ -58,12 +58,6 @@ const FieldError: React.FC<{ message?: string }> = ({ message }) =>
 
 const formatINR = (n: number) =>
   n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(2)} Lakhs` : `₹${Math.round(n).toLocaleString('en-IN')}`;
-
-const photoProblem = (file: File) => {
-  if (!PHOTO_TYPES.includes(file.type)) return `${file.name}: only JPG, PNG or WEBP photos`;
-  if (file.size > MAX_PHOTO_MB * 1024 * 1024) return `${file.name}: larger than ${MAX_PHOTO_MB} MB`;
-  return null;
-};
 
 const AddPropertyPage: React.FC = () => {
   const navigate = useNavigate();
@@ -89,6 +83,7 @@ const AddPropertyPage: React.FC = () => {
   const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null); // upload, 0..1
   const [submitted, setSubmitted] = useState<null | 'created' | 'updated'>(null);
   const [loadingEdit, setLoadingEdit] = useState(Boolean(editId));
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -134,7 +129,7 @@ const AddPropertyPage: React.FC = () => {
           state_id: p.state_id || '',
           district_id: p.district_id || '',
         });
-        setPhotos(p.images.map((i) => ({ url: i.url })));
+        setPhotos(p.images.map((i) => ({ url: i.url, video: i.type === 'VIDEO' })));
         setCoords(p.location);
       })
       .catch((err) => {
@@ -154,12 +149,14 @@ const AddPropertyPage: React.FC = () => {
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files || []);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    const problem = picked.map(photoProblem).find(Boolean);
+    const problem = picked.map(mediaProblem).find(Boolean);
     if (problem) toast.error(problem);
-    const ok = picked.filter((f) => !photoProblem(f));
-    const room = MAX_PHOTOS - photos.length;
-    if (ok.length > room) toast.error(`You can add up to ${MAX_PHOTOS} photos.`);
-    setPhotos((prev) => [...prev, ...ok.slice(0, Math.max(0, room)).map((file) => ({ file, preview: URL.createObjectURL(file) }))]);
+    const ok = picked.filter((f) => !mediaProblem(f));
+    const room = MAX_MEDIA - photos.length;
+    if (ok.length > room) toast.error(`You can add up to ${MAX_MEDIA} photos and videos.`);
+    setPhotos((prev) => [...prev, ...ok.slice(0, Math.max(0, room)).map((file) => ({
+      file, preview: URL.createObjectURL(file), video: file.type.startsWith('video/'),
+    }))]);
     setErrors((prev) => ({ ...prev, image_urls: '' }));
   };
 
@@ -200,18 +197,21 @@ const AddPropertyPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!photos.length) {
-      setErrors({ image_urls: 'Add at least 1 photo' });
+    if (!photos.some((p) => !p.video)) {
+      setErrors({ image_urls: 'Add at least 1 photo (a video can\'t be the cover)' });
       return;
     }
     setSubmitting(true);
     setErrors({});
     try {
-      // Upload new photos, keeping the display order (the first is the cover)
-      const newUrls = await uploadsAPI.uploadPhotos(photos.filter((p) => p.file).map((p) => p.file as File));
+      // Upload new photos and videos, keeping the display order (the first photo is the cover)
+      const newFiles = photos.filter((p) => p.file).map((p) => p.file as File);
+      if (newFiles.length) setProgress(0);
+      const newUrls = await uploadsAPI.uploadMedia(newFiles, setProgress);
+      setProgress(null);
       let next = 0;
       const imageUrls = photos.map((p) => p.url || newUrls[next++]);
-      setPhotos(imageUrls.map((url) => ({ url })));
+      setPhotos(photos.map((p, i) => ({ url: imageUrls[i], video: p.video })));
 
       const body = {
         listing_type: form.listing_type,
@@ -235,8 +235,11 @@ const AddPropertyPage: React.FC = () => {
       toast.error(apiErrorMessage(err, (err as Error).message || 'Could not save the property. Please try again.'));
     } finally {
       setSubmitting(false);
+      setProgress(null);
     }
   };
+
+  const coverIndex = photos.findIndex((p) => !p.video);
 
   if (isLoading || loadingEdit) {
     return (
@@ -372,33 +375,43 @@ const AddPropertyPage: React.FC = () => {
             </div>
           </section>
 
-          {/* ── Photos ── */}
+          {/* ── Photos and videos ── */}
           <section className={sectionClass}>
             <div>
-              <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Photos <Required /></h2>
+              <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">Photos &amp; videos <Required /></h2>
               <p className="font-manrope text-sm text-[#6B7280] mt-1">
-                At least one photo, up to {MAX_PHOTOS} (JPG, PNG or WEBP, {MAX_PHOTO_MB} MB each). The first one is the cover.
+                At least one photo, up to {MAX_MEDIA} files in all: photos (JPG, PNG, WEBP) and videos (MP4, MOV, WEBM),
+                up to {MAX_UPLOAD_MB} MB each. The first photo is the cover.
               </p>
             </div>
             {photos.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                 {photos.map((p, i) => (
                   <div key={p.url || p.preview} className="relative aspect-square rounded-lg overflow-hidden border border-[#E8E1EA] bg-[#F5F0F6]">
-                    <img src={p.url || p.preview} alt="" className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => removePhoto(i)} aria-label="Remove photo"
+                    {p.video ? (
+                      <>
+                        <video src={p.url || p.preview} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span className="w-8 h-8 rounded-full bg-black/55 flex items-center justify-center text-white text-xs pl-0.5">▶</span>
+                        </span>
+                      </>
+                    ) : (
+                      <img src={p.url || p.preview} alt="" className="w-full h-full object-cover" />
+                    )}
+                    <button type="button" onClick={() => removePhoto(i)} aria-label={p.video ? 'Remove video' : 'Remove photo'}
                       className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center">✕</button>
-                    {i === 0 && <span className="absolute bottom-1 left-1 font-manrope text-[10px] font-semibold bg-black/70 text-white px-1.5 py-0.5 rounded">Cover</span>}
+                    {i === coverIndex && <span className="absolute bottom-1 left-1 font-manrope text-[10px] font-semibold bg-black/70 text-white px-1.5 py-0.5 rounded">Cover</span>}
                   </div>
                 ))}
               </div>
             )}
-            {photos.length < MAX_PHOTOS && (
+            {photos.length < MAX_MEDIA && (
               <button type="button" onClick={() => fileInputRef.current?.click()}
                 className="w-full border-2 border-dashed border-[#A3078F]/40 rounded-xl px-6 py-5 font-manrope text-sm font-medium text-[#A3078F] hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-colors">
-                Add photos ({photos.length}/{MAX_PHOTOS})
+                Add photos or videos ({photos.length}/{MAX_MEDIA})
               </button>
             )}
-            <input ref={fileInputRef} type="file" accept={PHOTO_TYPES.join(',')} multiple className="sr-only" onChange={handleFiles} />
+            <input ref={fileInputRef} type="file" accept={[...PHOTO_TYPES, ...VIDEO_TYPES].join(',')} multiple className="sr-only" onChange={handleFiles} />
             <FieldError message={errors.image_urls} />
           </section>
 
@@ -458,9 +471,17 @@ const AddPropertyPage: React.FC = () => {
             <FieldError message={errors.description} />
           </section>
 
+          {progress !== null && (
+            <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}
+              className="h-2 w-full rounded-full bg-[#F5F0F6] overflow-hidden">
+              <div className="h-full bg-[#A3078F] transition-[width] duration-200" style={{ width: `${Math.round(progress * 100)}%` }} />
+            </div>
+          )}
           <button type="submit" disabled={submitting}
             className="w-full bg-[#A3078F] text-white font-manrope font-bold py-3.5 rounded-xl hover:bg-[#8E0A82] transition-[background-color] disabled:opacity-60">
-            {submitting ? 'Saving…' : editId ? 'Save changes' : 'Submit for review'}
+            {progress !== null
+              ? `Uploading… ${Math.round(progress * 100)}%`
+              : submitting ? 'Saving…' : editId ? 'Save changes' : 'Submit for review'}
           </button>
         </form>
       </div>

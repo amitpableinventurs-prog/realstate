@@ -1,5 +1,6 @@
 import { GitHubModelsProvider } from './llm/GitHubModelsProvider.js';
 import { NvidiaNimProvider }    from './llm/NvidiaNimProvider.js';
+import { AnthropicProvider }    from './llm/AnthropicProvider.js';
 import { LLMRouter }            from './llm/LLMRouter.js';
 import logger from '../utils/logger.js';
 
@@ -347,11 +348,14 @@ export function createAIService(
   nvidiaKey = null,
   githubModelsConfig = null,
   nvidiaModelsConfig = null,
+  anthropicKey = null,
+  anthropicModelsConfig = null,
 ) {
   const providers = [];
 
   if (githubKey) providers.push(new GitHubModelsProvider(githubKey, githubModelsConfig));
   if (nvidiaKey) providers.push(new NvidiaNimProvider(nvidiaKey, nvidiaModelsConfig));
+  if (anthropicKey) providers.push(new AnthropicProvider(anthropicKey, anthropicModelsConfig));
 
   if (!providers.length) throw new Error('[AIService] At least one AI provider key is required.');
 

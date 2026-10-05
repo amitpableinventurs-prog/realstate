@@ -11,6 +11,11 @@ function invalidateCache() {
 }
 
 const SEED_MODELS = [
+  {
+    name: 'Claude Sonnet 4.5', slug: 'claude-sonnet-4-5', modelId: 'claude-sonnet-4-5-20250929', provider: 'anthropic',
+    badge: 'Reliable · Strong reasoning', description: 'Claude Sonnet 4.5 via Anthropic Messages API.', isActive: true, isDefault: false, order: 4,
+    config: { maxTokens: 6000, timeoutMs: 90000, temperature: 0.3, topP: 1, enableThinking: false, reasoningBudget: null },
+  },
   // ── GitHub Models (primary provider chain) ───────────────────────────────
   {
     name: 'GPT-4.1',
@@ -147,6 +152,7 @@ export async function resolveModelsByProvider() {
   return {
     github: all.filter(m => (m.provider || 'nvidia') === 'github'),
     nvidia: all.filter(m => (m.provider || 'nvidia') === 'nvidia'),
+    anthropic: all.filter(m => m.provider === 'anthropic'),
   };
 }
 

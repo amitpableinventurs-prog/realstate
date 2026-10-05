@@ -1,6 +1,6 @@
 import logger from '../utils/logger.js';
 
-// AWS S3 (+ optional CloudFront) for property photos uploaded directly by the
+// AWS S3 (+ optional CloudFront) for property photos and videos uploaded directly by the
 // client with pre-signed URLs. Used when S3_BUCKET and AWS_REGION are set;
 // otherwise /api/v1/uploads falls back to ImageKit / local disk.
 // Credentials come from AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY or the
@@ -8,7 +8,8 @@ import logger from '../utils/logger.js';
 
 export const isS3Configured = () => Boolean(process.env.S3_BUCKET && process.env.AWS_REGION);
 
-export const presignExpirySeconds = () => Number(process.env.S3_PRESIGN_EXPIRES_SECONDS) || 600;
+// An hour, so the last of several large videos can still start uploading
+export const presignExpirySeconds = () => Number(process.env.S3_PRESIGN_EXPIRES_SECONDS) || 3600;
 
 // CloudFront domain when set, else the bucket's own URL
 export const s3PublicUrl = (key) => {

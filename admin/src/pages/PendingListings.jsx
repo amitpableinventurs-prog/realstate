@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, X, Building2, MapPin,
   Maximize, User, Phone, Clock, RefreshCw, Search,
-  ChevronLeft, ChevronRight, Images, Landmark, FileText,
+  ChevronLeft, ChevronRight, Images, Landmark, FileText, Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../services/apiClient";
@@ -14,9 +14,25 @@ import DistrictOptions from "../components/DistrictOptions";
 import { fetchDistricts } from "../lib/districts";
 
 // ─── Image Gallery + Lightbox ─────────────────────────────────────────────────
+// A photo, or a video's first frame with a play badge (its parent is `relative`)
+const MediaThumb = ({ item, alt = "", className, small = false }) =>
+  item.video ? (
+    <>
+      <video src={`${item.url}#t=0.1`} muted playsInline preload="metadata" className={className} />
+      <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span className={cn("rounded-full bg-black/55 flex items-center justify-center", small ? "w-5 h-5" : "w-9 h-9")}>
+          <Play className={cn("text-white fill-white ml-0.5", small ? "w-2.5 h-2.5" : "w-4 h-4")} />
+        </span>
+      </span>
+    </>
+  ) : (
+    <img src={item.url} alt={alt} className={className} loading="lazy" decoding="async" />
+  );
+
+// `images`: [{ url, video }], cover photo first
 const ImageGallery = ({ images, title }) => {
   const [lightboxIdx, setLightboxIdx] = useState(null);
-  const imgs = (images || []).filter(Boolean);
+  const imgs = (images || []).filter((m) => m?.url);
 
   const openLightbox = (idx, e) => {
     e.stopPropagation();
@@ -34,6 +50,8 @@ const ImageGallery = ({ images, title }) => {
     if (lightboxIdx === null) return;
     const onKey = (e) => {
       if (e.key === "Escape") closeLightbox();
+      // Arrow keys seek a focused video instead of changing the slide
+      if (e.target?.tagName === "VIDEO") return;
       if (e.key === "ArrowLeft") setLightboxIdx((i) => (i - 1 + imgs.length) % imgs.length);
       if (e.key === "ArrowRight") setLightboxIdx((i) => (i + 1) % imgs.length);
     };
@@ -51,6 +69,7 @@ const ImageGallery = ({ images, title }) => {
   }
 
   const count = imgs.length;
+  const countLabel = imgs.some((m) => m.video) ? `${count} photos & videos` : `${count} photos`;
 
   return (
     <>
@@ -74,8 +93,8 @@ const ImageGallery = ({ images, title }) => {
           )}
           onClick={(e) => openLightbox(0, e)}
         >
-          <img
-            src={imgs[0]}
+          <MediaThumb
+            item={imgs[0]}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
           />
@@ -92,12 +111,12 @@ const ImageGallery = ({ images, title }) => {
                 className="relative overflow-hidden cursor-pointer group"
                 onClick={(e) => openLightbox(i, e)}
               >
-                <img src={imgs[i]} alt="" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
+                <MediaThumb item={imgs[i]} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
                 {/* "See all" overlay on last thumb */}
                 {i === 2 && count > 3 && (
                   <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-1">
                     <Images className="w-5 h-5 text-white" />
-                    <span className="text-white font-bold text-sm">{count} photos</span>
+                    <span className="text-white font-bold text-sm">{countLabel}</span>
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
@@ -106,13 +125,13 @@ const ImageGallery = ({ images, title }) => {
           </div>
         ) : count === 2 ? (
           <div className="relative overflow-hidden cursor-pointer group aspect-[4/3]" onClick={(e) => openLightbox(1, e)}>
-            <img src={imgs[1]} alt="" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
+            <MediaThumb item={imgs[1]} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
           </div>
         ) : count === 3 ? (
           [1, 2].map((i) => (
             <div key={i} className="relative overflow-hidden cursor-pointer group aspect-[4/3]" onClick={(e) => openLightbox(i, e)}>
-              <img src={imgs[i]} alt="" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
+              <MediaThumb item={imgs[i]} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
             </div>
           ))
@@ -143,17 +162,32 @@ const ImageGallery = ({ images, title }) => {
               {lightboxIdx + 1} / {imgs.length}
             </div>
 
-            {/* Main image */}
-            <motion.img
-              key={lightboxIdx}
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.18 }}
-              src={imgs[lightboxIdx]}
-              alt=""
-              className="max-h-[75vh] max-w-[85vw] object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
+            {/* Main photo or video */}
+            {imgs[lightboxIdx].video ? (
+              <motion.video
+                key={lightboxIdx}
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.18 }}
+                src={imgs[lightboxIdx].url}
+                controls
+                autoPlay
+                playsInline
+                className="max-h-[75vh] max-w-[85vw] rounded-lg shadow-2xl bg-black"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <motion.img
+                key={lightboxIdx}
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.18 }}
+                src={imgs[lightboxIdx].url}
+                alt=""
+                className="max-h-[75vh] max-w-[85vw] object-contain rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
 
             {/* Prev / Next */}
             {imgs.length > 1 && (
@@ -180,11 +214,11 @@ const ImageGallery = ({ images, title }) => {
                   key={i}
                   onClick={() => setLightboxIdx(i)}
                   className={cn(
-                    "w-14 h-10 rounded overflow-hidden border-2 transition-all duration-150 flex-shrink-0",
+                    "relative w-14 h-10 rounded overflow-hidden border-2 transition-all duration-150 flex-shrink-0",
                     i === lightboxIdx ? "border-white opacity-100" : "border-transparent opacity-50 hover:opacity-80"
                   )}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <MediaThumb item={img} className="w-full h-full object-cover" small />
                 </button>
               ))}
             </div>
@@ -275,7 +309,10 @@ const UNIT_LABELS = { KATHA: "Katha", DISMIL: "Dismil" };
 const toCard = (p) => ({
   id: p.id,
   title: p.title,
-  images: (p.images || []).map((i) => i.url),
+  // Cover photo first, then the rest in order
+  images: [...(p.images || [])]
+    .sort((a, b) => Number(b.is_primary) - Number(a.is_primary))
+    .map((i) => ({ url: i.url, video: i.type === "VIDEO" })),
   location: [p.address, p.district?.name, p.state?.name].filter(Boolean).join(", ") || "—",
   price: p.price?.label,
   typeLabel: TYPE_LABELS[p.listing_type],

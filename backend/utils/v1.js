@@ -98,19 +98,26 @@ const imagekitHost = () => {
     }
 };
 
-// ImageKit resizes on the fly; other storage serves the original
-export const thumbnailUrl = (url) => {
+// ImageKit resizes on the fly and makes video thumbnails; other storage
+// serves the original photo and has no video thumbnail (null)
+export const thumbnailUrl = (url, type = 'IMAGE') => {
     const host = imagekitHost();
     try {
-        return host && new URL(url).host === host ? `${url}?tr=w-400` : url;
+        const onImagekit = host && new URL(url).host === host;
+        if (type === 'VIDEO') return onImagekit ? `${url}/ik-thumbnail.jpg?tr=w-400` : null;
+        return onImagekit ? `${url}?tr=w-400` : url;
     } catch {
-        return url;
+        return type === 'VIDEO' ? null : url;
     }
 };
 
+/** The cover photo: the first image (a video is never the cover). */
+export const primaryImage = (property) => property.images?.find((media) => media.type !== 'VIDEO') || null;
+
 const imagesOut = (property) => property.images.map((image) => ({
     url: image.url,
-    thumbnail_url: thumbnailUrl(image.url),
+    type: image.type || 'IMAGE',
+    thumbnail_url: thumbnailUrl(image.url, image.type),
     is_primary: image.is_primary,
     sort_order: image.sort_order,
 }));
@@ -130,7 +137,8 @@ const titleFor = (property) => {
 
 /** Card for list screens (GET /listings, /properties/my, /wishlist). Expects state_id and district_id populated. */
 export const propertyCard = (property, { savedIds } = {}) => {
-    const primary = property.images[0];
+    const primary = primaryImage(property);
+    const videoCount = property.images.filter((media) => media.type === 'VIDEO').length;
     return {
         id: property._id,
         listing_type: property.listing_type,
@@ -143,7 +151,8 @@ export const propertyCard = (property, { savedIds } = {}) => {
         estimated_total: property.estimated_total ?? null,
         address: property.address || null,
         thumbnail_url: primary ? thumbnailUrl(primary.url) : null,
-        image_count: property.images.length,
+        image_count: property.images.length - videoCount,
+        video_count: videoCount,
         state: refOut(property.state_id),
         district: refOut(property.district_id),
         is_saved: savedIds ? savedIds.has(String(property._id)) : false,

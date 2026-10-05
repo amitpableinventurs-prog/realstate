@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'sonner';
-import { Upload, X, MapPin, Home, IndianRupee, Phone, Crosshair, FileText, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, MapPin, Home, IndianRupee, Phone, Crosshair, FileText, Play, Image as ImageIcon } from 'lucide-react';
 import DistrictOptions from './DistrictOptions';
 import { fetchDistricts } from '../lib/districts';
-import { uploadPhotos, photoProblem } from '../lib/uploads';
+import { uploadMedia, mediaProblem, PHOTO_TYPES, VIDEO_TYPES, MAX_UPLOAD_MB } from '../lib/uploads';
 import { cn } from '../lib/utils';
 
 // Admin "Add Property" / "Edit" form — the property fields of the technical
 // document: Sell/Rent/Lease, Khata, Khasra, Area and Price (per Katha or
-// Dismil), Photos, Description, optional current location, and the district.
+// Dismil), Photos and videos, Description, optional current location, and the district.
 // Adding also needs the owner's mobile number: the property is listed under
 // their account (created if new), so they see it in My Listings.
 
-const MAX_PHOTOS = 10;
+const MAX_MEDIA = 10; // photos and videos together
 const LISTING_TYPES = [
   { value: 'SELL', label: 'For Sale' },
   { value: 'RENT', label: 'For Rent' },
@@ -78,11 +78,12 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
   const [districts, setDistricts] = useState([]);
   const [values, setValues] = useState(() => initialValues(listing));
   const [coords, setCoords] = useState(listing?.location || null);
-  // Photos in display order: { url } already uploaded, or { file, preview } to upload
-  const [photos, setPhotos] = useState(() => (listing?.images || []).map((i) => ({ url: i.url })));
+  // Photos and videos in display order: { url } already uploaded, or { file, preview } to upload
+  const [photos, setPhotos] = useState(() => (listing?.images || []).map((i) => ({ url: i.url, video: i.type === 'VIDEO' })));
   const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState(null); // upload, 0..1
   const fileInput = useRef(null);
 
   useEffect(() => {
@@ -100,12 +101,14 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
   const addFiles = (e) => {
     const picked = Array.from(e.target.files || []);
     if (fileInput.current) fileInput.current.value = '';
-    const problems = picked.map(photoProblem).filter(Boolean);
+    const problems = picked.map(mediaProblem).filter(Boolean);
     if (problems.length) toast.error(problems[0]);
-    const ok = picked.filter((f) => !photoProblem(f));
-    const room = MAX_PHOTOS - photos.length;
-    if (ok.length > room) toast.error(`A property can have at most ${MAX_PHOTOS} photos`);
-    const added = ok.slice(0, Math.max(0, room)).map((file) => ({ file, preview: URL.createObjectURL(file) }));
+    const ok = picked.filter((f) => !mediaProblem(f));
+    const room = MAX_MEDIA - photos.length;
+    if (ok.length > room) toast.error(`A property can have at most ${MAX_MEDIA} photos and videos`);
+    const added = ok.slice(0, Math.max(0, room)).map((file) => ({
+      file, preview: URL.createObjectURL(file), video: file.type.startsWith('video/'),
+    }));
     setPhotos((prev) => [...prev, ...added]);
     setErrors((prev) => ({ ...prev, photos: undefined }));
   };
@@ -143,16 +146,18 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!photos.length) {
-      setErrors({ photos: 'Add at least 1 photo' });
+    if (!photos.some((p) => !p.video)) {
+      setErrors({ photos: "Add at least 1 photo (a video can't be the cover)" });
       return;
     }
     setSaving(true);
     setErrors({});
     try {
-      // Upload new photos first, keeping the display order
+      // Upload new photos and videos first, keeping the display order
       const newFiles = photos.filter((p) => p.file).map((p) => p.file);
-      const newUrls = await uploadPhotos(newFiles);
+      if (newFiles.length) setProgress(0);
+      const newUrls = await uploadMedia(newFiles, setProgress);
+      setProgress(null);
       let next = 0;
       const imageUrls = photos.map((p) => p.url || newUrls[next++]);
 
@@ -169,8 +174,8 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
         location: coords,
         ...(!isEdit && { owner_mobile: values.owner_mobile, owner_name: values.owner_name.trim() || undefined }),
       });
-      // Uploaded photos are now saved with the property
-      setPhotos(imageUrls.map((url) => ({ url })));
+      // Uploaded files are now saved with the property
+      setPhotos(photos.map((p, i) => ({ url: imageUrls[i], video: p.video })));
     } catch (error) {
       const data = error.response?.data;
       if (data?.errors) {
@@ -179,8 +184,11 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
       toast.error(data?.message || error.message || 'Could not save the property');
     } finally {
       setSaving(false);
+      setProgress(null);
     }
   };
+
+  const coverIndex = photos.findIndex((p) => !p.video);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -282,31 +290,43 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
         <FieldError message={errors.price} />
       </div>
 
-      {/* Photos */}
+      {/* Photos and videos */}
       <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
-        <SectionHeader icon={ImageIcon} title="Photos" subtitle={`JPG, PNG or WEBP, up to ${MAX_PHOTOS}. The first one is the cover.`} />
+        <SectionHeader icon={ImageIcon} title="Photos & videos"
+          subtitle={`Photos (JPG, PNG, WEBP) and videos (MP4, MOV, WEBM), up to ${MAX_UPLOAD_MB} MB each and ${MAX_MEDIA} in all. The first photo is the cover.`} />
         {photos.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
             {photos.map((p, i) => (
               <div key={p.url || p.preview} className={cn("relative aspect-square rounded-xl overflow-hidden border bg-[#F5F0F6]", p.file ? "border-[#A3078F]/40" : "border-[#E6D6E8]")}>
-                <img src={p.url || p.preview} alt="" className="w-full h-full object-cover" />
-                <button type="button" onClick={() => removePhoto(i)} aria-label="Remove photo"
+                {p.video ? (
+                  <>
+                    <video src={p.url || p.preview} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                    <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="w-8 h-8 rounded-full bg-black/55 flex items-center justify-center">
+                        <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  <img src={p.url || p.preview} alt="" className="w-full h-full object-cover" />
+                )}
+                <button type="button" onClick={() => removePhoto(i)} aria-label={p.video ? 'Remove video' : 'Remove photo'}
                   className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center">
                   <X className="w-3.5 h-3.5" />
                 </button>
-                {i === 0 && <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-[#17131A]/80 text-white px-1.5 py-0.5 rounded">Cover</span>}
+                {i === coverIndex && <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-[#17131A]/80 text-white px-1.5 py-0.5 rounded">Cover</span>}
                 {p.file && <span className="absolute bottom-1 right-1 text-[10px] font-semibold bg-[#A3078F] text-white px-1.5 py-0.5 rounded">New</span>}
               </div>
             ))}
           </div>
         )}
-        {photos.length < MAX_PHOTOS && (
+        {photos.length < MAX_MEDIA && (
           <button type="button" onClick={() => fileInput.current?.click()}
             className="flex items-center gap-2 border-2 border-dashed border-[#A3078F]/40 rounded-xl px-6 py-4 text-[#A3078F] text-sm font-medium hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-colors">
-            <Upload className="w-4 h-4" /> Add photos ({photos.length}/{MAX_PHOTOS})
+            <Upload className="w-4 h-4" /> Add photos or videos ({photos.length}/{MAX_MEDIA})
           </button>
         )}
-        <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={addFiles} />
+        <input ref={fileInput} type="file" accept={[...PHOTO_TYPES, ...VIDEO_TYPES].join(',')} multiple className="sr-only" onChange={addFiles} />
         <FieldError message={errors.photos} />
       </div>
 
@@ -359,9 +379,15 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
         <FieldError message={errors.description} />
       </div>
 
+      {progress !== null && (
+        <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}
+          className="h-2 w-full rounded-full bg-[#F5F0F6] overflow-hidden">
+          <div className="h-full bg-[#A3078F] transition-[width] duration-200" style={{ width: `${Math.round(progress * 100)}%` }} />
+        </div>
+      )}
       <button type="submit" disabled={saving}
         className="w-full py-3.5 bg-[#A3078F] hover:bg-[#7A0A74] text-white rounded-xl font-semibold transition-colors disabled:opacity-60">
-        {saving ? 'Saving…' : submitLabel}
+        {progress !== null ? `Uploading… ${Math.round(progress * 100)}%` : saving ? 'Saving…' : submitLabel}
       </button>
     </form>
   );

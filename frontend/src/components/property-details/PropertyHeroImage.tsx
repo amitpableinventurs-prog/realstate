@@ -1,34 +1,80 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Images } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Images, Play } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nContext';
+import type { GalleryItem } from '../../utils/propertyDisplay';
 
 interface PropertyHeroImageProps {
-  images?: string[];
-  image?: string;           // legacy single-image compat
+  media?: GalleryItem[];   // photos and videos, cover photo first
   propertyName?: string;
 }
 
+const FALLBACK: GalleryItem = {
+  url: 'https://images.unsplash.com/photo-1622015663381-d2e05ae91b72?w=1200',
+  type: 'IMAGE',
+  poster: null,
+};
+
+// ── Tile: a photo, or a video's first frame with a play badge ──────────────
+const Tile: React.FC<{
+  item: GalleryItem;
+  alt: string;
+  className: string;
+  eager?: boolean;
+  small?: boolean;
+}> = ({ item, alt, className, eager = false, small = false }) => {
+  const style = { outline: '1px solid rgba(0,0,0,0.08)', outlineOffset: '-1px' };
+  if (item.type !== 'VIDEO') {
+    return (
+      <img src={item.url} alt={alt} className={className} style={style}
+        loading={eager ? 'eager' : 'lazy'} decoding="async" />
+    );
+  }
+  return (
+    <>
+      {item.poster
+        ? <img src={item.poster} alt={alt} className={className} style={style} loading="lazy" decoding="async" />
+        // #t=0.1 makes browsers (Safari too) show the first frame instead of a blank box
+        : <video src={`${item.url}#t=0.1`} muted playsInline preload="metadata" aria-label={alt} className={className} style={style} />}
+      <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span className={`${small ? 'w-5 h-5' : 'w-12 h-12'} rounded-full bg-black/55 flex items-center justify-center`}>
+          <Play className={`${small ? 'w-2.5 h-2.5' : 'w-5 h-5'} text-white fill-white ml-0.5`} />
+        </span>
+      </span>
+    </>
+  );
+};
+
 // ── Lightbox ────────────────────────────────────────────────────────────────
 const Lightbox: React.FC<{
-  images: string[];
+  media: GalleryItem[];
   startIndex: number;
   onClose: () => void;
-}> = ({ images, startIndex, onClose }) => {
+}> = ({ media, startIndex, onClose }) => {
   const [current, setCurrent] = useState(startIndex);
 
-  const prev = useCallback(() => setCurrent(i => (i - 1 + images.length) % images.length), [images.length]);
-  const next = useCallback(() => setCurrent(i => (i + 1) % images.length), [images.length]);
+  const prev = useCallback(() => setCurrent(i => (i - 1 + media.length) % media.length), [media.length]);
+  const next = useCallback(() => setCurrent(i => (i + 1) % media.length), [media.length]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      // Arrow keys seek a focused video instead of changing the slide
+      if ((e.target as HTMLElement | null)?.tagName === 'VIDEO') return;
       if (e.key === 'ArrowLeft') prev();
       if (e.key === 'ArrowRight') next();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose, prev, next]);
+
+  const item = media[current];
+  const motionProps = {
+    initial: { opacity: 0, scale: 0.97 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 1.02 },
+    transition: { duration: 0.2, ease: [0.2, 0, 0, 1] as const },
+  };
 
   return (
     <motion.div
@@ -50,60 +96,71 @@ const Lightbox: React.FC<{
 
       {/* Counter */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 font-space-mono text-sm text-white/70 tabular-nums">
-        {current + 1} / {images.length}
+        {current + 1} / {media.length}
       </div>
 
       {/* Prev */}
-      {images.length > 1 && (
+      {media.length > 1 && (
         <button
           onClick={e => { e.stopPropagation(); prev(); }}
-          className="absolute left-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-          aria-label="Previous photo"
+          className="absolute left-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          aria-label="Previous"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
       )}
 
-      {/* Image */}
+      {/* Photo or video */}
       <div className="max-w-5xl max-h-[85vh] w-full px-16" onClick={e => e.stopPropagation()}>
         <AnimatePresence mode="wait">
-          <motion.img
-            key={current}
-            src={images[current]}
-            alt={`Photo ${current + 1}`}
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.02 }}
-            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
-            className="w-full h-full object-contain rounded-xl"
-            style={{ maxHeight: '85vh' }}
-          />
+          {item.type === 'VIDEO' ? (
+            <motion.video
+              key={current}
+              src={item.url}
+              poster={item.poster || undefined}
+              controls
+              autoPlay
+              playsInline
+              {...motionProps}
+              className="w-full h-full object-contain rounded-xl bg-black"
+              style={{ maxHeight: '85vh' }}
+            />
+          ) : (
+            <motion.img
+              key={current}
+              src={item.url}
+              alt={`Photo ${current + 1}`}
+              {...motionProps}
+              className="w-full h-full object-contain rounded-xl"
+              style={{ maxHeight: '85vh' }}
+            />
+          )}
         </AnimatePresence>
       </div>
 
       {/* Next */}
-      {images.length > 1 && (
+      {media.length > 1 && (
         <button
           onClick={e => { e.stopPropagation(); next(); }}
-          className="absolute right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-          aria-label="Next photo"
+          className="absolute right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          aria-label="Next"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
       )}
 
       {/* Thumbnail strip */}
-      {images.length > 1 && (
+      {media.length > 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-          {images.map((img, i) => (
+          {media.map((m, i) => (
             <button
               key={i}
               onClick={e => { e.stopPropagation(); setCurrent(i); }}
-              className={`w-12 h-8 rounded-md overflow-hidden transition-all ${
+              className={`relative w-12 h-8 rounded-md overflow-hidden transition-all ${
                 i === current ? 'ring-2 ring-[#A3078F] opacity-100' : 'opacity-40 hover:opacity-70'
               }`}
             >
-              <img src={img} alt="" className="w-full h-full object-cover" />
+              <Tile item={m} alt="" className="w-full h-full object-cover" small />
             </button>
           ))}
         </div>
@@ -113,44 +170,36 @@ const Lightbox: React.FC<{
 };
 
 // ── Adaptive gallery ─────────────────────────────────────────────────────────
-const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], image, propertyName }) => {
+const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ media = [], propertyName }) => {
   const { t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  // Normalize to array, de-dupe
-  const allImages = [...new Set([
-    ...(images.length > 0 ? images : []),
-    ...(image && !images.includes(image) ? [image] : []),
-  ])].filter(Boolean);
-
-  const fallback = "https://images.unsplash.com/photo-1622015663381-d2e05ae91b72?w=1200";
-  const imgs = allImages.length > 0 ? allImages : [fallback];
+  const items = media.length > 0 ? media : [FALLBACK];
+  const name = propertyName || 'Property';
 
   const open = (i: number) => setLightboxIndex(i);
   const close = () => setLightboxIndex(null);
+  const lightbox = (
+    <AnimatePresence>
+      {lightboxIndex !== null && <Lightbox media={items} startIndex={lightboxIndex} onClose={close} />}
+    </AnimatePresence>
+  );
 
-  // ── 1 image ───────────────────────────────────────────────────────────────
-  if (imgs.length === 1) {
+  // ── 1 item ────────────────────────────────────────────────────────────────
+  if (items.length === 1) {
     return (
       <>
         <div className="relative w-full h-[65vh] min-h-[420px] overflow-hidden bg-[#17131A] cursor-pointer" onClick={() => open(0)}>
-          <img
-            src={imgs[0]}
-            alt={propertyName || 'Property'}
-            className="w-full h-full object-cover opacity-90"
-            style={{ outline: '1px solid rgba(0,0,0,0.08)', outlineOffset: '-1px' }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          <Tile item={items[0]} alt={name} className="w-full h-full object-cover opacity-90" eager />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
         </div>
-        <AnimatePresence>
-          {lightboxIndex !== null && <Lightbox images={imgs} startIndex={lightboxIndex} onClose={close} />}
-        </AnimatePresence>
+        {lightbox}
       </>
     );
   }
 
-  // ── 2–4 images: hero left + vertical strip right ───────────────────────
-  if (imgs.length <= 4) {
+  // ── 2–4 items: hero left + vertical strip right ────────────────────────
+  if (items.length <= 4) {
     return (
       <>
         <div className="flex gap-1 h-[62vh] min-h-[400px] bg-[#17131A] overflow-hidden">
@@ -159,43 +208,33 @@ const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], imag
             className="relative flex-[2] overflow-hidden cursor-pointer group"
             onClick={() => open(0)}
           >
-            <img
-              src={imgs[0]}
-              alt={propertyName || 'Property'}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-              style={{ outline: '1px solid rgba(0,0,0,0.08)', outlineOffset: '-1px' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            <Tile item={items[0]} alt={name} eager
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
           </div>
 
           {/* Thumbnails */}
           <div className="flex-1 flex flex-col gap-1">
-            {imgs.slice(1).map((img, i) => (
+            {items.slice(1).map((item, i) => (
               <div
                 key={i}
                 className="relative flex-1 overflow-hidden cursor-pointer group"
                 onClick={() => open(i + 1)}
               >
-                <img
-                  src={img}
-                  alt={`Photo ${i + 2}`}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                  style={{ outline: '1px solid rgba(0,0,0,0.07)', outlineOffset: '-1px' }}
-                />
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-300" />
+                <Tile item={item} alt={`Photo ${i + 2}`}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-300 pointer-events-none" />
               </div>
             ))}
           </div>
         </div>
-        <AnimatePresence>
-          {lightboxIndex !== null && <Lightbox images={imgs} startIndex={lightboxIndex} onClose={close} />}
-        </AnimatePresence>
+        {lightbox}
       </>
     );
   }
 
-  // ── 5+ images: Airbnb-style grid ─────────────────────────────────────────
-  const gridImgs = imgs.slice(0, 5);
+  // ── 5+ items: Airbnb-style grid ──────────────────────────────────────────
+  const grid = items.slice(0, 5);
   return (
     <>
       <div className="relative h-[60vh] min-h-[380px] bg-[#17131A] overflow-hidden">
@@ -205,34 +244,26 @@ const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], imag
             className="col-span-2 row-span-2 relative overflow-hidden cursor-pointer group"
             onClick={() => open(0)}
           >
-            <img
-              src={gridImgs[0]}
-              alt={propertyName || 'Property'}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-              style={{ outline: '1px solid rgba(0,0,0,0.08)', outlineOffset: '-1px' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            <Tile item={grid[0]} alt={name} eager
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
           </div>
 
           {/* 4 thumbnails */}
-          {gridImgs.slice(1, 5).map((img, i) => (
+          {grid.slice(1, 5).map((item, i) => (
             <div
               key={i}
               className="relative overflow-hidden cursor-pointer group"
               onClick={() => open(i + 1)}
             >
-              <img
-                src={img}
-                alt={`Photo ${i + 2}`}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
-                style={{ outline: '1px solid rgba(0,0,0,0.07)', outlineOffset: '-1px' }}
-              />
+              <Tile item={item} alt={`Photo ${i + 2}`}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" />
               {/* "View all" overlay on last thumbnail */}
-              {i === 3 && imgs.length > 5 && (
+              {i === 3 && items.length > 5 && (
                 <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-1">
                   <Images className="w-5 h-5 text-white" />
                   <span className="font-manrope font-semibold text-white text-sm">
-                    +{imgs.length - 5} more
+                    +{items.length - 5} more
                   </span>
                 </div>
               )}
@@ -240,19 +271,17 @@ const PropertyHeroImage: React.FC<PropertyHeroImageProps> = ({ images = [], imag
           ))}
         </div>
 
-        {/* "Show all photos" button */}
+        {/* "Show all" button */}
         <button
           onClick={() => open(0)}
           className="absolute bottom-4 right-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm hover:bg-white text-[#1A0A1E] font-manrope font-semibold text-sm px-4 py-2 rounded-xl shadow-md transition-all active:scale-[0.96]"
         >
           <Images className="w-4 h-4" />
-          {t('details.showAll', { count: imgs.length })}
+          {t('details.showAll', { count: items.length })}
         </button>
       </div>
 
-      <AnimatePresence>
-        {lightboxIndex !== null && <Lightbox images={imgs} startIndex={lightboxIndex} onClose={close} />}
-      </AnimatePresence>
+      {lightbox}
     </>
   );
 };

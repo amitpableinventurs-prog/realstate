@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import happyHomeowner1 from '../../images/Happy Homeowners_1.jpg';
 import happyHomeowner2 from '../../images/Happy Homeowners_2.jpg';
-import happyHomeowner3 from '../../images/Team section.jpg';
+import happyHomeowner3 from '../../images/Team section avatar.jpg';
 import rightFeatureCard from '../../images/Right side feature card.jpg';
 
 const HeroSection: React.FC = () => {

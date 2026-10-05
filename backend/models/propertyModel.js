@@ -9,9 +9,12 @@ export const UNITS = ['KATHA', 'DISMIL'];
 export const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SOLD', 'RENTED', 'LEASED'];
 // Marking an approved property closed: the word depends on its type
 export const CLOSED_STATUS_FOR_TYPE = { SELL: 'SOLD', RENT: 'RENTED', LEASE: 'LEASED' };
+// Videos sit in `images` next to the photos (added on request; the document lists photos only)
+export const MEDIA_TYPES = ['IMAGE', 'VIDEO'];
 
 const ImageSchema = new mongoose.Schema({
     url: { type: String, required: true },
+    type: { type: String, enum: MEDIA_TYPES, default: 'IMAGE' },
     is_primary: { type: Boolean, default: false },
     sort_order: { type: Number, default: 0 },
 }, { _id: false });
@@ -67,10 +70,11 @@ PropertySchema.pre('validate', function () {
     this.estimated_total = sameUnit && this.price.amount != null && this.area.value != null
         ? Math.round(this.price.amount * this.area.value)
         : undefined;
-    // The first photo is the primary one, in display order
+    // Display order; the first photo (never a video) is the primary one
+    const primary = this.images.findIndex((media) => media.type !== 'VIDEO');
     this.images.forEach((image, i) => {
         image.sort_order = i;
-        image.is_primary = i === 0;
+        image.is_primary = i === primary;
     });
 });
 

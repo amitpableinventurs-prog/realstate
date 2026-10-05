@@ -3,7 +3,7 @@ import Notification from '../../models/notificationModel.js';
 import Property from '../../models/propertyModel.js';
 import { notifyNewEnquiry } from '../../services/notificationService.js';
 import {
-    created, fail, isObjectId, listResponse, notFound, notificationOut, ok, parsePage, thumbnailUrl, validationFailed,
+    created, fail, isObjectId, listResponse, notFound, notificationOut, ok, parsePage, primaryImage, thumbnailUrl, validationFailed,
 } from '../../utils/v1.js';
 
 // /api/v1 enquiries and notifications (technical document 6.6)
@@ -65,7 +65,7 @@ export const receivedEnquiries = async (req, res) => {
                 listing_type: property.listing_type,
                 khata_number: property.khata_number,
                 khasra_number: property.khasra_number,
-                thumbnail_url: property.images[0] ? thumbnailUrl(property.images[0].url) : null,
+                thumbnail_url: primaryImage(property) ? thumbnailUrl(primaryImage(property).url) : null,
             } : null,
             from_user: e.from_user_id
                 ? { id: e.from_user_id._id, name: e.from_user_id.name || null, mobile: e.from_user_id.mobile }
