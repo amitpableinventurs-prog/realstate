@@ -150,6 +150,7 @@ export const propertyCard = (property, { savedIds } = {}) => {
         price: priceOut(property.price),
         estimated_total: property.estimated_total ?? null,
         address: property.address || null,
+        description: property.description || null,
         thumbnail_url: primary ? thumbnailUrl(primary.url) : null,
         images: imagesOut(property),
         image_count: property.images.length - videoCount,

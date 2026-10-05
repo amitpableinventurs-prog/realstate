@@ -100,7 +100,7 @@ export const toProperty = (p: PropertyCardData | PropertyDetailData): Property =
     areaLabel: areaLabel(p.area),
     khataNo: p.khata_number,
     khasraNo: p.khasra_number,
-    description: 'description' in p ? p.description || '' : '',
+    description: p.description || '',
     isSaved: p.is_saved,
   };
 };

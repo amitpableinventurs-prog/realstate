@@ -185,6 +185,7 @@ export interface PropertyCardData {
   price: { amount: number; per_unit: Unit; label: string };
   estimated_total: number | null;
   address: string | null;
+  description?: string | null;
   thumbnail_url: string | null; // the cover photo
   images?: PropertyMedia[];
   image_count: number;

@@ -406,7 +406,7 @@ const SORTS = {
     price_asc: { 'price.amount': 1, created_at: -1 },
     price_desc: { 'price.amount': -1, created_at: -1 },
 };
-const CARD_FIELDS = 'listing_type status khata_number khasra_number area price estimated_total address images state_id district_id created_at';
+const CARD_FIELDS = 'listing_type status khata_number khasra_number area price estimated_total address description images state_id district_id created_at';
 
 // An amount stored per KATHA or DISMIL, as an amount per dismil (for comparing across units)
 const perDismil = (field, unitField) => ({
