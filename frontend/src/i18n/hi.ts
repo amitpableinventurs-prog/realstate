@@ -227,6 +227,18 @@ const hi: Dictionary = {
   'profile.save': 'बदलाव सेव करें',
   'profile.saving': 'सेव हो रहा है…',
   'profile.saveFailed': 'आपकी जानकारी सेव नहीं हो सकी। कृपया फिर कोशिश करें।',
+  'contact.label': 'संपर्क और सहायता',
+  'contact.title': 'हम आपसे बात करना चाहेंगे',
+  'contact.subtitle': 'लिस्टिंग, AI टूल या साझेदारी से जुड़े सवालों के लिए हमारी टीम आपकी मदद के लिए तैयार है।',
+  'contact.formTitle': 'हमें संदेश भेजें',
+  'contact.formIntro': 'नीचे दिया गया फ़ॉर्म भरें। हमारी टीम 24 घंटे में आपसे संपर्क करेगी।',
+  'contact.firstName': 'पहला नाम',
+  'contact.lastName': 'उपनाम',
+  'contact.message': 'संदेश',
+  'contact.send': 'संदेश भेजें',
+  'contact.sending': 'भेजा जा रहा है…',
+  'contact.success': 'संदेश सफलतापूर्वक भेजा गया! हम 24 घंटे में आपसे संपर्क करेंगे।',
+  'contact.error': 'कुछ गलत हो गया। कृपया बाद में फिर कोशिश करें।',
 };
 
 export default hi;

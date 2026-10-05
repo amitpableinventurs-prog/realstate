@@ -47,6 +47,24 @@ export interface Property {
   isSaved: boolean;
 }
 
+// Local-disk development uploads can be persisted as localhost URLs. When the
+// frontend is deployed, resolve those URLs against the configured API origin
+// so galleries still load instead of pointing at the visitor's own machine.
+export const resolveMediaUrl = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  const apiOrigin = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  if (!apiOrigin) return value;
+  try {
+    const url = new URL(value);
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+      return `${apiOrigin}${url.pathname}${url.search}`;
+    }
+  } catch {
+    // Preserve relative or non-URL media values unchanged.
+  }
+  return value;
+};
+
 export const areaLabel = (area: { value: number; unit: Unit }) => `${area.value} ${UNIT_LABELS[area.unit] || area.unit}`;
 
 /** Card or detail data from the API → the website's property shape. */
@@ -54,13 +72,13 @@ export const toProperty = (p: PropertyCardData | PropertyDetailData): Property =
   // The cover photo first, then the rest in the owner's order
   const all = 'images' in p ? [...p.images].sort((a, b) => Number(b.is_primary) - Number(a.is_primary)) : [];
   const media: GalleryItem[] = all.map((m) => ({
-    url: m.url,
+    url: resolveMediaUrl(m.url) || m.url,
     type: m.type || 'IMAGE',
-    poster: m.type === 'VIDEO' ? m.thumbnail_url : null,
+    poster: m.type === 'VIDEO' ? resolveMediaUrl(m.thumbnail_url) : null,
   }));
   const images = 'images' in p
     ? media.filter((m) => m.type === 'IMAGE').map((m) => m.url)
-    : p.thumbnail_url ? [p.thumbnail_url] : [];
+    : p.thumbnail_url ? [resolveMediaUrl(p.thumbnail_url) || p.thumbnail_url] : [];
   return {
     _id: p.id,
     title: p.title,

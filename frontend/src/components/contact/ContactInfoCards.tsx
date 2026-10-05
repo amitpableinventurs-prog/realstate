@@ -1,6 +1,7 @@
 import React from 'react';
+import type { PlatformContact } from '../../services/api';
 
-const ContactInfoCards: React.FC = () => {
+const ContactInfoCards: React.FC<{ contact: PlatformContact }> = ({ contact }) => {
   return (
     <div className="space-y-6">
       {/* Visit Our Office Card */}
@@ -48,24 +49,27 @@ const ContactInfoCards: React.FC = () => {
               Call or Email Us
             </h3>
             <div className="space-y-2">
-              <a 
-                href="tel:+919876543210" 
+              {contact.whatsapp && <a
+                href={`https://wa.me/${contact.whatsapp.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 font-manrope font-extralight text-sm text-[#4B5563] hover:text-[#A3078F] transition-[color]"
               >
                 <span className="material-icons text-base">
-                  call
+                  chat
                 </span>
-                <span>+91 98765 43210</span>
-              </a>
-              <a 
-                href="mailto:hello@buildestate.com" 
+                <span>{contact.whatsapp}</span>
+              </a>}
+              {contact.email && <a
+                href={`mailto:${contact.email}`}
                 className="flex items-center gap-2 font-manrope font-extralight text-sm text-[#4B5563] hover:text-[#A3078F] transition-[color]"
               >
                 <span className="material-icons text-base">
                   email
                 </span>
-                <span>hello@buildestate.com</span>
-              </a>
+                <span>{contact.email}</span>
+              </a>}
+              {!contact.whatsapp && !contact.email && <p className="font-manrope text-sm text-[#6B7280]">Contact details are temporarily unavailable.</p>}
             </div>
           </div>
         </div>

@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { propertiesAPI, apiErrorMessage, type PropertyCardData, type PropertyStatus } from '../services/api';
-import { LISTING_TYPE_LABELS, CLOSED_LABEL_FOR_TYPE, areaLabel } from '../utils/propertyDisplay';
+import { CLOSED_LABEL_FOR_TYPE, toProperty } from '../utils/propertyDisplay';
+import { useLandText } from '../i18n/useLandText';
+import { useI18n } from '../i18n/I18nContext';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import {
@@ -49,6 +51,8 @@ function formatDate(dateStr: string): string {
 const MyListingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
+  const text = useLandText();
+  const { t } = useI18n();
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [fetchLoading, setFetchLoading] = useState(true);
@@ -210,7 +214,9 @@ const MyListingsPage: React.FC = () => {
         {/* ── Stats bar ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {(['APPROVED', 'PENDING', 'REJECTED', 'CLOSED'] as const).map((status) => {
-            const cfg = status === 'CLOSED' ? { ...CLOSED, label: 'Sold / Rented / Leased' } : STATUS_CONFIG[status];
+            const cfg = status === 'CLOSED'
+              ? { ...CLOSED, label: [text.status('SOLD'), text.status('RENTED'), text.status('LEASED')].join(' / ') }
+              : { ...STATUS_CONFIG[status], label: text.status(status) };
             return (
               <div key={status} className="bg-white border border-[#E8E1EA] rounded-xl p-4">
                 <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-manrope font-medium ${cfg.bg} ${cfg.text} mb-2`}>
@@ -227,6 +233,7 @@ const MyListingsPage: React.FC = () => {
         <div className="space-y-4">
           {listings.map((listing) => {
             const cfg = STATUS_CONFIG[listing.status] ?? STATUS_CONFIG.PENDING;
+            const display = toProperty(listing);
             const coverImage = listing.thumbnail_url;
             const place = [listing.district?.name, listing.state?.name].filter(Boolean).join(', ');
 
@@ -260,11 +267,11 @@ const MyListingsPage: React.FC = () => {
                     {/* Title row */}
                     <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
                       <h3 className="font-fraunces text-lg font-semibold text-[#1A0A1E] leading-snug">
-                        {listing.title}
+                        {text.title(display)}
                       </h3>
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-manrope font-semibold ${cfg.bg} ${cfg.text} flex-shrink-0`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                        {cfg.label}
+                        {text.status(listing.status)}
                       </span>
                     </div>
 
@@ -278,13 +285,13 @@ const MyListingsPage: React.FC = () => {
                     </p>
 
                     <div className="flex flex-wrap gap-x-3 gap-y-1 font-manrope text-sm text-[#374151]">
-                      <span className="font-semibold text-[#A3078F]">{listing.price.label}</span>
+                      <span className="font-semibold text-[#A3078F]">{text.price(display)}</span>
                       <span>·</span>
-                      <span>{areaLabel(listing.area)}</span>
+                      <span>{text.area(display)}</span>
                       <span>·</span><span>Khata {listing.khata_number}</span>
                       <span>·</span><span>Khasra {listing.khasra_number}</span>
                       <span>·</span>
-                      <span>{LISTING_TYPE_LABELS[listing.listing_type]}</span>
+                      <span>{text.listingType(listing.listing_type)}</span>
                     </div>
                   </div>
 

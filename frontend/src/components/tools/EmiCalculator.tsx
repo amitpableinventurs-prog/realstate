@@ -17,16 +17,14 @@ const EmiCalculator: React.FC<{ initialAmount?: number }> = ({ initialAmount = 0
   const { money } = useLandText();
   const [amount, setAmount] = useState(initialAmount > 0 ? String(initialAmount) : '');
   const [months, setMonths] = useState(DEFAULT_PLAN.months);
-  const [rate, setRate] = useState(String(DEFAULT_PLAN.rate));
   const autoRate = EMI_PLANS.find((p) => p.months === months)?.rate ?? 0;
 
   // Choosing a period sets its rate automatically
   const choosePeriod = (plan: { months: number; rate: number }) => {
     setMonths(plan.months);
-    setRate(String(plan.rate));
   };
 
-  const result = useMemo(() => calculateEmi(Number(amount), Number(rate), months), [amount, rate, months]);
+  const result = useMemo(() => calculateEmi(Number(amount), autoRate, months), [amount, autoRate, months]);
   const rupees = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
   return (
@@ -68,29 +66,10 @@ const EmiCalculator: React.FC<{ initialAmount?: number }> = ({ initialAmount = 0
         <p className="font-manrope text-xs text-[#6B7280] mt-1.5">{t('emi.autoRate', { n: months, rate: autoRate })}</p>
       </fieldset>
 
-      <div>
-        <label htmlFor="emi-rate" className={labelClass}>{t('emi.rate')}</label>
-        <div className="flex gap-2">
-          <input
-            id="emi-rate"
-            type="number"
-            min="0"
-            max="50"
-            step="0.1"
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
-            className={inputClass}
-          />
-          {Number(rate) !== autoRate && (
-            <button
-              type="button"
-              onClick={() => setRate(String(autoRate))}
-              className="shrink-0 font-manrope text-xs font-semibold text-[#A3078F] border border-[#E8E1EA] rounded-lg px-3 hover:border-[#A3078F]"
-            >
-              {t('emi.reset')}
-            </button>
-          )}
-        </div>
+      <div className="rounded-lg border border-[#E8E1EA] bg-[#FAF8FB] px-3 py-2.5">
+        <p className={labelClass}>{t('emi.rate')}</p>
+        <p className="font-manrope text-sm font-semibold text-[#1A0A1E]">{autoRate}% per year</p>
+        <p className="mt-1 font-manrope text-xs text-[#6B7280]">{t('emi.autoRate', { n: months, rate: autoRate })}</p>
       </div>
 
       <div className="rounded-xl bg-[#1A0A1E] text-white p-5" aria-live="polite">

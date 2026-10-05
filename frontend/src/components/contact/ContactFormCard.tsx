@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { contactAPI } from '../../services/api';
+import { useI18n } from '../../i18n/I18nContext';
 
 const ContactFormCard: React.FC = () => {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -38,12 +40,12 @@ const ContactFormCard: React.FC = () => {
       });
 
       setStatus('success');
-      setStatusMessage('Message sent successfully! We\'ll get back to you within 24 hours.');
+      setStatusMessage(t('contact.success'));
       setFormData({ firstName: '', lastName: '', email: '', phoneNumber: '', message: '' });
     } catch (err: any) {
       setStatus('error');
       setStatusMessage(
-        err.response?.data?.message || 'Something went wrong. Please try again later.'
+        err.response?.data?.message || t('contact.error')
       );
     } finally {
       setLoading(false);
@@ -55,10 +57,10 @@ const ContactFormCard: React.FC = () => {
       {/* Card Header */}
       <div className="mb-8">
         <h2 className="font-syne font-bold text-2xl text-[#1A0A1E] mb-2">
-          Send Us a Message
+          {t('contact.formTitle')}
         </h2>
         <p className="font-manrope font-extralight text-sm text-[#4B5563]">
-          Fill in the form below and our team will get back to you within 24 hours.
+          {t('contact.formIntro')}
         </p>
       </div>
 
@@ -68,7 +70,7 @@ const ContactFormCard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block font-manrope font-extralight text-xs text-[#64748B] uppercase tracking-wider mb-2">
-              First Name
+              {t('contact.firstName')}
             </label>
             <input
               type="text"
@@ -83,7 +85,7 @@ const ContactFormCard: React.FC = () => {
 
           <div>
             <label className="block font-manrope font-extralight text-xs text-[#64748B] uppercase tracking-wider mb-2">
-              Last Name
+              {t('contact.lastName')}
             </label>
             <input
               type="text"
@@ -100,7 +102,7 @@ const ContactFormCard: React.FC = () => {
         {/* Email */}
         <div>
           <label className="block font-manrope font-extralight text-xs text-[#64748B] uppercase tracking-wider mb-2">
-            Email
+            {t('profile.email')}
           </label>
           <input
             type="email"
@@ -116,7 +118,7 @@ const ContactFormCard: React.FC = () => {
         {/* Phone Number */}
         <div>
           <label className="block font-manrope font-extralight text-xs text-[#64748B] uppercase tracking-wider mb-2">
-            Phone Number
+            {t('schedule.phone')}
           </label>
           <input
             type="tel"
@@ -132,7 +134,7 @@ const ContactFormCard: React.FC = () => {
         {/* Message */}
         <div>
           <label className="block font-manrope font-extralight text-xs text-[#64748B] uppercase tracking-wider mb-2">
-            Message
+            {t('contact.message')}
           </label>
           <textarea
             name="message"
@@ -154,10 +156,10 @@ const ContactFormCard: React.FC = () => {
           {loading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Sending…
+              {t('contact.sending')}
             </>
           ) : (
-            'Send Message'
+            t('contact.send')
           )}
         </button>
 

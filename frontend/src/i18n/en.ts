@@ -241,6 +241,18 @@ const en = {
   'profile.save': 'Save changes',
   'profile.saving': 'Saving…',
   'profile.saveFailed': 'Could not save your details. Please try again.',
+  'contact.label': 'Contact & Support',
+  'contact.title': "We'd Love to Hear From You",
+  'contact.subtitle': 'Whether you have a question about listings, need assistance with our AI tools, or want to explore partnership opportunities, our team is ready to help.',
+  'contact.formTitle': 'Send Us a Message',
+  'contact.formIntro': 'Fill in the form below and our team will get back to you within 24 hours.',
+  'contact.firstName': 'First Name',
+  'contact.lastName': 'Last Name',
+  'contact.message': 'Message',
+  'contact.send': 'Send Message',
+  'contact.sending': 'Sending…',
+  'contact.success': "Message sent successfully! We'll get back to you within 24 hours.",
+  'contact.error': 'Something went wrong. Please try again later.',
 };
 
 export default en;

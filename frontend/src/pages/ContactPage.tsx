@@ -10,6 +10,8 @@ import ContactMapSection from '../components/contact/ContactMapSection';
 import FAQSection from '../components/contact/FAQSection';
 import OtherWaysSection from '../components/contact/OtherWaysSection';
 import NewsletterBanner from '../components/contact/NewsletterBanner';
+import { platformContactAPI, type PlatformContact } from '../services/api';
+import { useEffect, useState } from 'react';
 
 const FAQ_ITEMS = [
   {
@@ -31,6 +33,14 @@ const FAQ_ITEMS = [
 ];
 
 const ContactPage: React.FC = () => {
+  const [platformContact, setPlatformContact] = useState<PlatformContact>({ whatsapp: null, email: null });
+
+  useEffect(() => {
+    platformContactAPI.getPlatformContact()
+      .then(({ data }) => setPlatformContact(data.data))
+      .catch(() => setPlatformContact({ whatsapp: null, email: null }));
+  }, []);
+
   useSEO({
     title: 'Contact Us',
     description: 'Get in touch with Bhumi Bazar. We\'re here to help you find your dream property.',
@@ -58,7 +68,7 @@ const ContactPage: React.FC = () => {
 
             {/* Right - Contact Info Cards (1/3 width) */}
             <div className="lg:col-span-1">
-              <ContactInfoCards />
+              <ContactInfoCards contact={platformContact} />
             </div>
           </div>
         </div>
@@ -71,7 +81,7 @@ const ContactPage: React.FC = () => {
       <FAQSection />
 
       {/* Other Ways to Connect */}
-      <OtherWaysSection />
+      <OtherWaysSection contact={platformContact} />
 
       {/* Newsletter Banner */}
       <NewsletterBanner />

@@ -89,6 +89,15 @@ apiClient.interceptors.response.use(
 export const apiErrorMessage = (err: unknown, fallback: string): string =>
   (err as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
 
+export interface PlatformContact {
+  whatsapp: string | null;
+  email: string | null;
+}
+
+export const platformContactAPI = {
+  getPlatformContact: () => apiClient.get<{ success: boolean; data: PlatformContact }>('/contact-info'),
+};
+
 /** Field errors of a failed API call ({ field: message }), if any. */
 export const apiFieldErrors = (err: unknown): Record<string, string> =>
   (err as { response?: { data?: { errors?: Record<string, string> } } })?.response?.data?.errors || {};

@@ -227,6 +227,18 @@ const bn: Dictionary = {
   'profile.save': 'পরিবর্তন সেভ করুন',
   'profile.saving': 'সেভ হচ্ছে…',
   'profile.saveFailed': 'আপনার তথ্য সেভ করা গেল না। আবার চেষ্টা করুন।',
+  'contact.label': 'যোগাযোগ ও সহায়তা',
+  'contact.title': 'আমরা আপনার কথা শুনতে চাই',
+  'contact.subtitle': 'লিস্টিং, AI টুল বা অংশীদারিত্ব নিয়ে প্রশ্ন থাকলে আমাদের দল সাহায্য করতে প্রস্তুত।',
+  'contact.formTitle': 'আমাদের বার্তা পাঠান',
+  'contact.formIntro': 'নিচের ফর্মটি পূরণ করুন। আমাদের দল ২৪ ঘণ্টার মধ্যে আপনার সঙ্গে যোগাযোগ করবে।',
+  'contact.firstName': 'নামের প্রথম অংশ',
+  'contact.lastName': 'নামের শেষ অংশ',
+  'contact.message': 'বার্তা',
+  'contact.send': 'বার্তা পাঠান',
+  'contact.sending': 'পাঠানো হচ্ছে…',
+  'contact.success': 'বার্তা সফলভাবে পাঠানো হয়েছে! আমরা ২৪ ঘণ্টার মধ্যে যোগাযোগ করব।',
+  'contact.error': 'কিছু ভুল হয়েছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।',
 };
 
 export default bn;

@@ -1,4 +1,5 @@
 import React from 'react';
+import type { PlatformContact } from '../../services/api';
 
 interface ContactMethod {
   icon: string;
@@ -9,16 +10,16 @@ interface ContactMethod {
   bgColor: string;
 }
 
-const OtherWaysSection: React.FC = () => {
+const OtherWaysSection: React.FC<{ contact: PlatformContact }> = ({ contact }) => {
   const methods: ContactMethod[] = [
-    {
+    ...(contact.whatsapp ? [{
       icon: 'chat',
       title: 'WhatsApp Us',
       description: 'Chat directly with our support team via WhatsApp for instant assistance.',
       action: 'Start Chat',
-      actionLink: 'https://wa.me/919876543210',
-      bgColor: 'bg-[#E8F5E9]'
-    },
+      actionLink: `https://wa.me/${contact.whatsapp.replace(/\D/g, '')}`,
+      bgColor: 'bg-[#E8F5E9]',
+    }] : []),
     {
       icon: 'chat_bubble',
       title: 'Live Chat',

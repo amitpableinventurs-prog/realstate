@@ -25,6 +25,7 @@ import { LOCAL_MEDIA_DIR, LOCAL_MEDIA_ROUTE } from './services/mediaStorageServi
 import getStatusPage from './serverweb.js';
 import { printBanner } from './utils/banner.js';
 import { startUploadCleanup } from './utils/cleanupUploads.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: './.env.local' });
@@ -117,6 +118,7 @@ const defaultDevOrigins = [
   'http://localhost:4000',
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:5175',
 ];
 
 const allowedOrigins = [
@@ -183,6 +185,18 @@ connectdb().then(() => {
 // Health check routes (mounted early for reliability)
 app.use('/health', healthRouter);
 
+// Public platform contact details used by the guest Contact Us page.
+// Values are managed through the deployment/admin environment, never hardcoded in the client.
+app.get('/api/contact-info', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      whatsapp: process.env.PLATFORM_WHATSAPP?.trim() || null,
+      email: process.env.PLATFORM_EMAIL?.trim() || process.env.ADMIN_EMAIL?.trim() || null,
+    },
+  });
+});
+
 // API Routes
 app.use('/api/forms', formrouter);
 app.use('/api/news', newsrouter);
@@ -217,26 +231,6 @@ app.use(LOCAL_MEDIA_ROUTE, express.static(LOCAL_MEDIA_DIR, {
   immutable: true,
   setHeaders: (res) => res.set('Cross-Origin-Resource-Policy', 'cross-origin'),
 }));
-
-
-app.use((err, req, res, next) => {
-  logger.error('Request error', {
-    error: err.message,
-    stack: err.stack,
-    requestId: req.requestId,
-    path: req.path,
-    method: req.method,
-  });
-  const statusCode = err.status || 500;
-  res.status(statusCode).json({
-    success: false,
-    message: err.message || 'Internal server error',
-    statusCode,
-    requestId: req.requestId,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-    timestamp: new Date().toISOString()
-  });
-});
 
 
 // Handle unhandled rejections
@@ -310,14 +304,9 @@ app.get('/', (req, res) => {
 });
 
 // 404 handler - must be after all other routes
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`,
-    statusCode: 404,
-    timestamp: new Date().toISOString()
-  });
-});
+app.use('*', notFoundHandler);
+// Error middleware must be last so it catches failures from every route.
+app.use(errorHandler);
 
 const port = process.env.PORT || 4000;
 
