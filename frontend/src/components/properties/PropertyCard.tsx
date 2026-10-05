@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n/I18nContext';
 interface PropertyCardProps {
   id: string;
   image: string;
+  images?: string[];
   name: string;
   price: string;
   location: string;
@@ -30,23 +31,34 @@ const badgeColor: Record<string, string> = {
 };
 
 const PropertyCard: React.FC<PropertyCardProps> = ({
-  id, image, name, price, location, specs, subPrice, badge, badgeTone = 'SELL', tags = [], saved = false, onToggleSave,
+  id, image, images = [], name, price, location, specs, subPrice, badge, badgeTone = 'SELL', tags = [], saved = false, onToggleSave,
 }) => {
   const { t } = useI18n();
+  const gallery = images.length > 0 ? images : [image];
   return (
     <Link to={`/property/${id}`} className="group block outline-none focus-visible:ring-2 focus-visible:ring-[#A3078F] rounded-2xl">
       <article className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] transition-shadow duration-300">
 
         {/* ── Image ──────────────────────────────────────── */}
         <div className="relative aspect-[4/3] overflow-hidden bg-[#E8E1EA]">
-          <img
-            src={image}
-            alt={name}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-            style={{ outline: '1px solid rgba(0,0,0,0.08)', outlineOffset: '-1px' }}
-          />
+          <div className={`grid h-full gap-0.5 ${gallery.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {gallery.slice(0, 4).map((src, index) => (
+              <img
+                key={`${src}-${index}`}
+                src={src}
+                alt={`${name} ${index + 1}`}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                className={`w-full h-full min-h-0 object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] ${index === 0 && gallery.length > 2 ? 'row-span-2' : ''}`}
+                style={{ outline: '1px solid rgba(0,0,0,0.08)', outlineOffset: '-1px' }}
+              />
+            ))}
+          </div>
+          {gallery.length > 4 && (
+            <span className="absolute top-3 right-3 rounded-md bg-black/60 px-2 py-1 text-[10px] font-semibold text-white">
+              +{gallery.length - 4} {t('details.more')}
+            </span>
+          )}
 
           {/* Dark gradient — price lives here */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />

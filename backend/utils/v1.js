@@ -151,6 +151,7 @@ export const propertyCard = (property, { savedIds } = {}) => {
         estimated_total: property.estimated_total ?? null,
         address: property.address || null,
         thumbnail_url: primary ? thumbnailUrl(primary.url) : null,
+        images: imagesOut(property),
         image_count: property.images.length - videoCount,
         video_count: videoCount,
         state: refOut(property.state_id),

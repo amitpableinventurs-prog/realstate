@@ -186,6 +186,7 @@ export interface PropertyCardData {
   estimated_total: number | null;
   address: string | null;
   thumbnail_url: string | null; // the cover photo
+  images?: PropertyMedia[];
   image_count: number;
   video_count: number;
   state: Ref | null;

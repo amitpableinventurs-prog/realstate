@@ -70,13 +70,13 @@ export const areaLabel = (area: { value: number; unit: Unit }) => `${area.value}
 /** Card or detail data from the API → the website's property shape. */
 export const toProperty = (p: PropertyCardData | PropertyDetailData): Property => {
   // The cover photo first, then the rest in the owner's order
-  const all = 'images' in p ? [...p.images].sort((a, b) => Number(b.is_primary) - Number(a.is_primary)) : [];
+  const all = Array.isArray(p.images) ? [...p.images].sort((a, b) => Number(b.is_primary) - Number(a.is_primary)) : [];
   const media: GalleryItem[] = all.map((m) => ({
     url: resolveMediaUrl(m.url) || m.url,
     type: m.type || 'IMAGE',
     poster: m.type === 'VIDEO' ? resolveMediaUrl(m.thumbnail_url) : null,
   }));
-  const images = 'images' in p
+  const images = Array.isArray(p.images)
     ? media.filter((m) => m.type === 'IMAGE').map((m) => m.url)
     : p.thumbnail_url ? [resolveMediaUrl(p.thumbnail_url) || p.thumbnail_url] : [];
   return {
