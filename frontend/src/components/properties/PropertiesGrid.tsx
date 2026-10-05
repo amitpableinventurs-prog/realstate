@@ -91,7 +91,6 @@ const PropertiesGrid: React.FC<PropertiesGridProps> = ({ properties, viewMode = 
               <PropertyCard
                 id={property._id}
                 image={property.image[0] || fallbackImages[index % fallbackImages.length]}
-                images={property.media.filter((item) => item.type === 'IMAGE').map((item) => item.url)}
                 name={text.title(property)}
                 price={text.price(property)}
                 subPrice={text.estTotal(property)}
