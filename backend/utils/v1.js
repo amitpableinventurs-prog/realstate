@@ -139,6 +139,7 @@ const titleFor = (property) => {
 export const propertyCard = (property, { savedIds } = {}) => {
     const primary = primaryImage(property);
     const videoCount = property.images.filter((media) => media.type === 'VIDEO').length;
+    const [longitude, latitude] = property.location?.coordinates || [];
     return {
         id: property._id,
         listing_type: property.listing_type,
@@ -151,6 +152,7 @@ export const propertyCard = (property, { savedIds } = {}) => {
         estimated_total: property.estimated_total ?? null,
         address: property.address || null,
         description: property.description || null,
+        location: latitude !== undefined ? { latitude, longitude } : null,
         thumbnail_url: primary ? thumbnailUrl(primary.url) : null,
         images: imagesOut(property),
         image_count: property.images.length - videoCount,

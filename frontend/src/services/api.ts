@@ -186,6 +186,7 @@ export interface PropertyCardData {
   estimated_total: number | null;
   address: string | null;
   description?: string | null;
+  location?: { latitude: number; longitude: number } | null;
   thumbnail_url: string | null; // the cover photo
   images?: PropertyMedia[];
   image_count: number;

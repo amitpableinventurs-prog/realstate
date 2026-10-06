@@ -2,7 +2,7 @@ import Property from '../../models/propertyModel.js';
 import PropertyBooking, { PROPERTY_BOOKING_STATUSES } from '../../models/propertyBookingModel.js';
 import { created, fail, isObjectId, listResponse, notFound, ok, parsePage, validationFailed } from '../../utils/v1.js';
 
-const propertyFields = 'listing_type status khata_number khasra_number area price images state_id district_id';
+const propertyFields = 'listing_type status khata_number khasra_number area price images location state_id district_id';
 
 const propertyOut = (property) => property ? {
     id: property._id,
@@ -13,6 +13,9 @@ const propertyOut = (property) => property ? {
     area: property.area,
     price: property.price,
     images: property.images,
+    location: property.location?.coordinates?.length === 2
+        ? { latitude: property.location.coordinates[1], longitude: property.location.coordinates[0] }
+        : null,
     state: property.state_id ? { id: property.state_id._id, name: property.state_id.name } : null,
     district: property.district_id ? { id: property.district_id._id, name: property.district_id.name } : null,
 } : null;

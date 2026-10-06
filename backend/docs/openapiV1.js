@@ -178,6 +178,7 @@ const spec = {
                 estimated_total: { type: 'number', nullable: true, example: 1250000, description: 'price.amount × area.value when both are in the same unit; otherwise null' },
                 address: str({ nullable: true, example: 'Village Rampur, near Shiv Mandir' }),
                 description: str({ nullable: true, example: 'This is a peaceful land parcel near the main road.' }),
+                location: { allOf: [ref('Location')], nullable: true, description: 'Stored coordinates, returned as latitude and longitude' },
                 thumbnail_url: str({ nullable: true, description: 'The cover photo (first image)' }),
                 images: { type: 'array', description: 'Photos and videos in display order', items: obj({ url: str(), type: str({ enum: ['IMAGE', 'VIDEO'] }), thumbnail_url: str({ nullable: true, description: 'For a video: a frame on ImageKit, otherwise null' }), is_primary: bool, sort_order: int }) },
                 image_count: { type: 'integer', description: 'Photos' },
