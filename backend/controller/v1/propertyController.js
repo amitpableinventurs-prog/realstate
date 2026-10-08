@@ -8,6 +8,7 @@ import { dismilPer } from '../../utils/areaUnits.js';
 import { deleteImageByUrl } from '../../services/mediaStorageService.js';
 import { resolveImageUrls, consumeUploads } from './uploadController.js';
 import { normalizeMobile } from './authController.js';
+import { parseLang, detectSourceLang, getTranslation, deleteTranslations } from '../../services/listingTranslationService.js';
 import {
     LISTING_TYPES, UNITS, STATUSES, parseEnum, enumList, isObjectId, propertyCard, propertyDetail,
     ok, created, fail, notFound, forbidden, validationFailed, parsePage, listResponse, PLACE_POPULATE,
@@ -308,6 +309,10 @@ export const applyPropertyEdit = async (req, res, property, { uploaderId }) => {
             property.images = images.images;
         }
     }
+    // Translated text (and price label) is out of date once any of its source changes
+    if (['description', 'address', 'area', 'price', 'district_id'].some((path) => property.isModified(path))) {
+        await deleteTranslations(property._id);
+    }
     const changed = property.isModified();
     return { changed, removedUrls, pending: images?.pending };
 };
@@ -391,12 +396,35 @@ export const myProperties = async (req, res) => {
 
 // GET /list-property/:id — public for approved properties; the owner can also
 // see their own pending / rejected / sold ones.
+// Optional ?lang= translates this property's seller-written text (title, description,
+// address, price label); lang missing or en returns the original response.
 export const getProperty = async (req, res) => {
+    const lang = parseLang(req.query.lang);
+    if (!lang) return fail(res, 400, 'Unsupported language.', 'INVALID_LANGUAGE');
     const property = await loadProperty(req.params.id);
     if (!property) return notFound(res);
     const isOwner = Boolean(req.user && property.owner_id.equals(req.user._id));
     if (property.status !== 'APPROVED' && !isOwner) return notFound(res);
-    return sendDetail(res, property, { viewer: req.user });
+    if (lang === 'en') return sendDetail(res, property, { viewer: req.user });
+
+    const data = await detailData(property, { viewer: req.user });
+    const sourceLang = detectSourceLang(data.description, data.address);
+    if (lang === sourceLang) return ok(res, { ...data, lang, source_lang: sourceLang });
+
+    const translation = await getTranslation(property._id, lang, {
+        title: data.title, description: data.description, address: data.address, price_label: data.price.label,
+    });
+    // Translator unavailable: the original text, labelled with the language it is in
+    if (!translation) return ok(res, { ...data, lang: sourceLang, source_lang: sourceLang });
+    return ok(res, {
+        ...data,
+        title: translation.title || data.title,
+        description: translation.description || data.description,
+        address: translation.address || data.address,
+        price: { ...data.price, label: translation.price_label || data.price.label },
+        lang,
+        source_lang: sourceLang,
+    });
 };
 
 // ── Public listing ───────────────────────────────────────────────────────────

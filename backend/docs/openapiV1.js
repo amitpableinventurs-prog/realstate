@@ -368,8 +368,13 @@ const spec = {
             get: {
                 tags: ['Property'], summary: 'Property detail',
                 description: 'Public for APPROVED properties; the owner can also open their own pending, rejected or sold ones.',
-                security: optionalUser, parameters: [id()],
-                responses: { 200: ok('Property', ref('Property')), 404: err('Not found') },
+                security: optionalUser,
+                parameters: [id(), {
+                    name: 'lang', in: 'query', required: false,
+                    description: 'Return title, description, address and price label in this language (the list API is always original). Missing or en = original text. Adds `lang` and `source_lang` to data.',
+                    schema: { type: 'string', enum: ['en', 'hi', 'bn', 'te', 'mr', 'ta', 'gu', 'kn', 'pa', 'or'] },
+                }],
+                responses: { 200: ok('Property', ref('Property')), 400: err('INVALID_LANGUAGE'), 404: err('Not found') },
             },
             put: {
                 tags: ['Property'], summary: 'Edit own property',
