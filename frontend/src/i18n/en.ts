@@ -243,7 +243,7 @@ const en = {
   'profile.saveFailed': 'Could not save your details. Please try again.',
   'contact.label': 'Contact & Support',
   'contact.title': "We'd Love to Hear From You",
-  'contact.subtitle': 'Whether you have a question about listings, need assistance with our AI tools, or want to explore partnership opportunities, our team is ready to help.',
+  'contact.subtitle': 'Whether you have a question about listings, need help with a listing, or want to explore partnership opportunities, our team is ready to help.',
   'contact.formTitle': 'Send Us a Message',
   'contact.formIntro': 'Fill in the form below and our team will get back to you within 24 hours.',
   'contact.firstName': 'First Name',

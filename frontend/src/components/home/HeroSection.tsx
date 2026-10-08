@@ -80,21 +80,21 @@ const HeroSection: React.FC = () => {
               <motion.div variants={itemVariants} className="inline-flex items-center gap-3 bg-[rgba(163,7,143,0.1)] border border-[rgba(163,7,143,0.2)] rounded-full px-4 py-2 mb-10">
                 <div className="w-2 h-2 bg-[#A3078F] rounded-full" />
                 <span className="font-manrope font-bold text-xs text-[#A3078F] uppercase tracking-wider">
-                  AI-Powered Real Estate
+                  Land Buying & Selling
                 </span>
               </motion.div>
 
               {/* Heading */}
               <motion.h1 data-speakable variants={itemVariants} className="font-fraunces text-[56px] lg:text-[70px] leading-[1.1] text-[#111827] mb-8">
                 Discover Your<br />
-                <span className="italic text-[#A3078F]">Dream Home</span> with<br />
-                AI Intelligence
+                <span className="italic text-[#A3078F]">Dream Land</span> with<br />
+                Confidence
               </motion.h1>
 
               {/* Description */}
               <motion.p data-speakable variants={itemVariants} className="font-manrope font-light text-xl leading-7 text-[#4b5563] mb-12 max-w-[676px]">
-                Find flats, villas, and apartments in Mumbai, Delhi, Bangalore, Ahmedabad, and Pune.
-                Bhumi Bazar uses AI-powered search and live market analysis to match you with the right property.
+                Find plots and land for sale, rent or lease across India.
+                Bhumi Bazar shows verified listings with clear details, so you can contact the owner directly.
               </motion.p>
 
               {/* CTA Buttons */}
@@ -142,7 +142,7 @@ const HeroSection: React.FC = () => {
                         <p className="font-space-mono text-xs text-[#6b7280] uppercase tracking-wide">Beverly Hills, CA</p>
                       </div>
                       <div className="bg-[rgba(163,7,143,0.1)] px-2 py-1 rounded">
-                        <span className="font-manrope font-bold text-xs text-[#A3078F]">AI MATCH: 98%</span>
+                        <span className="font-manrope font-bold text-xs text-[#A3078F]">VERIFIED</span>
                       </div>
                     </div>
                     <div className="border-t border-[#e5e7eb] pt-3 flex items-center justify-between">

@@ -12,8 +12,8 @@ const FAQSection: React.FC = () => {
   const faqs: FAQItem[] = [
     {
       id: 1,
-      question: "How does the AI matching process work?",
-      answer: "Our proprietary algorithm analyzes over 50 data points from your preferences and lifestyle inputs to suggest properties that align with your unique needs, often uncovering options you might have missed."
+      question: "How do I find the right land?",
+      answer: "Choose your state and district, then filter by price, area and listing type. Each listing shows photos, khata and khasra numbers and the map location, and you can contact the owner directly."
     },
     {
       id: 2,
@@ -23,7 +23,7 @@ const FAQSection: React.FC = () => {
     {
       id: 3,
       question: "Can I list my property exclusively with Bhumi Bazar?",
-      answer: "Yes, we offer exclusive listing agreements with premium marketing benefits including professional photography, virtual tours, AI-powered listing optimization, and dedicated property consultant support throughout the selling process."
+      answer: "Yes, we offer exclusive listing agreements with premium marketing benefits including professional photography and dedicated property consultant support throughout the selling process."
     },
     {
       id: 4,

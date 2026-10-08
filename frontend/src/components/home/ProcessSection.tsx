@@ -14,8 +14,8 @@ const ProcessSection: React.FC = () => {
                 <span className="italic text-[#A3078F]">New Beginning</span>
               </h2>
               <p className="font-manrope font-light text-lg text-[#4b5563] mb-8 leading-relaxed">
-                We've simplified the complex journey of buying a home into four seamless, AI-
-                assisted steps.
+                We've simplified the complex journey of buying land into four simple
+                steps.
               </p>
               <button className="bg-[#111827] text-white font-manrope font-medium px-8 py-3 rounded-lg shadow-[0px_10px_15px_-3px_rgba(0,0,0,0.1)] hover:bg-[#1f2937] transition-all">
                 Start Your Journey
@@ -34,10 +34,9 @@ const ProcessSection: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-syne font-bold text-2xl text-[#111827] mb-3">Profile Analysis</h3>
+                  <h3 className="font-syne font-bold text-2xl text-[#111827] mb-3">Search</h3>
                   <p className="font-manrope text-base text-[#4b5563] leading-relaxed">
-                    Our AI deep-dives into your preferences, lifestyle needs, and financial goals to build a comprehensive
-                    buyer profile.
+                    Pick your state and district, then filter by price, area and listing type.
                   </p>
                 </div>
               </div>
@@ -52,10 +51,9 @@ const ProcessSection: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-syne font-bold text-2xl text-[#111827] mb-3">Smart Matching</h3>
+                  <h3 className="font-syne font-bold text-2xl text-[#111827] mb-3">Shortlist</h3>
                   <p className="font-manrope text-base text-[#4b5563] leading-relaxed">
-                    Algorithms scan thousands of listings to find properties that align with your unique criteria, filtering out
-                    the noise.
+                    Compare plots with photos, khata and khasra numbers, and save the ones you like.
                   </p>
                 </div>
               </div>
@@ -70,10 +68,9 @@ const ProcessSection: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-syne font-bold text-2xl text-[#111827] mb-3">Virtual Tours & Insights</h3>
+                  <h3 className="font-syne font-bold text-2xl text-[#111827] mb-3">Visit & Talk</h3>
                   <p className="font-manrope text-base text-[#4b5563] leading-relaxed">
-                    Experience homes remotely with immersive 3D tours and receive detailed neighborhood analytics
-                    reports.
+                    See the location on the map, talk to the owner and book a visit to the land.
                   </p>
                 </div>
               </div>
@@ -88,10 +85,9 @@ const ProcessSection: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-syne font-bold text-2xl text-[#111827] mb-3">Seamless Closing</h3>
+                  <h3 className="font-syne font-bold text-2xl text-[#111827] mb-3">Close the Deal</h3>
                   <p className="font-manrope text-base text-[#4b5563] leading-relaxed">
-                    From offer to keys, our digital platform handles paperwork, negotiations, and closing logistics
-                    effortlessly.
+                    Agree on the price with the owner and complete the paperwork with the help of our team.
                   </p>
                 </div>
               </div>

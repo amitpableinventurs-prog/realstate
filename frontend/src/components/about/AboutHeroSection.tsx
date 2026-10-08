@@ -29,7 +29,7 @@ const AboutHeroSection: React.FC = () => {
           <div className="w-24 h-px bg-[rgba(242,239,243,0.4)] mx-auto mb-8" />
           
           <p data-speakable className="font-manrope font-extralight text-lg text-[rgba(242,239,243,0.9)] tracking-wide">
-            Bhumi Bazar is an AI-powered real estate platform serving homebuyers and sellers across Mumbai, Delhi, Bangalore, Ahmedabad, and Pune — where data-driven precision meets the art of living.
+            Bhumi Bazar is a land marketplace for buyers and sellers across India, with verified listings and direct contact with owners.
           </p>
         </div>
       </div>

@@ -43,7 +43,7 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
       '@id': `${SITE_URL}/#website`,
       name: 'Bhumi Bazar',
       url: SITE_URL,
-      description: 'AI-powered luxury real estate platform for finding your perfect property in India.',
+      description: 'Land marketplace for buying, selling and renting land in India.',
       potentialAction: {
         '@type': 'SearchAction',
         target: `${SITE_URL}/properties?q={search_term_string}`,
@@ -75,7 +75,7 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
       '@type': 'LocalBusiness',
       '@id': `${SITE_URL}/#localbusiness`,
       name: 'Bhumi Bazar',
-      description: 'AI-powered real estate platform for finding luxury properties in India.',
+      description: 'Land marketplace for buying, selling and renting land in India.',
       url: SITE_URL,
       logo: `${SITE_URL}/logo.png`,
       image: `${SITE_URL}/og-image.png`,
@@ -116,10 +116,10 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
     aiHub: {
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
-      name: 'AI Property Hub - Bhumi Bazar',
+      name: 'Property Search - Bhumi Bazar',
       applicationCategory: 'RealEstateApplication',
-      description: 'AI-powered real estate analytics, property search, and investment insights.',
-      url: `${SITE_URL}/ai-hub`,
+      description: 'Search land listings across India.',
+      url: `${SITE_URL}/search`,
       offers: {
         '@type': 'Offer',
         price: '0',
@@ -162,8 +162,8 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
     howTo: {
       '@context': 'https://schema.org',
       '@type': 'HowTo',
-      name: data?.howToName || 'How to Buy Property with Bhumi Bazar',
-      description: data?.howToDescription || 'AI-assisted steps to find and buy your perfect home in India.',
+      name: data?.howToName || 'How to Buy Land with Bhumi Bazar',
+      description: data?.howToDescription || 'Simple steps to find and buy land in India.',
       step: (data?.steps || []).map((step) => ({
         '@type': 'HowToStep',
         name: step.name,

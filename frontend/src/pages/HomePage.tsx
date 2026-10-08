@@ -14,8 +14,8 @@ import CTASection from '../components/home/CTASection';
 
 const HomePage: React.FC = () => {
   useSEO({
-    title: 'Find Flats, Villas & Apartments in India with AI',
-    description: 'Bhumi Bazar helps you find flats, villas, and apartments in Mumbai, Delhi, Bangalore, Ahmedabad, and Pune using AI-powered search and live market analysis.',
+    title: 'Buy, Sell & Rent Land in India',
+    description: 'Bhumi Bazar helps you find plots and land for sale, rent or lease across India, with verified listings and direct owner contact.',
     url: 'https://buildestate.vercel.app',
   });
 
@@ -28,13 +28,13 @@ const HomePage: React.FC = () => {
       <StructuredData
         type="howTo"
         data={{
-          howToName: 'How to Buy Property with Bhumi Bazar',
-          howToDescription: 'AI-assisted steps to find and purchase your perfect home in India.',
+          howToName: 'How to Buy Land with Bhumi Bazar',
+          howToDescription: 'Simple steps to find and buy land in India.',
           steps: [
-            { name: 'Profile Analysis', text: 'Our AI deep-dives into your preferences, lifestyle needs, and financial goals to build a comprehensive buyer profile.' },
-            { name: 'Smart Matching', text: 'Algorithms scan thousands of listings to find properties that align with your unique criteria, filtering out the noise.' },
-            { name: 'Virtual Tours & Insights', text: 'Experience homes remotely with immersive 3D tours and receive detailed neighborhood analytics reports.' },
-            { name: 'Seamless Closing', text: 'From offer to keys, our digital platform handles paperwork, negotiations, and closing logistics effortlessly.' },
+            { name: 'Search', text: 'Pick your state and district, then filter by price, area and listing type.' },
+            { name: 'Shortlist', text: 'Compare plots with photos, khata and khasra numbers, and save the ones you like.' },
+            { name: 'Visit & Talk', text: 'See the location on the map, talk to the owner and book a visit to the land.' },
+            { name: 'Close the Deal', text: 'Agree on the price with the owner and complete the paperwork with the help of our team.' },
           ],
         }}
       />
@@ -48,7 +48,7 @@ const HomePage: React.FC = () => {
       {/* Stats Section */}
       <StatsSection />
 
-      {/* AI Intelligence Section */}
+      {/* Why choose us */}
       <AIIntelligenceSection />
 
       {/* Curated Listings Section */}

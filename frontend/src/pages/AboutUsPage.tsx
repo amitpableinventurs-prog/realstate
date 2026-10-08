@@ -12,8 +12,8 @@ import AboutCTASection from '../components/about/AboutCTASection';
 
 const AboutUsPage: React.FC = () => {
   useSEO({
-    title: 'About Bhumi Bazar — AI-Powered Real Estate in India',
-    description: 'Bhumi Bazar is an AI-powered real estate platform serving homebuyers and sellers across Mumbai, Delhi, Bangalore, Ahmedabad, and Pune. Learn about our mission and technology.',
+    title: 'About Bhumi Bazar — Land Marketplace in India',
+    description: 'Bhumi Bazar is a land marketplace for buyers and sellers across India, with verified listings and direct owner contact. Learn about our mission.',
     url: 'https://buildestate.vercel.app/about',
   });
 
@@ -36,7 +36,7 @@ const AboutUsPage: React.FC = () => {
       {/* Values Section - Driven by Purpose */}
       <AboutValuesSection />
 
-      {/* AI Intelligence Section */}
+      {/* Why Bhumi Bazar */}
       <AboutAISection />
 
       {/* CTA Section */}

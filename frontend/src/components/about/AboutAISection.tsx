@@ -5,10 +5,10 @@ const AboutAISection: React.FC = () => {
   const imgVerticalArchitecturalDetail = "https://images.unsplash.com/photo-1695067440629-b5e513976100?w=600";
   
   const features = [
-    "Predictive Market Analysis",
-    "Hyper-local Neighborhood Data",
-    "Investment Value Projection",
-    "Lifestyle Compatibility Scoring"
+    "Reviewed and approved listings",
+    "Khata, khasra and area details",
+    "Photos, videos and map location",
+    "Direct call and WhatsApp with the owner"
   ];
 
   return (
@@ -20,26 +20,23 @@ const AboutAISection: React.FC = () => {
             {/* Label */}
             <div className="mb-6">
               <p className="font-space-mono text-xs text-[#A3078F] uppercase tracking-[1.2px]">
-                The Engine
+                Why Bhumi Bazar
               </p>
             </div>
 
             {/* Headline */}
             <h2 className="mb-6">
               <span className="font-syne text-5xl leading-[48px] text-[#1A0A1E] block font-semibold">
-                AI-Powered
+                Trusted
               </span>
               <span className="font-fraunces font-light italic text-5xl leading-[48px] text-[#A3078F] block">
-                Property Intelligence
+                Land Listings
               </span>
             </h2>
 
             {/* Description */}
             <p className="font-manrope font-extralight text-lg leading-[29.25px] text-[#4b5563] mb-8">
-              Our proprietary algorithms analyze millions of data points—from sun
-              patterns and neighborhood noise levels to architectural styles and
-              historical value trends—to present you with opportunities others
-              miss.
+              We bring sellers and buyers of land together in one place. Each listing is checked by our team and shows the plot details, price and location, so you know what you are looking at before you visit.
             </p>
 
             {/* Features List */}
@@ -62,14 +59,14 @@ const AboutAISection: React.FC = () => {
               className="inline-flex items-center gap-2 border-b border-[#1A0A1E] pb-1 group hover:border-[#A3078F] transition-[border-color]"
             >
               <span className="font-space-mono text-sm text-[#1A0A1E] group-hover:text-[#A3078F] transition-[color]">
-                Learn about our Tech
+                Browse Listings
               </span>
 
               <ArrowRight className="w-4 h-4 text-[#1A0A1E] group-hover:text-[#A3078F] transition-[color]" />
             </a>
           </div>
 
-          {/* Right - Image with AI Card Overlay */}
+          {/* Right - Image with Card Overlay */}
           <div className="relative">
             {/* Background overlay (rotated) */}
             <div className="absolute inset-0 flex items-center justify-center">
@@ -80,13 +77,13 @@ const AboutAISection: React.FC = () => {
             <div className="relative aspect-[560/700] rounded-lg overflow-hidden shadow-[0px_20px_25px_-5px_rgba(0,0,0,0.1),0px_8px_10px_-6px_rgba(0,0,0,0.1)]">
               <img
                 src={imgVerticalArchitecturalDetail}
-                alt="AI Property Intelligence"
+                alt="Land listing"
                 loading="lazy"
                 decoding="async"
                 className="absolute h-full left-[-12.5%] w-[125%] object-cover"
               />
 
-              {/* AI Match Card Overlay */}
+              {/* Verified Card Overlay */}
               <div className="absolute bottom-6 left-6 right-6 backdrop-blur-md bg-white/90 border border-[#E8E1EA] rounded p-4 flex items-center gap-4">
                 {/* Icon */}
                 <div className="w-10 h-[46px] bg-[rgba(203,2,185,0.1)] rounded-full flex items-center justify-center flex-shrink-0">
@@ -96,10 +93,10 @@ const AboutAISection: React.FC = () => {
                 {/* Content */}
                 <div>
                   <p className="font-space-mono text-xs text-[#6b7280] uppercase mb-1">
-                    Match Score
+                    Listing Status
                   </p>
                   <p className="font-manrope font-extralight text-lg text-[#1A0A1E]">
-                    98.5% Compatibility
+                    Verified by our team
                   </p>
                 </div>
               </div>

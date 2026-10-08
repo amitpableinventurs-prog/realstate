@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
 const SITE_URL = 'https://buildestate.vercel.app';
-const DEFAULT_TITLE = 'Bhumi Bazar - AI-Powered Luxury Real Estate | Find Your Dream Home';
-const DEFAULT_DESCRIPTION = 'Find your perfect property with AI-powered insights, market analysis, and personalized recommendations across India.';
+const DEFAULT_TITLE = 'Bhumi Bazar - Buy, Sell & Rent Land in India';
+const DEFAULT_DESCRIPTION = 'Find verified plots and land for sale, rent or lease across India, and contact owners directly.';
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 interface SEOProps {
@@ -74,12 +74,12 @@ export function useSEO({ title, description, image, url, type = 'website' }: SEO
     return () => {
       document.title = DEFAULT_TITLE;
       setMeta('meta[name="description"]', 'name', 'description', DEFAULT_DESCRIPTION);
-      setOG('og:title', 'Bhumi Bazar - AI-Powered Luxury Real Estate');
+      setOG('og:title', 'Bhumi Bazar - Buy, Sell & Rent Land in India');
       setOG('og:description', DEFAULT_DESCRIPTION);
       setOG('og:image', DEFAULT_IMAGE);
       setOG('og:url', SITE_URL);
       setOG('og:type', 'website');
-      setTwitter('twitter:title', 'Bhumi Bazar - AI-Powered Luxury Real Estate');
+      setTwitter('twitter:title', 'Bhumi Bazar - Buy, Sell & Rent Land in India');
       setTwitter('twitter:description', DEFAULT_DESCRIPTION);
       setTwitter('twitter:image', DEFAULT_IMAGE);
       setCanonical(SITE_URL);

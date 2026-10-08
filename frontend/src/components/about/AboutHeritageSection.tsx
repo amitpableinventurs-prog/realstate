@@ -58,8 +58,8 @@ const AboutHeritageSection: React.FC = () => {
 
               <p className="font-manrope font-extralight text-base leading-[26px] text-[#4b5563]">
                 We set out to bridge the gap between cold data and warm living spaces. By
-                harnessing advanced AI, we don't just match square footage; we match
-                lifestyles, aesthetics, and the intangible feelings that make a house a home.
+                putting verified details, photos and the owner's contact in one place, we make
+                finding land simple, honest and comfortable.
               </p>
             </div>
 

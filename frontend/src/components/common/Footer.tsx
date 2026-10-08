@@ -23,7 +23,7 @@ const Footer: React.FC = () => {
               <span className="font-fraunces text-2xl font-bold">Bhumi Bazar</span>
             </Link>
             <p className="font-manrope font-extralight text-[#9ca3af] text-sm leading-relaxed mb-6">
-              AI-powered luxury real estate platform connecting you with your dream home through intelligent matching and personalized recommendations.
+              Land marketplace connecting buyers and sellers across India with verified listings and direct owner contact.
             </p>
             {/* Social Links */}
             <div className="flex gap-3">
@@ -168,7 +168,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-[rgba(255,255,255,0.1)] pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="font-manrope font-extralight text-[#6b7280] text-sm text-center md:text-left">
-              © 2026 Bhumi Bazar. All rights reserved. Powered by AI.
+              © 2026 Bhumi Bazar. All rights reserved.
             </p>
             <div className="flex flex-wrap justify-center gap-6">
               <Link to="/privacy" className="font-manrope font-extralight text-[#6b7280] text-sm hover:text-white transition-[color]">
