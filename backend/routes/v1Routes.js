@@ -12,6 +12,7 @@ import * as uploads from '../controller/v1/uploadController.js';
 import * as admin from '../controller/v1/adminController.js';
 import * as appFeedback from '../controller/v1/appFeedbackController.js';
 import * as propertyBookings from '../controller/v1/propertyBookingController.js';
+import * as legal from '../controller/v1/legalController.js';
 import { appFeedbackLimiter, propertyBookingLimiter } from '../middleware/rateLimitMiddleware.js';
 
 // Bhoomi Bazar API, mounted at /api/v1 — section 6 of the Development &
@@ -35,6 +36,11 @@ router.post('/auth/logout', userProtect, wrap(auth.logout));
 router.get('/users/me', userProtect, wrap(users.getMe));
 router.put('/users/me', userProtect, wrap(users.updateMe));
 router.post('/users/me/device-token', userProtect, wrap(users.saveDeviceToken));
+router.delete('/users/me/device-token', userProtect, wrap(users.deleteDeviceToken));
+
+// Legal text (public)
+router.get('/legal/privacy-policy', legal.privacyPolicy);
+router.get('/legal/terms-and-conditions', legal.termsAndConditions);
 router.delete('/users/me', userProtect, wrap(users.deleteMe));
 
 // 6.3 Property (owner) — the document's /properties endpoints, renamed to

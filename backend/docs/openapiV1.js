@@ -109,7 +109,7 @@ const spec = {
     tags: [
         { name: 'Auth' }, { name: 'Profile' }, { name: 'Property' }, { name: 'Uploads' },
         { name: 'Master data' }, { name: 'Wishlist' }, { name: 'Enquiries' }, { name: 'Notifications' }, { name: 'App feedback' }, { name: 'Bookings' },
-        { name: 'Admin' }, { name: 'Admin: master data' },
+        { name: 'Legal' }, { name: 'Admin' }, { name: 'Admin: master data' },
     ],
     components: {
         securitySchemes: {
@@ -319,6 +319,26 @@ const spec = {
                 tags: ['Profile'], summary: 'Save FCM token for push notifications', security: user,
                 requestBody: body(obj({ fcm_token: str(), platform: str({ enum: ['android', 'ios', 'web'] }) }, ['fcm_token', 'platform'])),
                 responses: { 200: ok('Registered', { type: 'object' }), ...common },
+            },
+            delete: {
+                tags: ['Profile'], summary: 'Remove FCM token (stop push notifications to this device)', security: user,
+                requestBody: body(obj({ fcm_token: str() }, ['fcm_token'])),
+                responses: { 200: ok('Removed', { type: 'object' }), ...common },
+            },
+        },
+
+        '/legal/privacy-policy': {
+            get: {
+                tags: ['Legal'], summary: 'Privacy Policy (public)',
+                description: 'Returns { type, title, version, last_updated, sections: [{ title, content: [paragraph] }], contact }.',
+                responses: { 200: ok('Privacy Policy', { type: 'object' }) },
+            },
+        },
+        '/legal/terms-and-conditions': {
+            get: {
+                tags: ['Legal'], summary: 'Terms & Conditions (public)',
+                description: 'Same shape as the Privacy Policy response.',
+                responses: { 200: ok('Terms & Conditions', { type: 'object' }) },
             },
         },
 

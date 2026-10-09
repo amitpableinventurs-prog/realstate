@@ -82,6 +82,14 @@ export const saveDeviceToken = async (req, res) => {
     return ok(res, { registered: true }, 'Device registered for notifications');
 };
 
+// DELETE /users/me/device-token { fcm_token } — stop push notifications to this device (e.g. on logout)
+export const deleteDeviceToken = async (req, res) => {
+    const fcmToken = req.body?.fcm_token ?? req.query?.fcm_token;
+    if (typeof fcmToken !== 'string' || !fcmToken.trim()) return validationFailed(res, { fcm_token: 'fcm_token is required' });
+    await DeviceToken.deleteOne({ fcm_token: fcmToken.trim(), user_id: req.user._id });
+    return ok(res, { removed: true }, 'Device removed from notifications');
+};
+
 // DELETE /users/me — soft delete: the account and its properties are hidden and
 // every session ends. Logging in again with the same number starts a new profile.
 export const deleteMe = async (req, res) => {
