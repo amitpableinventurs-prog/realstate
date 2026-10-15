@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Repository Overview
 
 **Bhumi Bazar** is a full-stack real estate platform (monorepo) with three apps:
-- `frontend/` — User-facing website (React 18 + TypeScript + Vite, port 5173)
+- `frontend/` — User-facing website (React 18 + TypeScript + Vite, port 5180)
 - `admin/` — Admin dashboard (React + JavaScript + Vite, port 5174)
 - `backend/` — REST API (Node.js + Express, port 4000)
 - `shared/` — Shared utilities
@@ -19,7 +19,7 @@ Each app is independent — run from its own directory:
 cd backend && npm run dev        # nodemon auto-reload on http://localhost:4000
 
 # Frontend
-cd frontend && npm run dev       # Vite dev server on http://localhost:5173
+cd frontend && npm run dev       # Vite dev server on http://localhost:5180 (strictPort; VITE_PORT overrides)
 cd frontend && npm run build     # TypeScript compile + Vite production build
 
 # Admin

@@ -18,8 +18,12 @@ import Footer from '../components/common/Footer';
 
 const MAX_MEDIA = 10; // photos and videos together
 
-const inputClass =
-  'w-full border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] bg-white focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] disabled:opacity-60';
+const fieldClass =
+  'border border-[#E8E1EA] rounded-lg px-4 py-2.5 font-manrope text-sm text-[#1A0A1E] bg-white focus:outline-none focus:ring-2 focus:ring-[#A3078F]/40 focus:border-[#A3078F] disabled:opacity-60';
+const inputClass = `w-full ${fieldClass}`;
+// Number + unit side by side: the number takes the free space, the unit a fixed width
+const amountClass = `flex-1 min-w-0 ${fieldClass}`;
+const unitClass = `w-32 sm:w-40 shrink-0 ${fieldClass}`;
 const labelClass = 'block font-manrope text-sm font-medium text-[#374151] mb-1';
 const sectionClass = 'bg-white border border-[#E8E1EA] rounded-2xl p-6 space-y-5';
 
@@ -345,9 +349,9 @@ const AddPropertyPage: React.FC = () => {
               <label htmlFor="area" className={labelClass}>Area <Required /></label>
               <div className="flex gap-2">
                 <input id="area" type="number" min="0" step="any" value={form.area_value} onChange={(e) => set('area_value', e.target.value)}
-                  required placeholder="5" className={inputClass} />
+                  required placeholder="5" className={amountClass} />
                 <select value={form.area_unit} onChange={(e) => set('area_unit', e.target.value as Unit)} aria-label="Area unit"
-                  className={`${inputClass} w-36 shrink-0`}>
+                  className={unitClass}>
                   {UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
                 </select>
               </div>
@@ -362,9 +366,9 @@ const AddPropertyPage: React.FC = () => {
               <label htmlFor="price" className={labelClass}>Price per unit (₹) <Required /></label>
               <div className="flex gap-2">
                 <input id="price" type="number" min="0" value={form.price_amount} onChange={(e) => set('price_amount', e.target.value)}
-                  required placeholder="250000" className={inputClass} />
+                  required placeholder="250000" className={amountClass} />
                 <select value={form.price_unit} onChange={(e) => set('price_unit', e.target.value as Unit)} aria-label="Price per"
-                  className={`${inputClass} w-40 shrink-0`}>
+                  className={unitClass}>
                   {UNITS.map((u) => <option key={u.value} value={u.value}>Per {u.label}</option>)}
                 </select>
               </div>

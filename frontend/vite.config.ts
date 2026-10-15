@@ -49,6 +49,12 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    // Fixed port, allowed by the backend's CORS (FRONTEND_URL). strictPort stops
+    // Vite from silently moving to a port the backend would block.
+    server: {
+      port: Number(env.VITE_PORT) || 5180,
+      strictPort: true,
+    },
     build: {
       rollupOptions: {
         output: {
