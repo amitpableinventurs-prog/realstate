@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import dns from "dns";
 
 dotenv.config();
 
@@ -8,6 +9,11 @@ const connectdb = async () => {
     // Check if MongoDB URI is provided
     if (!process.env.MONGO_URI) {
       throw new Error('MONGO_URI environment variable is not defined');
+    }
+
+    // Some local resolvers refuse the SRV lookup that mongodb+srv:// needs
+    if (process.env.MONGO_DNS_SERVERS) {
+      dns.setServers(process.env.MONGO_DNS_SERVERS.split(',').map(s => s.trim()));
     }
 
     const conn = await mongoose.connect(process.env.MONGO_URI, {
