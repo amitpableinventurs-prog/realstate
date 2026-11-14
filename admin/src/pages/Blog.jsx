@@ -16,7 +16,7 @@ const EMPTY_FORM = {
   coverImage: '',
   content: '',
   tags: '',
-  authorName: 'Bhumi Bazar Team',
+  authorName: 'Bhoomi Bazar Team',
   status: 'draft',
   isFeatured: false,
 };

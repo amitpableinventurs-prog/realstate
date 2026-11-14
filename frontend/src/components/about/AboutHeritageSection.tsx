@@ -51,7 +51,7 @@ const AboutHeritageSection: React.FC = () => {
             {/* Description Paragraphs */}
             <div className="space-y-6 mb-8">
               <p className="font-manrope font-extralight text-base leading-[26px] text-[#4b5563]">
-                Founded by architects and data scientists, Bhumi Bazar emerged from a
+                Founded by architects and data scientists, Bhoomi Bazar emerged from a
                 simple observation: the search for a home had become a transaction, losing
                 the emotional resonance of finding one's sanctuary.
               </p>

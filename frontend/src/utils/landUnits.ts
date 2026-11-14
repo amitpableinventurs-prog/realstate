@@ -1,7 +1,7 @@
 import type { Unit } from '../services/api';
 
 // Land area units for the converter. Katha, Dhur and Bigha follow the Bihar
-// standard used across Bhumi Bazar (1 Bigha = 20 Katha, 1 Katha = 20 Dhur,
+// standard used across Bhoomi Bazar (1 Bigha = 20 Katha, 1 Katha = 20 Dhur,
 // 1 Katha = 1,361.25 sq ft = 3.125 Dismil). Local measures differ by state.
 
 export type LandUnitKey =
@@ -22,8 +22,12 @@ export const LAND_UNITS: { key: LandUnitKey; sqft: number }[] = [
 
 const SQFT: Record<LandUnitKey, number> = Object.fromEntries(LAND_UNITS.map((u) => [u.key, u.sqft])) as Record<LandUnitKey, number>;
 
-/** The converter unit for a property unit (KATHA / DISMIL). */
-export const UNIT_KEY: Record<Unit, LandUnitKey> = { KATHA: 'katha', DISMIL: 'decimal' };
+/** The converter unit for a property unit. */
+export const UNIT_KEY: Record<Unit, LandUnitKey> = { KATHA: 'katha', DISMIL: 'decimal', BIGHA: 'bigha', ACRE: 'acre', SQFT: 'sqft' };
+
+/** Price × area, with the area converted to the price's unit. */
+export const estimateTotal = (areaValue: number, areaUnit: Unit, priceAmount: number, priceUnit: Unit) =>
+  Math.round(priceAmount * convertArea(areaValue, UNIT_KEY[areaUnit], UNIT_KEY[priceUnit]));
 
 export const convertArea = (value: number, from: LandUnitKey, to: LandUnitKey) => (value * SQFT[from]) / SQFT[to];
 

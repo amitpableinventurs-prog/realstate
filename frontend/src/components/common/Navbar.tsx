@@ -10,6 +10,7 @@ const navLinks: { path: string; label: TranslationKey }[] = [
   { path: '/', label: 'nav.home' },
   { path: '/properties', label: 'nav.properties' },
   { path: '/search', label: 'nav.search' },
+  { path: '/emi-calculator', label: 'nav.emi' },
   { path: '/blog', label: 'nav.blog' },
   { path: '/about', label: 'nav.about' },
   { path: '/contact', label: 'nav.contact' },
@@ -74,20 +75,20 @@ const Navbar: React.FC = () => {
       style={{ backgroundColor: `rgba(255, 255, 255, ${bgOpacity.get()})` }}
       className="sticky top-0 z-50 border-b border-[#E6D6E8] backdrop-blur-md"
     >
-      <div className="max-w-[1280px] mx-auto px-8 flex items-center justify-between h-20">
+      <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between gap-6 h-20">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 shrink-0" onClick={closeMobileMenu}>
-          <img src="/logo.png" alt="Bhumi Bazar" width="36" height="36" className="h-9 w-auto" />
-          <span className="font-fraunces text-2xl font-bold text-[#111827]">Bhumi Bazar</span>
+          <img src="/logo.png" alt="Bhoomi Bazar" width="36" height="36" className="h-9 w-auto" />
+          <span className="font-fraunces text-xl font-bold text-[#111827] whitespace-nowrap">Bhoomi Bazar</span>
         </Link>
 
         {/* Desktop nav links */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden xl:flex items-center gap-5">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`font-manrope transition-[color] ${
+              className={`font-manrope text-sm whitespace-nowrap transition-[color] ${
                 isActive(link.path)
                   ? 'text-[#A3078F] font-semibold'
                   : 'text-[#374151] hover:text-[#A3078F]'
@@ -99,13 +100,13 @@ const Navbar: React.FC = () => {
         </div>
 
         {/* Desktop right side */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden xl:flex items-center gap-3">
           <LanguageSwitcher />
           {isAuthenticated && user ? (
             <>
               <Link
                 to="/add-property"
-                className="bg-[#A3078F] text-white font-manrope font-bold px-5 py-2 rounded-xl hover:bg-[#8E0A82] transition-[background-color,box-shadow] hover:shadow-md active:scale-[0.96] transition-transform"
+                className="bg-[#A3078F] text-white font-manrope font-bold text-sm whitespace-nowrap px-4 py-2 rounded-xl hover:bg-[#8E0A82] transition-[background-color,box-shadow] hover:shadow-md active:scale-[0.96] transition-transform"
               >
                 {t('nav.listProperty')}
               </Link>
@@ -121,7 +122,7 @@ const Navbar: React.FC = () => {
                   <div className="w-8 h-8 rounded-lg bg-[#A3078F] text-white font-manrope font-bold text-xs flex items-center justify-center shrink-0">
                     {initials}
                   </div>
-                  <span className="font-manrope font-semibold text-[#1A0A1E] max-w-[100px] truncate">
+                  <span className="font-manrope font-semibold text-sm text-[#1A0A1E] max-w-[100px] truncate">
                     {user.name ? user.name.split(' ')[0] : t('nav.account')}
                   </span>
                   <span className="font-material-icons text-[#9CA3AF] text-lg" aria-hidden="true">
@@ -173,13 +174,13 @@ const Navbar: React.FC = () => {
             <>
               <Link
                 to="/signin"
-                className="font-manrope font-semibold text-[#374151] hover:text-[#A3078F] transition-[color] px-4 py-2"
+                className="font-manrope font-semibold text-sm whitespace-nowrap text-[#374151] hover:text-[#A3078F] transition-[color] px-3 py-2"
               >
                 {t('nav.login')}
               </Link>
               <Link
                 to="/add-property"
-                className="bg-[#A3078F] text-white font-manrope font-bold px-6 py-2 rounded-xl hover:bg-[#8E0A82] transition-[background-color,box-shadow] hover:shadow-md active:scale-[0.96]"
+                className="bg-[#A3078F] text-white font-manrope font-bold text-sm whitespace-nowrap px-4 py-2 rounded-xl hover:bg-[#8E0A82] transition-[background-color,box-shadow] hover:shadow-md active:scale-[0.96]"
               >
                 {t('nav.listProperty')}
               </Link>
@@ -189,7 +190,7 @@ const Navbar: React.FC = () => {
 
         {/* Mobile menu button */}
         <button
-          className="md:hidden p-2 text-[#374151] hover:text-[#A3078F] transition-[color]"
+          className="xl:hidden p-2 text-[#374151] hover:text-[#A3078F] transition-[color]"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={isMobileMenuOpen}
@@ -202,7 +203,7 @@ const Navbar: React.FC = () => {
 
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-20 left-0 w-full bg-white border-b border-[#E6D6E8] shadow-lg py-4 px-8 flex flex-col gap-1">
+        <div className="xl:hidden absolute top-20 left-0 w-full bg-white border-b border-[#E6D6E8] shadow-lg py-4 px-8 flex flex-col gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.path}

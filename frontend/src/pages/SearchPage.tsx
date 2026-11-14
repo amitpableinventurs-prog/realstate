@@ -26,6 +26,9 @@ const LISTING_TYPES: { value: string; label: TranslationKey }[] = [
 const UNITS: { value: string; label: TranslationKey }[] = [
   { value: 'KATHA', label: 'unit.KATHA' },
   { value: 'DISMIL', label: 'unit.DISMIL' },
+  { value: 'BIGHA', label: 'unit.BIGHA' },
+  { value: 'ACRE', label: 'unit.ACRE' },
+  { value: 'SQFT', label: 'unit.SQFT' },
 ];
 
 const SORTS: { value: string; label: TranslationKey }[] = [
@@ -51,7 +54,7 @@ const labelClass = 'block font-manrope text-xs font-semibold uppercase tracking-
 
 const SearchPage: React.FC = () => {
   useSEO({
-    title: 'Land for Sale, Rent and Lease | Bhumi Bazar',
+    title: 'Land for Sale, Rent and Lease | Bhoomi Bazar',
     description: 'Search approved land listings by state, district, khata / khasra number, price per katha or dismil, and area.',
   });
 

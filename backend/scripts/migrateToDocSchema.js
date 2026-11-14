@@ -14,6 +14,7 @@ import mongoose from 'mongoose';
 import User from '../models/userModel.js';
 import Admin from '../models/adminModel.js';
 import Property from '../models/propertyModel.js';
+import { estimateTotal } from '../utils/areaUnits.js';
 import State from '../models/stateModel.js';
 import District from '../models/districtModel.js';
 import Wishlist from '../models/wishlistModel.js';
@@ -186,7 +187,6 @@ const run = async () => {
         else if (l.price != null && areaDismil > 0) price = { amount: Math.round(l.price / areaDismil), per_unit: 'DISMIL' };
         else price = { amount: 0, per_unit: area.unit }; // was "price on request"
 
-        const sameUnit = area.unit === price.per_unit;
         const approved = l.status === 'active';
         await propertiesCol.replaceOne({ _id: l._id }, {
             _id: l._id,
@@ -196,7 +196,7 @@ const run = async () => {
             khasra_number: l.khasraNo || 'NA',
             area,
             price,
-            ...(sameUnit && { estimated_total: Math.round(price.amount * area.value) }),
+            ...(estimateTotal(area, price) != null && { estimated_total: estimateTotal(area, price) }),
             ...(l.description && { description: l.description }),
             ...(l.address && { address: l.address }),
             images: (l.media || []).filter((m) => m.type === 'image').map((m, i) => ({ url: m.url, is_primary: i === 0, sort_order: i })),

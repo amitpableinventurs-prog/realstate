@@ -41,7 +41,7 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       '@id': `${SITE_URL}/#website`,
-      name: 'Bhumi Bazar',
+      name: 'Bhoomi Bazar',
       url: SITE_URL,
       description: 'Land marketplace for buying, selling and renting land in India.',
       potentialAction: {
@@ -55,7 +55,7 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       '@id': `${SITE_URL}/#organization`,
-      name: 'Bhumi Bazar',
+      name: 'Bhoomi Bazar',
       url: SITE_URL,
       logo: `${SITE_URL}/logo.png`,
       areaServed: AREA_SERVED,
@@ -74,7 +74,7 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
       '@context': 'https://schema.org',
       '@type': 'LocalBusiness',
       '@id': `${SITE_URL}/#localbusiness`,
-      name: 'Bhumi Bazar',
+      name: 'Bhoomi Bazar',
       description: 'Land marketplace for buying, selling and renting land in India.',
       url: SITE_URL,
       logo: `${SITE_URL}/logo.png`,
@@ -116,7 +116,7 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
     aiHub: {
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
-      name: 'Property Search - Bhumi Bazar',
+      name: 'Property Search - Bhoomi Bazar',
       applicationCategory: 'RealEstateApplication',
       description: 'Search land listings across India.',
       url: `${SITE_URL}/search`,
@@ -162,7 +162,7 @@ const StructuredData: React.FC<StructuredDataProps> = ({ type, data }) => {
     howTo: {
       '@context': 'https://schema.org',
       '@type': 'HowTo',
-      name: data?.howToName || 'How to Buy Land with Bhumi Bazar',
+      name: data?.howToName || 'How to Buy Land with Bhoomi Bazar',
       description: data?.howToDescription || 'Simple steps to find and buy land in India.',
       step: (data?.steps || []).map((step) => ({
         '@type': 'HowToStep',

@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import apiClient from "../services/apiClient";
 import { cn, formatDate } from "../lib/utils";
+import { UNIT_LABELS } from "../lib/landUnits";
 
 const STATUS_CONFIG = {
   pending: { label: "Pending", className: "bg-amber-50 text-amber-700 border border-amber-200" },
@@ -197,7 +198,7 @@ const Appointments = () => {
                             </p>
                             {appointment.propertyId?.area && (
                               <p className="text-xs text-[#9CA3AF]">
-                                {appointment.propertyId.area.value} {appointment.propertyId.area.unit === "KATHA" ? "Katha" : "Dismil"}
+                                {appointment.propertyId.area.value} {UNIT_LABELS[appointment.propertyId.area.unit] || appointment.propertyId.area.unit}
                               </p>
                             )}
                           </div>

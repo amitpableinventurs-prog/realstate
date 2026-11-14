@@ -23,7 +23,7 @@ const FAQ_ITEMS = [
     answer: 'We currently cover major metropolitan areas including Ahmedabad, Mumbai, Delhi, Bangalore, and Pune. We\'re expanding to more cities across India and will update our coverage area regularly.',
   },
   {
-    question: 'Can I list my property exclusively with Bhumi Bazar?',
+    question: 'Can I list my property exclusively with Bhoomi Bazar?',
     answer: 'Yes, we offer exclusive listing agreements with premium marketing benefits including professional photography and dedicated property consultant support throughout the selling process.',
   },
   {
@@ -43,7 +43,7 @@ const ContactPage: React.FC = () => {
 
   useSEO({
     title: 'Contact Us',
-    description: 'Get in touch with Bhumi Bazar. We\'re here to help you find your dream property.',
+    description: 'Get in touch with Bhoomi Bazar. We\'re here to help you find your dream property.',
     url: 'https://buildestate.vercel.app/contact',
   });
 

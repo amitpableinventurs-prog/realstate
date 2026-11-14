@@ -12,6 +12,7 @@ import { cn, formatDate } from "../lib/utils";
 import { getAdminSession } from "../lib/adminSession";
 import DistrictOptions from "../components/DistrictOptions";
 import { fetchDistricts } from "../lib/districts";
+import { UNIT_LABELS } from "../lib/landUnits";
 
 // ─── Image Gallery + Lightbox ─────────────────────────────────────────────────
 // A photo, or a video's first frame with a play badge (its parent is `relative`)
@@ -304,7 +305,6 @@ const RejectModal = ({ listing, onClose, onConfirm, loading }) => {
 // ─── Properties (GET /api/v1/admin/properties) ────────────────────────────────
 
 const TYPE_LABELS = { SELL: "For Sale", RENT: "For Rent", LEASE: "For Lease" };
-const UNIT_LABELS = { KATHA: "Katha", DISMIL: "Dismil" };
 
 const toCard = (p) => ({
   id: p.id,

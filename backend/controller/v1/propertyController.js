@@ -62,7 +62,7 @@ const readPropertyBody = (body = {}, { partial }) => {
     requiredText(body, 'khata_number', errors, set, { partial });
     requiredText(body, 'khasra_number', errors, set, { partial });
 
-    // { value, unit } / { amount, per_unit } with unit KATHA or DISMIL
+    // { value, unit } / { amount, per_unit } with a unit from UNITS
     const measure = (key, numberKey, unitKey, label, { min }) => {
         if (body[key] === undefined) {
             if (!partial) errors[key] = `${key} is required: { ${numberKey}, ${unitKey} }`;
@@ -436,13 +436,13 @@ const SORTS = {
 };
 const CARD_FIELDS = 'listing_type status khata_number khasra_number area price estimated_total address description location images state_id district_id created_at';
 
-// An amount stored per KATHA or DISMIL, as an amount per dismil (for comparing across units)
-const perDismil = (field, unitField) => ({
-    $divide: [field, { $cond: [{ $eq: [unitField, 'KATHA'] }, dismilPer('KATHA'), dismilPer('DISMIL')] }],
+// How many dismil the stored unit is, so amounts in any unit can be compared
+const dismilOfUnit = (unitField) => ({
+    $switch: { branches: UNITS.map((u) => ({ case: { $eq: [unitField, u] }, then: dismilPer(u) })), default: 1 },
 });
-const perDismilValue = (field, unitField) => ({
-    $multiply: [field, { $cond: [{ $eq: [unitField, 'KATHA'] }, dismilPer('KATHA'), dismilPer('DISMIL')] }],
-});
+// A price per unit as a price per dismil, and an area as dismil
+const perDismil = (field, unitField) => ({ $divide: [field, dismilOfUnit(unitField)] });
+const perDismilValue = (field, unitField) => ({ $multiply: [field, dismilOfUnit(unitField)] });
 
 /**
  * Filter for GET /list-property and the admin property list (technical document 4.7).

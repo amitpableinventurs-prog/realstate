@@ -15,7 +15,7 @@ import CTASection from '../components/home/CTASection';
 const HomePage: React.FC = () => {
   useSEO({
     title: 'Buy, Sell & Rent Land in India',
-    description: 'Bhumi Bazar helps you find plots and land for sale, rent or lease across India, with verified listings and direct owner contact.',
+    description: 'Bhoomi Bazar helps you find plots and land for sale, rent or lease across India, with verified listings and direct owner contact.',
     url: 'https://buildestate.vercel.app',
   });
 
@@ -28,7 +28,7 @@ const HomePage: React.FC = () => {
       <StructuredData
         type="howTo"
         data={{
-          howToName: 'How to Buy Land with Bhumi Bazar',
+          howToName: 'How to Buy Land with Bhoomi Bazar',
           howToDescription: 'Simple steps to find and buy land in India.',
           steps: [
             { name: 'Search', text: 'Pick your state and district, then filter by price, area and listing type.' },

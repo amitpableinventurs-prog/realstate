@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test('home page renders the Bhumi Bazar experience', async ({ page }) => {
+test('home page renders the Bhoomi Bazar experience', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Bhumi|BuildEstate/i);
+  await expect(page).toHaveTitle(/Bhoomi|BuildEstate/i);
   await expect(page.locator('body')).toContainText(/property|home|real estate/i);
 });
 

@@ -1,5 +1,5 @@
 /**
- * Winston Structured Logger for Bhumi Bazar Backend
+ * Winston Structured Logger for Bhoomi Bazar Backend
  *
  * Features:
  * - Log levels: error, warn, info, http, debug

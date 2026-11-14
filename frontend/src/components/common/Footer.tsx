@@ -19,8 +19,8 @@ const Footer: React.FC = () => {
           {/* Brand Column */}
           <div>
             <Link to="/" className="flex items-center gap-3 mb-6">
-              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-white p-1"><img src="/logo.png" alt="Bhumi Bazar" loading="lazy" decoding="async" width="40" height="40" className="h-full w-full object-contain" /></span>
-              <span className="font-fraunces text-2xl font-bold">Bhumi Bazar</span>
+              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-white p-1"><img src="/logo.png" alt="Bhoomi Bazar" loading="lazy" decoding="async" width="40" height="40" className="h-full w-full object-contain" /></span>
+              <span className="font-fraunces text-2xl font-bold">Bhoomi Bazar</span>
             </Link>
             <p className="font-manrope font-extralight text-[#9ca3af] text-sm leading-relaxed mb-6">
               Land marketplace connecting buyers and sellers across India with verified listings and direct owner contact.
@@ -82,6 +82,11 @@ const Footer: React.FC = () => {
               <li>
                 <Link to="/search" className="font-manrope font-extralight text-[#9ca3af] text-sm hover:text-white hover:pl-2 transition-all inline-block">
                   Search Properties
+                </Link>
+              </li>
+              <li>
+                <Link to="/emi-calculator" className="font-manrope font-extralight text-[#9ca3af] text-sm hover:text-white hover:pl-2 transition-all inline-block">
+                  EMI Calculator
                 </Link>
               </li>
               <li>
@@ -168,7 +173,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-[rgba(255,255,255,0.1)] pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="font-manrope font-extralight text-[#6b7280] text-sm text-center md:text-left">
-              © 2026 Bhumi Bazar. All rights reserved.
+              © 2026 Bhoomi Bazar. All rights reserved.
             </p>
             <div className="flex flex-wrap justify-center gap-6">
               <Link to="/privacy" className="font-manrope font-extralight text-[#6b7280] text-sm hover:text-white transition-[color]">

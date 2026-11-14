@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Bhumi Bazar real estate platform backend API",
+  "description": "Bhoomi Bazar real estate platform backend API",
   "type": "module",
   "main": "server.js",
   "scripts": {

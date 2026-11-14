@@ -1,5 +1,5 @@
 // EMI plans: the interest rate is picked automatically from the period.
-// Change these to the rates Bhumi Bazar offers.
+// Change these to the rates Bhoomi Bazar offers.
 export const EMI_PLANS: { months: number; rate: number }[] = [
   { months: 3, rate: 2 },
   { months: 6, rate: 3 },

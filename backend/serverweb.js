@@ -9,7 +9,7 @@ export default function getStatusPage() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bhumi Bazar API</title>
+  <title>Bhoomi Bazar API</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -60,7 +60,7 @@ export default function getStatusPage() {
     <!-- Header -->
     <div class="hdr">
       <div>
-        <h1>Bhumi Bazar API</h1>
+        <h1>Bhoomi Bazar API</h1>
         <p class="sub">Real Estate Platform Backend</p>
       </div>
       <div class="badge"><span class="dot"></span> Online</div>
@@ -122,7 +122,7 @@ export default function getStatusPage() {
 
     <!-- Footer -->
     <div class="ftr">
-      <p>&copy; ${new Date().getFullYear()} Bhumi Bazar &nbsp;|&nbsp;
+      <p>&copy; ${new Date().getFullYear()} Bhoomi Bazar &nbsp;|&nbsp;
         <a href="/health">Health</a> &nbsp;|&nbsp;
         <a href="/status">Status</a> &nbsp;|&nbsp;
         <a href="https://buildestate.vercel.app" target="_blank">Website</a> &nbsp;|&nbsp;

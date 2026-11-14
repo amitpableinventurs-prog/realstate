@@ -133,11 +133,11 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, setIsCollapsed }) => {
                 whileTap={{ scale: 0.95 }}
                 className="w-9 h-9 bg-white rounded-lg p-1 flex items-center justify-center shadow-lg"
               >
-                <img src="/logo.png" alt="Bhumi Bazar" className="h-full w-full object-contain" />
+                <img src="/logo.png" alt="Bhoomi Bazar" className="h-full w-full object-contain" />
               </motion.div>
               <div>
                 <span className="text-base font-bold text-[#FAF8FB] tracking-tight">
-                  Bhumi Bazar
+                  Bhoomi Bazar
                 </span>
                 <div className="text-[10px] text-[#9CA3AF] font-medium uppercase tracking-widest leading-none">
                   Admin Panel
@@ -151,7 +151,7 @@ const Sidebar = ({ isOpen, setIsOpen, isCollapsed, setIsCollapsed }) => {
                 whileTap={{ scale: 0.95 }}
                 className="w-9 h-9 bg-white rounded-lg p-1 flex items-center justify-center shadow-lg"
               >
-                <img src="/logo.png" alt="Bhumi Bazar" className="h-full w-full object-contain" />
+                <img src="/logo.png" alt="Bhoomi Bazar" className="h-full w-full object-contain" />
               </motion.div>
             </Link>
           )}

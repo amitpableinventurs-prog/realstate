@@ -94,7 +94,7 @@ const HeroSection: React.FC = () => {
               {/* Description */}
               <motion.p data-speakable variants={itemVariants} className="font-manrope font-light text-xl leading-7 text-[#4b5563] mb-12 max-w-[676px]">
                 Find plots and land for sale, rent or lease across India.
-                Bhumi Bazar shows verified listings with clear details, so you can contact the owner directly.
+                Bhoomi Bazar shows verified listings with clear details, so you can contact the owner directly.
               </motion.p>
 
               {/* CTA Buttons */}

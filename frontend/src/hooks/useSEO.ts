@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 const SITE_URL = 'https://buildestate.vercel.app';
-const DEFAULT_TITLE = 'Bhumi Bazar - Buy, Sell & Rent Land in India';
+const DEFAULT_TITLE = 'Bhoomi Bazar - Buy, Sell & Rent Land in India';
 const DEFAULT_DESCRIPTION = 'Find verified plots and land for sale, rent or lease across India, and contact owners directly.';
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
@@ -45,7 +45,7 @@ function setCanonical(url: string) {
 
 export function useSEO({ title, description, image, url, type = 'website' }: SEOProps) {
   useEffect(() => {
-    const fullTitle = title ? `${title} | Bhumi Bazar` : DEFAULT_TITLE;
+    const fullTitle = title ? `${title} | Bhoomi Bazar` : DEFAULT_TITLE;
     const desc = description || DEFAULT_DESCRIPTION;
     const ogImage = image || DEFAULT_IMAGE;
     const canonical = url || window.location.href;
@@ -74,12 +74,12 @@ export function useSEO({ title, description, image, url, type = 'website' }: SEO
     return () => {
       document.title = DEFAULT_TITLE;
       setMeta('meta[name="description"]', 'name', 'description', DEFAULT_DESCRIPTION);
-      setOG('og:title', 'Bhumi Bazar - Buy, Sell & Rent Land in India');
+      setOG('og:title', 'Bhoomi Bazar - Buy, Sell & Rent Land in India');
       setOG('og:description', DEFAULT_DESCRIPTION);
       setOG('og:image', DEFAULT_IMAGE);
       setOG('og:url', SITE_URL);
       setOG('og:type', 'website');
-      setTwitter('twitter:title', 'Bhumi Bazar - Buy, Sell & Rent Land in India');
+      setTwitter('twitter:title', 'Bhoomi Bazar - Buy, Sell & Rent Land in India');
       setTwitter('twitter:description', DEFAULT_DESCRIPTION);
       setTwitter('twitter:image', DEFAULT_IMAGE);
       setCanonical(SITE_URL);

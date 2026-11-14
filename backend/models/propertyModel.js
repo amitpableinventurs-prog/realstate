@@ -1,11 +1,13 @@
 import mongoose from 'mongoose';
+import { estimateTotal } from '../utils/areaUnits.js';
 
 // properties — technical document 5.2 / 5.3. Land listings for SELL, RENT and
 // LEASE. Enum values are stored exactly as the API sends them (SELL, KATHA,
 // PENDING, ...).
 
 export const LISTING_TYPES = ['SELL', 'RENT', 'LEASE'];
-export const UNITS = ['KATHA', 'DISMIL'];
+// KATHA / DISMIL are the document's units; BIGHA, ACRE and SQFT were added on request (2026-11-14)
+export const UNITS = ['KATHA', 'DISMIL', 'BIGHA', 'ACRE', 'SQFT'];
 export const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SOLD', 'RENTED', 'LEASED'];
 // Marking an approved property closed: the word depends on its type
 export const CLOSED_STATUS_FOR_TYPE = { SELL: 'SOLD', RENT: 'RENTED', LEASE: 'LEASED' };
@@ -37,7 +39,7 @@ const PropertySchema = new mongoose.Schema({
         amount: { type: Number, required: true, min: [0, 'Price must be a positive number'] },
         per_unit: { type: String, enum: UNITS, required: true },
     },
-    // price.amount × area.value when both are in the same unit (set on save)
+    // price.amount × area.value, with the area converted to the price's unit (set on save)
     estimated_total: { type: Number },
     description: { type: String, trim: true, maxlength: 3000 },
     // Village / mohalla / landmark, as written by the owner (not in the document's 5.2 list; added on request)
@@ -66,10 +68,7 @@ PropertySchema.index({ khata_number: 'text', khasra_number: 'text', description:
 PropertySchema.index({ khata_number: 1, khasra_number: 1 });
 
 PropertySchema.pre('validate', function () {
-    const sameUnit = this.area?.unit && this.area.unit === this.price?.per_unit;
-    this.estimated_total = sameUnit && this.price.amount != null && this.area.value != null
-        ? Math.round(this.price.amount * this.area.value)
-        : undefined;
+    this.estimated_total = estimateTotal(this.area, this.price) ?? undefined;
     // Display order; the first photo (never a video) is the primary one
     const primary = this.images.findIndex((media) => media.type !== 'VIDEO');
     this.images.forEach((image, i) => {

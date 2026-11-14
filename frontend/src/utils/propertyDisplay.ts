@@ -5,7 +5,7 @@ import { formatPrice } from './formatPrice';
 // website's cards and detail page.
 
 export const LISTING_TYPE_LABELS: Record<ListingType, string> = { SELL: 'For Sale', RENT: 'For Rent', LEASE: 'For Lease' };
-export const UNIT_LABELS: Record<Unit, string> = { KATHA: 'Katha', DISMIL: 'Dismil' };
+export const UNIT_LABELS: Record<Unit, string> = { KATHA: 'Katha', DISMIL: 'Dismil', BIGHA: 'Bigha', ACRE: 'Acre', SQFT: 'sq ft' };
 // Marking an approved property closed: the word depends on its type
 export const CLOSED_LABEL_FOR_TYPE: Record<ListingType, 'Sold' | 'Rented' | 'Leased'> = { SELL: 'Sold', RENT: 'Rented', LEASE: 'Leased' };
 

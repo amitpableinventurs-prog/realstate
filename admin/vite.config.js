@@ -14,7 +14,7 @@ const banner = (mode, env) => ({
         console.log([
           '',
           '╔══════════════════════════════════════════════╗',
-          '║          Bhumi Bazar Admin  v1.0.0           ║',
+          '║          Bhoomi Bazar Admin  v1.0.0           ║',
           '╚══════════════════════════════════════════════╝',
           '',
           `  ◆ Environment       ${mode}`,

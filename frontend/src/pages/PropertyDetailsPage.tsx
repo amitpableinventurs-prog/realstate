@@ -176,7 +176,7 @@ const PropertyDetailsPage: React.FC = () => {
     title: property ? `${title} - ${property.location}` : 'Property Details',
     description: property
       ? `${text.area(property)} land ${text.listingType(property.listingType).toLowerCase()} in ${property.location}. ${text.price(property)}. Khata ${property.khataNo}, Khasra ${property.khasraNo}.`
-      : 'View property details on Bhumi Bazar.',
+      : 'View property details on Bhoomi Bazar.',
     image: property?.image[0] || undefined,
     url: property ? `https://buildestate.vercel.app/property/${property._id}` : undefined,
     type: 'article',

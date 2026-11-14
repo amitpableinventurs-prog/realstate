@@ -9,6 +9,7 @@ import {
 import { useStates, useDistricts } from '../hooks/useMasterData';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import { estimateTotal } from '../utils/landUnits';
 
 // Add / edit a land property (technical document 4.4 and 6.8): Sell / Rent /
 // Lease, khata and khasra numbers, area and price per Katha or Dismil, photos
@@ -35,6 +36,9 @@ const LISTING_TYPES: { value: ListingType; label: string }[] = [
 const UNITS: { value: Unit; label: string }[] = [
   { value: 'KATHA', label: 'Katha' },
   { value: 'DISMIL', label: 'Dismil' },
+  { value: 'BIGHA', label: 'Bigha' },
+  { value: 'ACRE', label: 'Acre' },
+  { value: 'SQFT', label: 'sq ft' },
 ];
 const TYPE_FROM_QUERY: Record<string, ListingType> = { sell: 'SELL', sale: 'SELL', rent: 'RENT', lease: 'LEASE' };
 
@@ -191,12 +195,12 @@ const AddPropertyPage: React.FC = () => {
     );
   };
 
-  // The server calculates the estimated total when both units are the same
+  // Same as the server's estimated total: the area is converted to the price's unit
   const totalPreview = (() => {
     const area = Number(form.area_value);
     const price = Number(form.price_amount);
-    if (!(area > 0) || !(price > 0) || form.area_unit !== form.price_unit) return null;
-    return formatINR(price * area);
+    if (!(area > 0) || !(price > 0)) return null;
+    return formatINR(estimateTotal(area, form.area_unit, price, form.price_unit));
   })();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -269,7 +273,7 @@ const AddPropertyPage: React.FC = () => {
             {submitted === 'created' ? 'Property submitted!' : 'Property updated!'}
           </h2>
           <p className="font-manrope text-[#6B7280] mb-8">
-            Your property is under review by the admin for its district. It will appear on Bhumi Bazar once approved —
+            Your property is under review by the admin for its district. It will appear on Bhoomi Bazar once approved —
             you'll get a notification with the decision.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

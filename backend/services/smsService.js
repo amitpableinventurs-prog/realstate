@@ -8,7 +8,7 @@ import logger from '../utils/logger.js';
 export const getSmsProvider = () => (process.env.SMS_PROVIDER || 'console').toLowerCase();
 
 const otpMessage = (code) =>
-    `${code} is your Bhumi Bazar verification code. It expires in ${Math.round(otpTtlSeconds() / 60)} minutes. Do not share it with anyone.`;
+    `${code} is your Bhoomi Bazar verification code. It expires in ${Math.round(otpTtlSeconds() / 60)} minutes. Do not share it with anyone.`;
 
 export const otpTtlSeconds = () => Number(process.env.OTP_TTL_SECONDS) || 300;
 

@@ -204,7 +204,7 @@ export const updateAppointmentMeetingLink = async (req, res) => {
     if (recipientEmail) {
       emailService.sendEmailSafely(
         recipientEmail,
-        'Your Virtual Meeting Link - Bhumi Bazar',
+        'Your Virtual Meeting Link - Bhoomi Bazar',
         getMeetingLinkTemplate(appointment, meetingLink)
       );
     }

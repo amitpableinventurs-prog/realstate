@@ -4,7 +4,7 @@ import { ok } from '../../utils/v1.js';
 // for the mobile app (the website has its own pages). Have a lawyer review this
 // text and set SUPPORT_EMAIL / SUPPORT_PHONE before launch.
 
-const BRAND = 'Bhumi Bazar';
+const BRAND = 'Bhoomi Bazar';
 const VERSION = '1.0';
 const LAST_UPDATED = '2026-10-09';
 

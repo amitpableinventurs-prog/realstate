@@ -25,6 +25,7 @@ const BlogPage = lazy(() => import('./pages/BlogPage'));
 const BlogPostPage = lazy(() => import('./pages/BlogPostPage'));
 const CareersPage = lazy(() => import('./pages/CareersPage'));
 const JobDetailsPage = lazy(() => import('./pages/JobDetailsPage'));
+const EmiCalculatorPage = lazy(() => import('./pages/EmiCalculatorPage'));
 
 function NotFoundPage() {
   return (
@@ -70,6 +71,7 @@ function AnimatedRoutes() {
           <Route path="/terms" element={<PageTransition><TermsPage /></PageTransition>} />
           <Route path="/privacy" element={<PageTransition><PrivacyPage /></PageTransition>} />
           <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
+          <Route path="/emi-calculator" element={<PageTransition><EmiCalculatorPage /></PageTransition>} />
           <Route path="/blog" element={<PageTransition><BlogPage /></PageTransition>} />
           <Route path="/blog/:slug" element={<PageTransition><BlogPostPage /></PageTransition>} />
           <Route path="/careers" element={<PageTransition><CareersPage /></PageTransition>} />

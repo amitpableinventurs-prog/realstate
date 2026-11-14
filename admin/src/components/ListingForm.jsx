@@ -6,6 +6,7 @@ import DistrictOptions from './DistrictOptions';
 import { fetchDistricts } from '../lib/districts';
 import { uploadMedia, mediaProblem, PHOTO_TYPES, VIDEO_TYPES, MAX_UPLOAD_MB } from '../lib/uploads';
 import { cn } from '../lib/utils';
+import { UNITS, estimateTotal } from '../lib/landUnits';
 
 // Admin "Add Property" / "Edit" form — the property fields of the technical
 // document: Sell/Rent/Lease, Khata, Khasra, Area and Price (per Katha or
@@ -18,10 +19,6 @@ const LISTING_TYPES = [
   { value: 'SELL', label: 'For Sale' },
   { value: 'RENT', label: 'For Rent' },
   { value: 'LEASE', label: 'For Lease' },
-];
-const UNITS = [
-  { value: 'KATHA', label: 'Katha' },
-  { value: 'DISMIL', label: 'Dismil' },
 ];
 
 const inputClass = "w-full px-4 py-3 bg-white border border-[#E6D6E8] rounded-xl text-[#17131A] placeholder-[#9CA3AF] text-sm transition-all duration-200 outline-none focus:border-[#A3078F] focus:ring-2 focus:ring-[#A3078F]/15 disabled:opacity-60";
@@ -136,12 +133,13 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
     );
   };
 
-  // estimated_total is only calculated when both units are the same
+  // Same as the server's estimated_total: the area is converted to the price's unit
   const totalPreview = (() => {
     const area = Number(values.area_value);
     const price = Number(values.price_amount);
-    if (!(area > 0) || !(price > 0) || values.area_unit !== values.price_unit) return null;
-    return formatINR(price * area);
+    if (!(area > 0) || !(price > 0)) return null;
+    const total = estimateTotal(area, values.area_unit, price, values.price_unit);
+    return total == null ? null : formatINR(total);
   })();
 
   const handleSubmit = async (e) => {

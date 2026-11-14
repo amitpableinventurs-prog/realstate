@@ -2,7 +2,7 @@
 // TODO before launch: replace every value in [brackets] with the real details,
 // and have a lawyer review both pages.
 export const LEGAL = {
-  brand: 'Bhumi Bazar',
+  brand: 'Bhoomi Bazar',
   companyName: '[Registered company / business name]',
   address: '[Registered office address]',
   email: '[support email address]',

@@ -73,10 +73,10 @@ const Login = () => {
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
             <div className="w-10 h-10 bg-white rounded-xl p-1 flex items-center justify-center">
-              <img src="/logo.png" alt="Bhumi Bazar" className="h-full w-full object-contain" />
+              <img src="/logo.png" alt="Bhoomi Bazar" className="h-full w-full object-contain" />
             </div>
             <div>
-              <div className="text-xl font-bold text-[#FAF8FB]">Bhumi Bazar</div>
+              <div className="text-xl font-bold text-[#FAF8FB]">Bhoomi Bazar</div>
               <div className="text-xs text-[#9CA3AF] uppercase tracking-widest">Admin Panel</div>
             </div>
           </div>
@@ -107,7 +107,7 @@ const Login = () => {
         {/* Footer */}
         <div className="relative z-10 flex items-center gap-2 text-xs text-[#5A5856]">
           <Shield className="w-3.5 h-3.5" />
-          <span>Secured with 256-bit encryption • Bhumi Bazar © 2025</span>
+          <span>Secured with 256-bit encryption • Bhoomi Bazar © 2025</span>
         </div>
       </motion.div>
 
@@ -122,9 +122,9 @@ const Login = () => {
           {/* Mobile Logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
             <div className="w-9 h-9 bg-white border border-[#E6D6E8] rounded-xl p-1 flex items-center justify-center">
-              <img src="/logo.png" alt="Bhumi Bazar" className="h-full w-full object-contain" />
+              <img src="/logo.png" alt="Bhoomi Bazar" className="h-full w-full object-contain" />
             </div>
-            <div className="text-lg font-bold text-[#17131A]">Bhumi Bazar Admin</div>
+            <div className="text-lg font-bold text-[#17131A]">Bhoomi Bazar Admin</div>
           </div>
 
           {/* Header */}

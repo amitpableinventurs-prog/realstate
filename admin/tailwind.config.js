@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Bhumi Bazar Design System — brand colors from the logo.
+        // Bhoomi Bazar Design System — brand colors from the logo.
         // Token names (terracotta/cream/sand) are kept so existing classes keep working.
         cream: {
           DEFAULT: '#FAF8FB',

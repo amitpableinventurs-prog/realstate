@@ -12,7 +12,7 @@ const blogPostSchema = new mongoose.Schema(
     coverImage: { type: String, trim: true, default: '' },
     category: { type: String, required: true, trim: true, maxlength: 60 },
     tags: { type: [String], default: [] },
-    authorName: { type: String, trim: true, default: 'Bhumi Bazar Team', maxlength: 80 },
+    authorName: { type: String, trim: true, default: 'Bhoomi Bazar Team', maxlength: 80 },
     status: { type: String, enum: ['draft', 'published'], default: 'draft' },
     publishedAt: { type: Date },
     isFeatured: { type: Boolean, default: false },

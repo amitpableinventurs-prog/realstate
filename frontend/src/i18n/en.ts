@@ -12,6 +12,7 @@ const en = {
   'nav.blog': 'Blog',
   'nav.about': 'About',
   'nav.contact': 'Contact',
+  'nav.emi': 'EMI Calculator',
   'nav.login': 'Login',
   'nav.loginSignup': 'Login / Sign Up',
   'nav.listProperty': '+ List Property',
@@ -30,6 +31,9 @@ const en = {
   // Land vocabulary
   'unit.KATHA': 'Katha',
   'unit.DISMIL': 'Dismil',
+  'unit.BIGHA': 'Bigha',
+  'unit.ACRE': 'Acre',
+  'unit.SQFT': 'sq ft',
   'type.SELL': 'For Sale',
   'type.RENT': 'For Rent',
   'type.LEASE': 'For Lease',
@@ -200,6 +204,13 @@ const en = {
   'emi.totalPayable': 'Total payable',
   'emi.note': 'Indicative only — the final EMI depends on the lender.',
   'emi.reset': 'Use auto rate',
+  'emiPage.plans': 'EMI plans',
+  'emiPage.rate': 'Interest / year',
+  'emiPage.howTitle': 'How the EMI is worked out',
+  'emiPage.howText': 'The EMI is on a reducing balance, so each month you pay interest only on what is still owed. P is the loan amount, r is the monthly rate (yearly rate ÷ 12) and n is the number of months.',
+  'emiPage.ctaTitle': 'Know your budget?',
+  'emiPage.ctaText': 'Browse land that fits your monthly instalment.',
+  'emiPage.cta': 'Browse land',
 
   // Login
   'signin.title': 'Login or Sign Up',

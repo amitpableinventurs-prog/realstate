@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for Bhumi Bazar
+about: Suggest an idea for Bhoomi Bazar
 title: "[FEATURE] "
 labels: enhancement
 assignees: ''

@@ -1,6 +1,6 @@
 @custom-variant dark (&:is(.dark *));
 
-/* Bhumi Bazar Luxury Design System */
+/* Bhoomi Bazar Luxury Design System */
 :root {
   /* Brand palette — taken from the BhoomiBazaar logo (magenta → plum → deep purple + black) */
   --brand-magenta: #CB02B9;
@@ -180,7 +180,7 @@
   }
 
   /**
-  * Bhumi Bazar Typography System
+  * Bhoomi Bazar Typography System
   * Headings use Fraunces (elegant serif)
   * Subheadings use Syne (geometric sans)
   * Body text uses Red Hat Display (humanist sans)

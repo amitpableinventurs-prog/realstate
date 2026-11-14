@@ -171,7 +171,7 @@ export const masterAPI = {
 
 // Properties — land listings for SELL / RENT / LEASE
 export type ListingType = 'SELL' | 'RENT' | 'LEASE';
-export type Unit = 'KATHA' | 'DISMIL';
+export type Unit = 'KATHA' | 'DISMIL' | 'BIGHA' | 'ACRE' | 'SQFT';
 export type PropertyStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SOLD' | 'RENTED' | 'LEASED';
 
 export interface PropertyCardData {

@@ -23,7 +23,7 @@ const ContactMapSection: React.FC = () => {
               </span>
               <div className="text-left">
                 <p className="font-syne font-bold text-base text-[#1A0A1E] mb-0.5">
-                  Bhumi Bazar Office
+                  Bhoomi Bazar Office
                 </p>
                 <p className="font-manrope font-extralight text-xs text-[#64748B]">
                   Click to view on Google Maps

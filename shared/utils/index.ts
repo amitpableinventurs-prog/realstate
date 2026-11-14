@@ -1,5 +1,5 @@
 /**
- * Shared utilities for the Bhumi Bazar monorepo
+ * Shared utilities for the Bhoomi Bazar monorepo
  *
  * This module can be imported by:
  * - frontend/

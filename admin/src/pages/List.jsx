@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../services/apiClient";
 import { cn } from "../lib/utils";
+import { UNIT_LABELS } from "../lib/landUnits";
 
 // All Properties — every property (from the app, the website and the admin
 // panel) with the fields of the technical document: Khata, Khasra, Area and
@@ -44,7 +45,6 @@ const LISTING_TYPE_BADGE = {
   RENT: { label: "For Rent", className: "bg-blue-600/85 text-white" },
   LEASE: { label: "For Lease", className: "bg-teal-600/85 text-white" },
 };
-const UNIT_LABELS = { KATHA: "Katha", DISMIL: "Dismil" };
 
 // A property from GET /api/v1/admin/properties, with the names the cards use
 const toListing = (p) => ({

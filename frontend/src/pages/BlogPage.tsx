@@ -12,7 +12,7 @@ const PAGE_SIZE = 9;
 const BlogPage: React.FC = () => {
   useSEO({
     title: 'Blog — Property & Land Buying Guides',
-    description: 'Guides on buying land, checking Khata and Khasra records, home loans and the Indian property market from the Bhumi Bazar team.',
+    description: 'Guides on buying land, checking Khata and Khasra records, home loans and the Indian property market from the Bhoomi Bazar team.',
   });
 
   const [posts, setPosts] = useState<BlogPostSummary[]>([]);
@@ -90,7 +90,7 @@ const BlogPage: React.FC = () => {
           <span className="font-space-mono text-xs text-[#A3078F] uppercase tracking-widest">
             Insights & Guides
           </span>
-          <h1 className="font-fraunces text-4xl md:text-6xl text-[#1A0A1E] mt-4 mb-6">The Bhumi Bazar Blog</h1>
+          <h1 className="font-fraunces text-4xl md:text-6xl text-[#1A0A1E] mt-4 mb-6">The Bhoomi Bazar Blog</h1>
           <p className="font-manrope text-lg text-[#4B5563] leading-relaxed max-w-[672px] mx-auto">
             Practical advice on buying, selling and renting property and land in India, from checking
             records to getting the right loan.

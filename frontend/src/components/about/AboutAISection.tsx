@@ -20,7 +20,7 @@ const AboutAISection: React.FC = () => {
             {/* Label */}
             <div className="mb-6">
               <p className="font-space-mono text-xs text-[#A3078F] uppercase tracking-[1.2px]">
-                Why Bhumi Bazar
+                Why Bhoomi Bazar
               </p>
             </div>
 

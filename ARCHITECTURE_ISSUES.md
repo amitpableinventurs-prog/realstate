@@ -1,6 +1,6 @@
-# Bhumi Bazar - Architecture Issues Document
+# Bhoomi Bazar - Architecture Issues Document
 
-> **Project:** Real Estate Website (Bhumi Bazar)
+> **Project:** Real Estate Website (Bhoomi Bazar)
 > **GitHub:** [github.com/AAYUSH412/Real-Estate-Website](https://github.com/AAYUSH412/Real-Estate-Website)
 > **Type:** Open-source project
 > **Structure:** Monorepo with 3 apps - `admin/`, `backend/`, `frontend/`

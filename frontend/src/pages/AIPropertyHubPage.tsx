@@ -155,7 +155,7 @@ const AIHubProductionPage: React.FC = () => {
               AI Property Hub
             </h1>
             <p data-speakable className="font-manrope text-lg text-[#9ca3af] leading-relaxed mb-10 max-w-2xl mx-auto">
-              Search for flats, villas, and apartments across India using AI. Bhumi Bazar's AI Property Hub
+              Search for flats, villas, and apartments across India using AI. Bhoomi Bazar's AI Property Hub
               scrapes live listings from 99acres, MagicBricks, and Housing.com using Firecrawl, then ranks
               results with GPT-4 based on your requirements. Available when running the project locally.
             </p>
@@ -272,7 +272,7 @@ const AIHubProductionPage: React.FC = () => {
 const AIPropertyHubPage: React.FC = () => {
   useSEO({
     title: 'AI Property Hub — Search Flats & Houses in India with GPT-4',
-    description: 'Search for flats, villas, and apartments across India using AI. Bhumi Bazar scrapes live listings from 99acres, MagicBricks, and Housing.com, then ranks results with GPT-4.',
+    description: 'Search for flats, villas, and apartments across India using AI. Bhoomi Bazar scrapes live listings from 99acres, MagicBricks, and Housing.com, then ranks results with GPT-4.',
     url: 'https://buildestate.vercel.app/ai-hub',
   });
 

@@ -374,7 +374,7 @@ const MyListingsPage: React.FC = () => {
             <AlertDialogTitle>Delete this listing?</AlertDialogTitle>
             <AlertDialogDescription>
               <strong className="text-[#1A0A1E]">{deleteTarget?.title}</strong> will be removed from
-              Bhumi Bazar and your listings.
+              Bhoomi Bazar and your listings.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

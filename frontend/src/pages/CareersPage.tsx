@@ -23,8 +23,8 @@ const STEPS = [
 
 const CareersPage: React.FC = () => {
   useSEO({
-    title: 'Careers — Join the Bhumi Bazar Team',
-    description: 'Open roles at Bhumi Bazar in engineering, sales, operations and customer success. Help build India\'s trusted marketplace for land and property.',
+    title: 'Careers — Join the Bhoomi Bazar Team',
+    description: 'Open roles at Bhoomi Bazar in engineering, sales, operations and customer success. Help build India\'s trusted marketplace for land and property.',
   });
 
   const [jobs, setJobs] = useState<JobSummary[]>([]);
@@ -72,7 +72,7 @@ const CareersPage: React.FC = () => {
       {/* Hero */}
       <section className="bg-[#1A0A1E] py-20 md:py-24">
         <div className="max-w-[1280px] mx-auto px-6 md:px-8 text-center">
-          <span className="font-space-mono text-xs text-[#E08AD6] uppercase tracking-widest">Careers at Bhumi Bazar</span>
+          <span className="font-space-mono text-xs text-[#E08AD6] uppercase tracking-widest">Careers at Bhoomi Bazar</span>
           <h1 className="font-fraunces text-4xl md:text-6xl text-white mt-4 mb-6 max-w-[900px] mx-auto leading-tight">
             Help India buy and sell land with confidence
           </h1>

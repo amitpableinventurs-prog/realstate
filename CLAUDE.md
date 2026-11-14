@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-**Bhumi Bazar** is a full-stack real estate platform (monorepo) with three apps:
+**Bhoomi Bazar** is a full-stack real estate platform (monorepo) with three apps:
 - `frontend/` — User-facing website (React 18 + TypeScript + Vite, port 5180)
 - `admin/` — Admin dashboard (React + JavaScript + Vite, port 5174)
 - `backend/` — REST API (Node.js + Express, port 4000)
@@ -101,7 +101,7 @@ frontend/src/
 - **Frontend is TypeScript, admin is JavaScript** — don't add TypeScript to the admin app.
 - **Structured logging**: Winston logger with request correlation IDs (`X-Request-ID` header). Log format is JSON in production.
 - **Health checks**: `GET /health` (liveness) and `GET /health/ready` (readiness with DB connectivity check).
-- **Database = technical document section 5.2**: collections `users`, `admins`, `properties`, `states`, `districts` (with `state_id`), `wishlists`, `enquiries`, `notifications`, `device_tokens`, `refresh_tokens`, with the snake_case fields, enums (`SELL/RENT/LEASE`, `KATHA/DISMIL`, `PENDING/APPROVED/REJECTED/SOLD/RENTED/LEASED`) and 5.3 indexes stored exactly as the API uses them. Land only — no property types, other units or rent/lease extras. Don't add fields the document doesn't list without asking. Older data: `npm run migrate:doc-schema` (backs up to `legacy_*` collections).
+- **Database = technical document section 5.2**: collections `users`, `admins`, `properties`, `states`, `districts` (with `state_id`), `wishlists`, `enquiries`, `notifications`, `device_tokens`, `refresh_tokens`, with the snake_case fields, enums (`SELL/RENT/LEASE`, `KATHA/DISMIL` plus `BIGHA/ACRE/SQFT` added on request, `PENDING/APPROVED/REJECTED/SOLD/RENTED/LEASED`) and 5.3 indexes stored exactly as the API uses them. Land only — no property types or rent/lease extras. Units: conversions live in `backend/utils/areaUnits.js` (`dismilPer`, `estimateTotal`), `frontend/src/utils/landUnits.ts` and `admin/src/lib/landUnits.js` — keep the three in step; `estimated_total` converts the area to the price unit. Don't add fields the document doesn't list without asking. Older data: `npm run migrate:doc-schema` (backs up to `legacy_*` collections).
 - **One API for every client**: `/api/v1` (`routes/v1Routes.js`, `controller/v1/`, docs `/api-docs`) — section 6 of the document, `{ success, data, meta }` / `errorCode`. The mobile app, website and admin panel all use it; `/api/admin` only keeps activity logs, appointments and AI models.
 - **One create API for properties**: `POST /api/v1/list-property` (`listing_type` SELL/RENT/LEASE). The document's owner endpoints `/properties`, `/properties/my`, `/properties/:id`, `/properties/:id/status` and the public `GET /listings` are named `/list-property…` here (`GET /list-property` = all approved listings), at the user's request (`/properties/:id/enquiries` keeps its name). is the only way to add a listing. Photos and videos are uploaded first with `/api/v1/uploads/presign` and sent as `image_urls`. A user token adds a PENDING property; an admin token adds one for an owner by `owner_mobile` (APPROVED). `userOrAdminProtect` picks the guard from the token. Don't add per-type or per-client create endpoints.
 - **District admins**: `admins.role = district_admin` with `district_id` review only their district (`reviewerProtect` + `utils/districts.js`).
