@@ -9,6 +9,7 @@ import * as properties from '../controller/v1/propertyController.js';
 import * as activity from '../controller/v1/activityController.js';
 import * as master from '../controller/v1/masterController.js';
 import * as uploads from '../controller/v1/uploadController.js';
+import * as documents from '../controller/v1/documentController.js';
 import * as admin from '../controller/v1/adminController.js';
 import * as appFeedback from '../controller/v1/appFeedbackController.js';
 import * as propertyBookings from '../controller/v1/propertyBookingController.js';
@@ -54,6 +55,8 @@ router.get('/list-property/:id', userOptionalAuth, wrap(properties.getProperty))
 router.put('/list-property/:id', userProtect, wrap(properties.updateProperty));
 router.delete('/list-property/:id', userProtect, wrap(properties.deleteProperty));
 router.patch('/list-property/:id/status', userProtect, wrap(properties.updatePropertyStatus));
+// Property documents are locked: the owner can open their own (added on request, not in the document)
+router.get('/list-property/:id/documents/:documentId', userProtect, wrap(documents.ownerDocument));
 router.post('/uploads/presign', userOrAdminProtect, wrap(uploads.presign));
 // Upload target when S3 isn't configured; authorised by the signed URL. The
 // controller streams the body to disk (videos up to UPLOAD_MAX_MB).
@@ -99,6 +102,10 @@ router.patch('/admin/properties/:id/reject', reviewerProtect, wrap(admin.rejectP
 router.put('/admin/properties/:id', adminProtect, wrap(admin.updateProperty));
 router.delete('/admin/properties/:id', adminProtect, wrap(admin.deleteProperty));
 router.patch('/admin/properties/:id/restore', adminProtect, wrap(admin.restoreProperty));
+// Unlocking documents: super admin + the document password. The file links it
+// returns are signed (opened in a new tab, without the admin token).
+router.post('/admin/properties/:id/documents/unlock', adminProtect, wrap(documents.unlockDocuments));
+router.get('/admin/properties/:id/documents/:documentId/file', wrap(documents.unlockedDocumentFile));
 router.get('/admin/users', adminProtect, wrap(admin.listUsers));
 router.get('/admin/users/:id', adminProtect, wrap(admin.getUser));
 router.patch('/admin/users/:id', adminProtect, wrap(admin.setUserActive));

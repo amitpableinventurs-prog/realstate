@@ -122,6 +122,19 @@ const imagesOut = (property) => property.images.map((image) => ({
     sort_order: image.sort_order,
 }));
 
+/**
+ * A property document without its file: documents have no URL. The owner opens
+ * one with GET /list-property/:id/documents/:documentId; the super admin
+ * unlocks them with POST /admin/properties/:id/documents/unlock.
+ */
+export const documentOut = (doc) => ({
+    id: doc._id,
+    file_name: doc.file_name,
+    content_type: doc.content_type,
+    size: doc.size,
+    uploaded_at: doc.uploaded_at,
+});
+
 // e.g. { amount: 250000, per_unit: 'KATHA', label: '₹2.50 Lakhs / Katha' }
 const priceOut = (price) => ({
     amount: price.amount,
@@ -157,6 +170,8 @@ export const propertyCard = (property, { savedIds } = {}) => {
         images: imagesOut(property),
         image_count: property.images.length - videoCount,
         video_count: videoCount,
+        // Documents are locked: everyone sees how many there are, only the owner and admins see the list
+        document_count: property.documents?.length ?? 0,
         state: refOut(property.state_id),
         district: refOut(property.district_id),
         is_saved: savedIds ? savedIds.has(String(property._id)) : false,
@@ -192,6 +207,7 @@ export const propertyDetail = (property, { savedIds, viewer, admin = false } = {
             rejection_reason: property.rejection_reason || null,
             approved_by: property.approved_by ?? null,
             approved_at: property.approved_at ?? null,
+            documents: (property.documents || []).map(documentOut),
         }),
         ...(admin && { is_deleted: Boolean(property.is_deleted) }),
     };

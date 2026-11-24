@@ -18,7 +18,7 @@ export const mediaProblem = (file) => {
 };
 
 // XHR rather than fetch: only XHR reports upload progress
-const putFile = (target, file, onProgress) => new Promise((resolve, reject) => {
+export const putFile =(target, file, onProgress) => new Promise((resolve, reject) => {
   const xhr = new XMLHttpRequest();
   xhr.open(target.method || 'PUT', target.upload_url);
   Object.entries(target.headers || {}).forEach(([name, value]) => xhr.setRequestHeader(name, value));

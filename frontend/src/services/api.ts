@@ -191,6 +191,7 @@ export interface PropertyCardData {
   images?: PropertyMedia[];
   image_count: number;
   video_count: number;
+  document_count?: number; // locked property documents
   state: Ref | null;
   district: Ref | null;
   is_saved: boolean;
@@ -209,7 +210,18 @@ export interface PropertyMedia {
   sort_order: number;
 }
 
+// A locked property document (registry, khatiyan, ...): no URL. The owner opens
+// it with propertiesAPI.openDocument; only the super admin can unlock it.
+export interface PropertyDocument {
+  id: string;
+  file_name: string;
+  content_type: 'application/pdf' | 'image/jpeg' | 'image/png';
+  size: number;
+  uploaded_at: string;
+}
+
 export interface PropertyDetailData extends PropertyCardData {
+  documents?: PropertyDocument[]; // the owner's own property only
   owner_id: string;
   owner: { name: string | null; mobile?: string | null };
   description: string | null;
@@ -230,6 +242,7 @@ export interface PropertyInput {
   description?: string;
   address?: string | null;
   image_urls: string[];
+  document_ids?: string[];
   location?: { latitude: number; longitude: number } | null;
   state_id?: string;
   district_id?: string;
@@ -264,6 +277,21 @@ export const propertiesAPI = {
     apiClient.patch<Envelope<PropertyDetailData>>(`/v1/list-property/${id}/status`, { status }),
   mine: (params: { status?: PropertyStatus; listing_type?: ListingType; page?: number; limit?: number } = {}) =>
     apiClient.get<ListEnvelope<PropertyCardData>>('/v1/list-property/my', { params }),
+  /** Opens one of the owner's own documents in a new tab (fetched with the login token). */
+  openDocument: async (propertyId: string, documentId: string) => {
+    // Opened before the download so the browser doesn't block it as a popup
+    const tab = window.open('', '_blank');
+    try {
+      const { data } = await apiClient.get<Blob>(`/v1/list-property/${propertyId}/documents/${documentId}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(data);
+      if (tab) tab.location.href = url;
+      else window.location.assign(url);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      tab?.close();
+      throw err;
+    }
+  },
 };
 
 // Error keys of the property API → the add-property form's fields
@@ -272,6 +300,7 @@ const PROPERTY_ERROR_FIELDS: Record<string, string> = {
   'price.amount': 'price', 'price.per_unit': 'price',
   state_id: 'district_id',
   'location.latitude': 'location', 'location.longitude': 'location',
+  document_ids: 'documents',
 };
 
 export const propertyErrorsToForm = (errors: Record<string, string>) =>
@@ -337,7 +366,43 @@ export const uploadsAPI = {
     await Promise.all(Array.from({ length: Math.min(PARALLEL_UPLOADS, ready.length) }, worker));
     return data.data.map((target) => target.file_url);
   },
+
+  /**
+   * Uploads locked property documents as they are (no shrinking: scans must
+   * stay readable) and returns their ids, for document_ids.
+   */
+  uploadDocuments: async (files: File[], onProgress?: (fraction: number) => void): Promise<string[]> => {
+    if (!files.length) return [];
+    const { data } = await apiClient.post<Envelope<(UploadTarget & { document_id: string })[]>>(
+      '/v1/uploads/presign',
+      { files: files.map((f) => ({ content_type: f.type, size: f.size, purpose: 'DOCUMENT', file_name: f.name })) }
+    );
+    const total = files.reduce((sum, f) => sum + f.size, 0);
+    const sent = files.map(() => 0);
+    const report = () => onProgress?.(sent.reduce((sum, n) => sum + n, 0) / total);
+    await Promise.all(files.map(async (file, i) => {
+      await putFile(data.data[i], file, (bytes) => { sent[i] = bytes; report(); });
+      sent[i] = file.size;
+      report();
+    }));
+    return data.data.map((target) => target.document_id);
+  },
 };
+
+// Locked property documents: registry, khatiyan, ... (PDF, JPG or PNG)
+export const DOCUMENT_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+export const MAX_DOCUMENT_MB = 10;
+export const MAX_DOCUMENTS = 5;
+
+/** Why the API would refuse `file` as a document, or null. */
+export const documentProblem = (file: File) => {
+  if (!DOCUMENT_TYPES.includes(file.type)) return `${file.name}: only PDF, JPG or PNG documents`;
+  if (file.size > MAX_DOCUMENT_MB * 1024 * 1024) return `${file.name}: larger than ${MAX_DOCUMENT_MB} MB`;
+  return null;
+};
+
+export const formatFileSize = (bytes: number) =>
+  (bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`);
 
 // 6.5 Wishlist
 export const wishlistAPI = {

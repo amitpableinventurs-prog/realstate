@@ -39,7 +39,9 @@ const adminActivityLogSchema = new mongoose.Schema({
       'update_property',
       'restore_property',
       'activate_user',
-      'deactivate_user'
+      'deactivate_user',
+      'unlock_documents',
+      'unlock_documents_failed'
     ]
   },
   // 'listing' is kept for entries logged before properties replaced listings

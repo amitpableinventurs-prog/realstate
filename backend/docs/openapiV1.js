@@ -81,6 +81,7 @@ const sampleProperty = {
     description: 'Road-facing land, close to the main market',
     address: 'Village Rampur, near Shiv Mandir',
     image_urls: ['https://cdn.bhoomibazar.com/properties/66f1.../1.jpg', 'https://cdn.bhoomibazar.com/properties/66f1.../2.jpg'],
+    document_ids: ['66f1a2b3c4d5e6f7a8b9c803'],
     location: { latitude: 22.7533, longitude: 75.8937 },
 };
 
@@ -138,6 +139,7 @@ ex.card = {
     ],
     image_count: 1,
     video_count: 1,
+    document_count: 1,
     state: ex.state,
     district: ex.district,
     is_saved: false,
@@ -152,9 +154,16 @@ ex.property = {
     is_owner: false,
     updated_at: '2026-10-02T11:20:00.000Z',
 };
+ex.document = {
+    id: '66f1a2b3c4d5e6f7a8b9c803',
+    file_name: 'Registry.pdf',
+    content_type: 'application/pdf',
+    size: 1048576,
+    uploaded_at: '2026-10-01T09:00:00.000Z',
+};
 // What the owner sees for their own property
 ex.ownProperty = {
-    ...ex.property, status: 'PENDING', is_owner: true, rejection_reason: null, approved_by: null, approved_at: null,
+    ...ex.property, status: 'PENDING', is_owner: true, rejection_reason: null, approved_by: null, approved_at: null, documents: [ex.document],
 };
 ex.adminProperty = {
     ...ex.property,
@@ -162,6 +171,7 @@ ex.adminProperty = {
     rejection_reason: null,
     approved_by: '66f1a2b3c4d5e6f7a8b9c301',
     approved_at: '2026-10-02T11:20:00.000Z',
+    documents: [ex.document],
     is_deleted: false,
 };
 ex.deleted = { id: ex.card.id, deleted: true };
@@ -246,6 +256,7 @@ const propertyInputProperties = {
     description: str({ maxLength: 3000 }),
     address: str({ maxLength: 300, example: 'Village Rampur, near Shiv Mandir', description: 'Optional: village / mohalla / landmark. Send null on edit to remove it' }),
     image_urls: { type: 'array', minItems: 1, maxItems: 10, items: str(), description: 'file_url values from /uploads/presign — photos and videos, in display order. At least one photo; the first photo is the cover.' },
+    document_ids: { type: 'array', maxItems: 5, items: str(), description: 'Optional, locked property documents (registry, khatiyan, ...): document_id values from /uploads/presign with purpose DOCUMENT. On edit the list replaces the current one — keep the ids of documents to keep; [] or null removes all.' },
     location: { allOf: [ref('Location')], nullable: true, description: 'Optional "Use my current location". Send null on edit to remove it' },
     state_id: str({ description: "Optional; defaults to the owner's profile" }),
     district_id: str({ description: "Optional; defaults to the owner's profile district" }),
@@ -255,7 +266,7 @@ const spec = {
     openapi: '3.0.3',
     info: {
         title: 'Bhoomi Bazar API v1',
-        version: '1.2.0',
+        version: '1.3.0',
         description: [
             'REST API for the Bhoomi Bazar mobile app, website and admin panel (Development & Technical Document v1.2, section 6). Data is stored in the collections of section 5.2.',
             '',
@@ -264,6 +275,8 @@ const spec = {
             '**Login (app and website)**: `POST /auth/send-otp` → `POST /auth/verify-otp` → use `access_token` as `Authorization: Bearer <token>`. When `profile_complete` is false, show "Tell us about you" and call `PUT /users/me`. Refresh with `POST /auth/refresh-token` (the refresh token rotates on every use).',
             '',
             '**Photos & videos**: `POST /uploads/presign` → `PUT` each file to its `upload_url` with the given `Content-Type` → send the `file_url` values as `image_urls`.',
+            '',
+            '**Property documents (locked)**: optional registry / khatiyan / other land papers, PDF, JPG or PNG, up to 10 MB each and 5 per property. `POST /uploads/presign` with `purpose: "DOCUMENT"` (and `file_name`) → `PUT` the file to `upload_url` → send the `document_id` values as `document_ids`. Documents have no public URL: every property shows only `document_count`; the owner gets the list (`documents`) and opens a file with `GET /list-property/{id}/documents/{documentId}`. Only the super admin can unlock them, with the document password.',
             '',
             '**Statuses**: new and edited properties are `PENDING` until an admin approves them. Only `APPROVED` properties are public. `SOLD` / `RENTED` / `LEASED` are set by the owner.',
         ].join('\n'),
@@ -285,7 +298,7 @@ const spec = {
                 message: str({ example: 'Invalid OTP' }),
                 errorCode: str({
                     example: 'OTP_INVALID',
-                    description: 'VALIDATION_ERROR, UNAUTHORIZED, TOKEN_EXPIRED, FORBIDDEN, NOT_FOUND, CONFLICT, INVALID_STATUS, RATE_LIMITED, OTP_INVALID, OTP_EXPIRED, OTP_THROTTLED, OTP_ATTEMPTS_EXCEEDED, ACCOUNT_BLOCKED, ACCOUNT_LOCKED, INVALID_CREDENTIALS, REFRESH_INVALID, UPLOAD_URL_INVALID, UPLOAD_URL_EXPIRED, FILE_TOO_LARGE, SERVER_ERROR',
+                    description: 'VALIDATION_ERROR, UNAUTHORIZED, TOKEN_EXPIRED, FORBIDDEN, NOT_FOUND, CONFLICT, INVALID_STATUS, RATE_LIMITED, OTP_INVALID, OTP_EXPIRED, OTP_THROTTLED, OTP_ATTEMPTS_EXCEEDED, ACCOUNT_BLOCKED, ACCOUNT_LOCKED, INVALID_CREDENTIALS, REFRESH_INVALID, UPLOAD_URL_INVALID, UPLOAD_URL_EXPIRED, FILE_TOO_LARGE, DOCUMENT_PASSWORD_INVALID, DOCUMENT_UNLOCK_LOCKED, DOCUMENT_LOCK_NOT_CONFIGURED, DOCUMENT_LINK_INVALID, DOCUMENT_LINK_EXPIRED, SERVER_ERROR',
                 }),
                 errors: { type: 'object', additionalProperties: str(), example: { 'area.unit': 'Must be one of KATHA, DISMIL, BIGHA, ACRE, SQFT' } },
             }),
@@ -346,6 +359,7 @@ const spec = {
                 images: { type: 'array', description: 'Photos and videos in display order', items: obj({ url: str(), type: str({ enum: ['IMAGE', 'VIDEO'] }), thumbnail_url: str({ nullable: true, description: 'For a video: a frame on ImageKit, otherwise null' }), is_primary: bool, sort_order: int }) },
                 image_count: { type: 'integer', description: 'Photos' },
                 video_count: { type: 'integer', description: 'Videos' },
+                document_count: { type: 'integer', description: 'Locked property documents. Show e.g. "🔒 2 documents" — only the owner and the admin can open them' },
                 state: ref('Ref'),
                 district: ref('Ref'),
                 is_saved: bool,
@@ -365,8 +379,16 @@ const spec = {
                     rejection_reason: str({ nullable: true, description: 'Owner and admin only' }),
                     approved_by: str({ nullable: true, description: 'Admin id. Owner and admin only' }),
                     approved_at: { ...date, nullable: true, description: 'Owner and admin only' },
+                    documents: { type: 'array', items: ref('PropertyDocument'), description: 'Owner and admin only. No URLs: the owner opens one with GET /list-property/{id}/documents/{documentId}' },
                 })],
             },
+            PropertyDocument: obj({
+                id: str({ example: '66f1a2b3c4d5e6f7a8b9c803' }),
+                file_name: str({ example: 'Registry.pdf' }),
+                content_type: str({ enum: ['application/pdf', 'image/jpeg', 'image/png'] }),
+                size: { type: 'integer', description: 'Bytes' },
+                uploaded_at: date,
+            }),
             Notification: obj({
                 id: str(), title: str(), body: str(),
                 type: str({ enum: ['PROPERTY_APPROVED', 'PROPERTY_REJECTED', 'NEW_ENQUIRY'] }),
@@ -632,7 +654,7 @@ const spec = {
             },
             put: {
                 tags: ['Property'], summary: 'Edit own property',
-                description: 'Send any fields of the add request. `image_urls` replaces the photo/video list (keep existing URLs to keep those files). Any change sends an APPROVED or REJECTED property back to PENDING.',
+                description: 'Send any fields of the add request. `image_urls` replaces the photo/video list (keep existing URLs to keep those files) and `document_ids` the document list (keep existing ids). Any change sends an APPROVED or REJECTED property back to PENDING.',
                 security: user, parameters: [id()],
                 requestBody: body(ref('PropertyUpdate'), { price: { amount: 300000, per_unit: 'KATHA' }, address: 'Village Rampur, near Shiv Mandir' }),
                 responses: {
@@ -665,15 +687,37 @@ const spec = {
                 },
             },
         },
+        '/list-property/{id}/documents/{documentId}': {
+            get: {
+                tags: ['Property'], summary: 'Open own property document (owner)',
+                description: 'Documents are locked: only the property owner can open them here (the super admin unlocks them in the admin panel). Returns the file itself (`Content-Type` application/pdf, image/jpeg or image/png) — download it with the Authorization header and show or save it. Not cached.',
+                security: user, parameters: [id(), id('documentId')],
+                responses: {
+                    200: { description: 'The file', content: Object.fromEntries(['application/pdf', 'image/jpeg', 'image/png'].map((type) => [type, { schema: str({ format: 'binary' }) }])) },
+                    401: common[401],
+                    403: err('Not the owner', 'FORBIDDEN', 'Property documents are locked. Only the owner can open them.'),
+                    404: notFound('Document'),
+                },
+            },
+        },
         '/uploads/presign': {
             post: {
-                tags: ['Uploads'], summary: 'Get upload URLs for photos and videos',
-                description: 'Photos (JPG, PNG, WEBP) and videos (MP4, MOV, WEBM), at most 500 MB each (`UPLOAD_MAX_MB`), up to 10 per call. PUT the file bytes to `upload_url` with the `Content-Type` header (and the exact size sent here), then use `file_url` in `image_urls`. URLs expire after 1 hour (an upload only has to start before then). With S3 configured these are S3 pre-signed URLs; otherwise they point to this API. User or admin token.',
+                tags: ['Uploads'], summary: 'Get upload URLs for photos, videos and documents',
+                description: [
+                    'Photos (JPG, PNG, WEBP) and videos (MP4, MOV, WEBM), at most 500 MB each (`UPLOAD_MAX_MB`), up to 10 per call. PUT the file bytes to `upload_url` with the `Content-Type` header (and the exact size sent here), then use `file_url` in `image_urls`. URLs expire after 1 hour (an upload only has to start before then). With S3 configured these are S3 pre-signed URLs; otherwise they point to this API. User or admin token.',
+                    '',
+                    '**Documents**: send `purpose: "DOCUMENT"` (PDF, JPG or PNG, at most 10 MB, `DOCUMENT_MAX_MB`) and the `file_name` to show. The target has `document_id` instead of `file_url` — documents are locked and never get a public URL. Send the ids as `document_ids` when adding or editing the property. Document uploads always go to this API.',
+                ].join('\n'),
                 security: [{ userBearer: [] }, { adminBearer: [] }],
-                requestBody: body(obj({ files: { type: 'array', maxItems: 10, items: obj({ content_type: str({ enum: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime', 'video/webm'] }), size: { type: 'integer', description: 'Bytes' } }, ['content_type', 'size']) } }, ['files']),
-                    { files: [{ content_type: 'image/jpeg', size: 482113 }, { content_type: 'video/mp4', size: 52428800 }] }),
+                requestBody: body(obj({ files: { type: 'array', maxItems: 10, items: obj({
+                    content_type: str({ enum: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime', 'video/webm', 'application/pdf'], description: 'Documents: application/pdf, image/jpeg or image/png' }),
+                    size: { type: 'integer', description: 'Bytes' },
+                    purpose: str({ enum: ['MEDIA', 'DOCUMENT'], default: 'MEDIA', description: 'MEDIA: a photo or video. DOCUMENT: a locked property document' }),
+                    file_name: str({ maxLength: 120, example: 'Registry.pdf', description: 'Documents: the name shown to the owner and admin (default "Document 1.pdf")' }),
+                }, ['content_type', 'size']) } }, ['files']),
+                    { files: [{ content_type: 'image/jpeg', size: 482113 }, { content_type: 'video/mp4', size: 52428800 }, { content_type: 'application/pdf', size: 1048576, purpose: 'DOCUMENT', file_name: 'Registry.pdf' }] }),
                 responses: {
-                    200: ok('Upload targets', { type: 'array', items: obj({ upload_url: str(), method: str({ example: 'PUT' }), headers: { type: 'object' }, file_url: str(), media_type: str({ enum: ['IMAGE', 'VIDEO'] }), expires_in: int }) }, [
+                    200: ok('Upload targets', { type: 'array', items: obj({ upload_url: str(), method: str({ example: 'PUT' }), headers: { type: 'object' }, file_url: str({ description: 'Photos and videos only' }), document_id: str({ description: 'Documents only' }), file_name: str({ description: 'Documents only' }), media_type: str({ enum: ['IMAGE', 'VIDEO', 'DOCUMENT'] }), expires_in: int }) }, [
                         {
                             upload_url: 'https://api.bhoomibazar.com/api/v1/uploads/66f1a2b3c4d5e6f7a8b9c801?expires=1760009400&signature=4f9c2a7e',
                             method: 'PUT',
@@ -690,6 +734,15 @@ const spec = {
                             media_type: 'VIDEO',
                             expires_in: 3600,
                         },
+                        {
+                            upload_url: 'https://api.bhoomibazar.com/api/v1/uploads/66f1a2b3c4d5e6f7a8b9c803?expires=1760009400&signature=c27e91aa',
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/pdf' },
+                            document_id: '66f1a2b3c4d5e6f7a8b9c803',
+                            file_name: 'Registry.pdf',
+                            media_type: 'DOCUMENT',
+                            expires_in: 3600,
+                        },
                     ]),
                     400: err('Wrong type or size', 'VALIDATION_ERROR', 'Please fix the highlighted fields', { errors: { 'files[0].content_type': 'Must be one of image/jpeg, image/png, image/webp, video/mp4, video/quicktime, video/webm' } }),
                     401: common[401],
@@ -699,11 +752,11 @@ const spec = {
         '/uploads/{id}': {
             put: {
                 tags: ['Uploads'], summary: 'Upload target (when S3 is not configured)',
-                description: 'Use the full `upload_url` from /uploads/presign; it carries its own signature, so no Authorization header is needed.',
+                description: 'Use the full `upload_url` from /uploads/presign; it carries its own signature, so no Authorization header is needed. Documents always upload here. A document answers with `document_id` instead of `file_url`.',
                 parameters: [id(), query('expires', int), query('signature', str())],
-                requestBody: { required: true, content: Object.fromEntries(['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime', 'video/webm'].map((type) => [type, { schema: str({ format: 'binary' }) }])) },
+                requestBody: { required: true, content: Object.fromEntries(['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime', 'video/webm', 'application/pdf'].map((type) => [type, { schema: str({ format: 'binary' }) }])) },
                 responses: {
-                    200: ok('Uploaded', obj({ file_url: str(), media_type: str({ enum: ['IMAGE', 'VIDEO'] }) }),
+                    200: ok('Uploaded', obj({ file_url: str({ description: 'Photos and videos' }), document_id: str({ description: 'Documents' }), file_name: str({ description: 'Documents' }), media_type: str({ enum: ['IMAGE', 'VIDEO', 'DOCUMENT'] }) }),
                         { file_url: 'https://ik.imagekit.io/bhoomibazar/properties/66f1a2b3c4d5e6f7a8b9c801.jpg', media_type: 'IMAGE' }, 'Uploaded'),
                     400: err('Wrong type or size', 'VALIDATION_ERROR', 'Please fix the highlighted fields', { errors: { 'Content-Type': 'Must be image/jpeg, as requested' } }),
                     403: err('UPLOAD_URL_INVALID / UPLOAD_URL_EXPIRED', 'UPLOAD_URL_EXPIRED', 'Upload URL has expired'),
@@ -1002,6 +1055,39 @@ const spec = {
                     200: ok('Restored', ref('Property'), ex.adminProperty, 'Property restored'),
                     401: admin401, 403: superAdminOnly, 404: notFound(),
                     409: err('Not deleted', 'INVALID_STATUS', 'This property is not deleted'),
+                },
+            },
+        },
+        '/admin/properties/{id}/documents/unlock': {
+            post: {
+                tags: ['Admin'], summary: 'Unlock property documents (super admin + document password)',
+                description: 'The document password (`DOCUMENT_UNLOCK_PASSWORD` on the server) is separate from the admin login. Returns each document with a `url` that opens it, no token needed, for 10 minutes (`expires_in`). 5 wrong passwords lock unlocking for 15 minutes. Unlocks and wrong passwords are in the activity log. Wrong password is 403 (not 401) so the session stays.',
+                security: adminAuth, parameters: [id()],
+                requestBody: body(obj({ password: str() }, ['password']), { password: 'the-document-password' }),
+                responses: {
+                    200: ok('Unlocked', obj({ expires_in: int, expires_at: date, documents: { type: 'array', items: { allOf: [ref('PropertyDocument'), obj({ url: str() })] } } }), {
+                        expires_in: 600,
+                        expires_at: '2026-10-09T10:40:00.000Z',
+                        documents: [{ ...ex.document, url: 'https://api.bhoomibazar.com/api/v1/admin/properties/66f1a2b3c4d5e6f7a8b9c201/documents/66f1a2b3c4d5e6f7a8b9c803/file?expires=1760006400&signature=9a1f…' }],
+                    }, 'Documents unlocked'),
+                    400: err('Password missing', 'VALIDATION_ERROR', 'Please fix the highlighted fields', { errors: { password: 'Enter the document password' } }),
+                    401: admin401,
+                    403: err('Wrong password (DOCUMENT_PASSWORD_INVALID) or not the super admin (FORBIDDEN)', 'DOCUMENT_PASSWORD_INVALID', 'Wrong document password. 4 tries left.'),
+                    404: notFound('Document'),
+                    429: err('DOCUMENT_UNLOCK_LOCKED', 'DOCUMENT_UNLOCK_LOCKED', 'Too many wrong passwords. Try again in 15 minutes.'),
+                    503: err('DOCUMENT_LOCK_NOT_CONFIGURED', 'DOCUMENT_LOCK_NOT_CONFIGURED', 'Document unlocking is not set up. Set DOCUMENT_UNLOCK_PASSWORD on the server.'),
+                },
+            },
+        },
+        '/admin/properties/{id}/documents/{documentId}/file': {
+            get: {
+                tags: ['Admin'], summary: 'Unlocked document link',
+                description: 'Use the full `url` from the unlock response; it carries its own signature and expiry, so it opens in a new browser tab.',
+                parameters: [id(), id('documentId'), query('expires', int), query('signature', str())],
+                responses: {
+                    200: { description: 'The file', content: Object.fromEntries(['application/pdf', 'image/jpeg', 'image/png'].map((type) => [type, { schema: str({ format: 'binary' }) }])) },
+                    403: err('DOCUMENT_LINK_INVALID / DOCUMENT_LINK_EXPIRED', 'DOCUMENT_LINK_EXPIRED', 'This document link has expired. Unlock the documents again.'),
+                    404: notFound('Document'),
                 },
             },
         },

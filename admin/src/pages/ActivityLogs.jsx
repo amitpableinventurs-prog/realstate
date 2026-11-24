@@ -45,7 +45,9 @@ const ActivityLogs = () => {
     { value: 'unban_user', label: 'Unban User' },
     { value: 'delete_user', label: 'Delete User' },
     { value: 'bulk_suspend_users', label: 'Bulk Suspend Users' },
-    { value: 'bulk_ban_users', label: 'Bulk Ban Users' }
+    { value: 'bulk_ban_users', label: 'Bulk Ban Users' },
+    { value: 'unlock_documents', label: 'Unlock Property Documents' },
+    { value: 'unlock_documents_failed', label: 'Wrong Document Password' }
   ];
 
   const targetTypeOptions = [

@@ -13,6 +13,10 @@ export const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SOLD', 'RENTED', 'L
 export const CLOSED_STATUS_FOR_TYPE = { SELL: 'SOLD', RENT: 'RENTED', LEASE: 'LEASED' };
 // Videos sit in `images` next to the photos (added on request; the document lists photos only)
 export const MEDIA_TYPES = ['IMAGE', 'VIDEO'];
+// Land papers (registry, khatiyan, ...) the owner attaches. Added on request
+// (2026-11-24); not in the document's 5.2 list. They are private: never on a
+// public URL. Only the owner and the super admin (with the document password) can open them.
+export const DOCUMENT_CONTENT_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 const ImageSchema = new mongoose.Schema({
     url: { type: String, required: true },
@@ -20,6 +24,15 @@ const ImageSchema = new mongoose.Schema({
     is_primary: { type: Boolean, default: false },
     sort_order: { type: Number, default: 0 },
 }, { _id: false });
+
+// _id is the id of the upload (POST /uploads/presign) the file came from
+const DocumentSchema = new mongoose.Schema({
+    file_name: { type: String, required: true, trim: true, maxlength: 120 },
+    content_type: { type: String, enum: DOCUMENT_CONTENT_TYPES, required: true },
+    size: { type: Number, required: true },
+    storage_id: { type: String, required: true }, // file name, see services/documentStorageService.js
+    uploaded_at: { type: Date, default: Date.now },
+});
 
 const PointSchema = new mongoose.Schema({
     type: { type: String, enum: ['Point'], required: true },
@@ -45,6 +58,7 @@ const PropertySchema = new mongoose.Schema({
     // Village / mohalla / landmark, as written by the owner (not in the document's 5.2 list; added on request)
     address: { type: String, trim: true, maxlength: 300 },
     images: { type: [ImageSchema], default: [] },
+    documents: { type: [DocumentSchema], default: [] },
     location: { type: PointSchema, default: undefined },
     state_id: { type: mongoose.Schema.Types.ObjectId, ref: 'State' },
     district_id: { type: mongoose.Schema.Types.ObjectId, ref: 'District' },

@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 // admins — technical document 5.2 (name, email, password_hash, created_at).
 // The account whose email is ADMIN_EMAIL is the super admin. The remaining
 // fields support district admins (who review listings of one district only),
-// brute-force lockout and the admin panel's refresh-token cookie.
+// brute-force lockout (login and document unlock) and the admin panel's
+// refresh-token cookie.
 const AdminSchema = new mongoose.Schema({
     name: { type: String, trim: true, default: '' },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
@@ -17,6 +18,9 @@ const AdminSchema = new mongoose.Schema({
 
     failed_login_attempts: { type: Number, default: 0 },
     lock_until: { type: Date },
+    // Wrong property-document passwords (POST /admin/properties/:id/documents/unlock)
+    document_unlock_failed_attempts: { type: Number, default: 0 },
+    document_unlock_lock_until: { type: Date },
 
     refresh_token_hash: { type: String },
     refresh_token_expires_at: { type: Date },

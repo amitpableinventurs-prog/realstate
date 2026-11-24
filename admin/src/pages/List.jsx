@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Trash2, Edit3, Search, Plus, Home, Maximize, MapPin, Grid3X3, List as ListIcon,
-  RefreshCw, Building2, Check, X, Phone, ChevronLeft, ChevronRight, FileText,
+  RefreshCw, Building2, Check, X, Phone, ChevronLeft, ChevronRight, FileText, Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -55,6 +55,7 @@ const toListing = (p) => ({
   status: p.status,
   coverImage: p.thumbnail_url,
   mediaCount: p.image_count,
+  documentCount: p.document_count || 0,
   area: { label: `${p.area.value} ${UNIT_LABELS[p.area.unit] || p.area.unit}` },
   khataNo: p.khata_number,
   khasraNo: p.khasra_number,
@@ -163,6 +164,12 @@ const ListingGridCard = ({ listing, onApprove, onDisapprove, onDelete, busy }) =
         <div className="absolute top-3 right-3"><StatusBadge listing={listing} /></div>
         {listing.mediaCount > 1 && (
           <span className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-white text-xs rounded-full">{listing.mediaCount} photos</span>
+        )}
+        {listing.documentCount > 0 && (
+          <span className="absolute bottom-3 left-3 flex items-center gap-1 px-2 py-0.5 bg-black/60 text-white text-xs rounded-full"
+            title="Locked documents: unlock them in Edit or the review queue">
+            <Lock className="w-3 h-3" /> {listing.documentCount} {listing.documentCount === 1 ? "document" : "documents"}
+          </span>
         )}
       </div>
 

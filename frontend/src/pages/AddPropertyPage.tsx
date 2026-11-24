@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   propertiesAPI, uploadsAPI, propertyErrorsToForm, apiErrorMessage, apiFieldErrors,
   PHOTO_TYPES, VIDEO_TYPES, MAX_UPLOAD_MB, mediaProblem, type ListingType, type Unit,
+  DOCUMENT_TYPES, MAX_DOCUMENT_MB, MAX_DOCUMENTS, documentProblem, formatFileSize, type PropertyDocument,
 } from '../services/api';
 import { useStates, useDistricts } from '../hooks/useMasterData';
 import Navbar from '../components/common/Navbar';
@@ -13,7 +14,8 @@ import { estimateTotal } from '../utils/landUnits';
 
 // Add / edit a land property (technical document 4.4 and 6.8): Sell / Rent /
 // Lease, khata and khasra numbers, area and price per Katha or Dismil, photos
-// and videos, description and an optional current location. Same API as the mobile app
+// and videos, optional locked documents (registry, khatiyan, ...), description
+// and an optional current location. Same API as the mobile app
 // (POST /v1/list-property); the property is public once the admin approves it.
 // Editing: /add-property?edit=<id> (PUT /v1/list-property/:id).
 
@@ -59,6 +61,15 @@ interface FormState {
 // A photo or video in display order: already uploaded (url) or to upload (file)
 interface Photo { url?: string; file?: File; preview?: string; video?: boolean }
 
+// A document added in this form (id once uploaded, so a retry doesn't upload it again)
+interface NewDocument { file: File; id?: string }
+
+const DocIcon: React.FC<{ type: string }> = ({ type }) => (
+  <span aria-hidden="true" className="w-8 h-8 shrink-0 rounded-md bg-[#F5F0F6] text-[#A3078F] font-manrope text-[10px] font-bold flex items-center justify-center">
+    {type === 'application/pdf' ? 'PDF' : 'IMG'}
+  </span>
+);
+
 const Required = () => <span className="text-red-500">*</span>;
 
 const FieldError: React.FC<{ message?: string }> = ({ message }) =>
@@ -87,6 +98,9 @@ const AddPropertyPage: React.FC = () => {
     district_id: '',
   });
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [savedDocs, setSavedDocs] = useState<PropertyDocument[]>([]);
+  const [newDocs, setNewDocs] = useState<NewDocument[]>([]);
+  const [openingDoc, setOpeningDoc] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -95,6 +109,7 @@ const AddPropertyPage: React.FC = () => {
   const [submitted, setSubmitted] = useState<null | 'created' | 'updated'>(null);
   const [loadingEdit, setLoadingEdit] = useState(Boolean(editId));
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const states = useStates();
   const { districts, loading: loadingDistricts } = useDistricts(form.state_id);
 
@@ -138,6 +153,7 @@ const AddPropertyPage: React.FC = () => {
           district_id: p.district_id || '',
         });
         setPhotos(p.images.map((i) => ({ url: i.url, video: i.type === 'VIDEO' })));
+        setSavedDocs(p.documents || []);
         setCoords(p.location);
       })
       .catch((err) => {
@@ -176,6 +192,30 @@ const AddPropertyPage: React.FC = () => {
     });
   };
 
+  const handleDocuments = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files || []);
+    if (docInputRef.current) docInputRef.current.value = '';
+    const problem = picked.map(documentProblem).find(Boolean);
+    if (problem) toast.error(problem);
+    const ok = picked.filter((f) => !documentProblem(f));
+    const room = MAX_DOCUMENTS - savedDocs.length - newDocs.length;
+    if (ok.length > room) toast.error(`You can add up to ${MAX_DOCUMENTS} documents.`);
+    setNewDocs((prev) => [...prev, ...ok.slice(0, Math.max(0, room)).map((file) => ({ file }))]);
+    setErrors((prev) => ({ ...prev, documents: '' }));
+  };
+
+  const openDocument = async (doc: PropertyDocument) => {
+    if (!editId) return;
+    setOpeningDoc(doc.id);
+    try {
+      await propertiesAPI.openDocument(editId, doc.id);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Could not open the document. Please try again.'));
+    } finally {
+      setOpeningDoc(null);
+    }
+  };
+
   const getLocation = () => {
     if (!navigator.geolocation) {
       toast.error('Location is not supported by this browser.');
@@ -212,14 +252,22 @@ const AddPropertyPage: React.FC = () => {
     setSubmitting(true);
     setErrors({});
     try {
-      // Upload new photos and videos, keeping the display order (the first photo is the cover)
+      // Upload new photos and videos, keeping the display order (the first photo is the cover), then new documents
       const newFiles = photos.filter((p) => p.file).map((p) => p.file as File);
-      if (newFiles.length) setProgress(0);
-      const newUrls = await uploadsAPI.uploadMedia(newFiles, setProgress);
-      setProgress(null);
+      const docsToUpload = newDocs.filter((d) => !d.id).map((d) => d.file);
+      const mediaBytes = newFiles.reduce((sum, f) => sum + f.size, 0);
+      const totalBytes = mediaBytes + docsToUpload.reduce((sum, f) => sum + f.size, 0);
+      if (totalBytes) setProgress(0);
+      const newUrls = await uploadsAPI.uploadMedia(newFiles, (f) => setProgress((f * mediaBytes) / totalBytes));
       let next = 0;
       const imageUrls = photos.map((p) => p.url || newUrls[next++]);
       setPhotos(photos.map((p, i) => ({ url: imageUrls[i], video: p.video })));
+      const docIds = await uploadsAPI.uploadDocuments(docsToUpload,
+        (f) => setProgress((mediaBytes + f * (totalBytes - mediaBytes)) / totalBytes));
+      setProgress(null);
+      let nextDoc = 0;
+      const uploadedDocs = newDocs.map((d) => (d.id ? d : { ...d, id: docIds[nextDoc++] }));
+      setNewDocs(uploadedDocs);
 
       const body = {
         listing_type: form.listing_type,
@@ -230,6 +278,7 @@ const AddPropertyPage: React.FC = () => {
         description: form.description.trim(),
         address: form.address.trim() || (editId ? null : undefined),
         image_urls: imageUrls,
+        document_ids: [...savedDocs.map((d) => d.id), ...uploadedDocs.map((d) => d.id as string)],
         location: coords,
         ...(form.district_id && { state_id: form.state_id, district_id: form.district_id }),
       };
@@ -421,6 +470,56 @@ const AddPropertyPage: React.FC = () => {
             )}
             <input ref={fileInputRef} type="file" accept={[...PHOTO_TYPES, ...VIDEO_TYPES].join(',')} multiple className="sr-only" onChange={handleFiles} />
             <FieldError message={errors.image_urls} />
+          </section>
+
+          {/* ── Documents (locked) ── */}
+          <section className={sectionClass}>
+            <div>
+              <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E]">
+                Property documents <span className="font-manrope text-sm font-normal text-[#9CA3AF]">(optional)</span>
+              </h2>
+              <p className="font-manrope text-sm text-[#6B7280] mt-1">
+                Registry, khatiyan, mutation papers… PDF, JPG or PNG, up to {MAX_DOCUMENT_MB} MB each and {MAX_DOCUMENTS} in all.
+              </p>
+              <p className="font-manrope text-xs text-[#7A0A74] bg-[#FAF1F9] border border-[#EBC9E6] rounded-lg px-3 py-2 mt-3">
+                🔒 Documents stay locked. Buyers never see them — only you and the Bhoomi Bazar admin can open them.
+              </p>
+            </div>
+            {savedDocs.length + newDocs.length > 0 && (
+              <ul className="space-y-2">
+                {savedDocs.map((doc) => (
+                  <li key={doc.id} className="flex items-center gap-3 border border-[#E8E1EA] rounded-lg px-3 py-2 min-w-0">
+                    <DocIcon type={doc.content_type} />
+                    <span className="font-manrope text-sm text-[#1A0A1E] truncate flex-1 min-w-0" title={doc.file_name}>{doc.file_name}</span>
+                    <span className="font-manrope text-xs text-[#9CA3AF] tabular-nums shrink-0">{formatFileSize(doc.size)}</span>
+                    <button type="button" onClick={() => openDocument(doc)} disabled={openingDoc === doc.id}
+                      className="font-manrope text-xs font-semibold text-[#A3078F] hover:underline disabled:opacity-60 shrink-0">
+                      {openingDoc === doc.id ? 'Opening…' : 'View'}
+                    </button>
+                    <button type="button" onClick={() => setSavedDocs((prev) => prev.filter((d) => d.id !== doc.id))}
+                      aria-label={`Remove ${doc.file_name}`} className="w-6 h-6 rounded-full text-[#6B7280] hover:text-red-600 hover:bg-red-50 text-xs shrink-0">✕</button>
+                  </li>
+                ))}
+                {newDocs.map((doc, i) => (
+                  <li key={`${doc.file.name}-${i}`} className="flex items-center gap-3 border border-[#A3078F]/30 rounded-lg px-3 py-2 min-w-0">
+                    <DocIcon type={doc.file.type} />
+                    <span className="font-manrope text-sm text-[#1A0A1E] truncate flex-1 min-w-0" title={doc.file.name}>{doc.file.name}</span>
+                    <span className="font-manrope text-xs text-[#9CA3AF] tabular-nums shrink-0">{formatFileSize(doc.file.size)}</span>
+                    <span className="font-manrope text-[10px] font-semibold bg-[#A3078F] text-white px-1.5 py-0.5 rounded shrink-0">New</span>
+                    <button type="button" onClick={() => setNewDocs((prev) => prev.filter((_, j) => j !== i))}
+                      aria-label={`Remove ${doc.file.name}`} className="w-6 h-6 rounded-full text-[#6B7280] hover:text-red-600 hover:bg-red-50 text-xs shrink-0">✕</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {savedDocs.length + newDocs.length < MAX_DOCUMENTS && (
+              <button type="button" onClick={() => docInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-[#A3078F]/40 rounded-xl px-6 py-5 font-manrope text-sm font-medium text-[#A3078F] hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-colors">
+                Add documents ({savedDocs.length + newDocs.length}/{MAX_DOCUMENTS})
+              </button>
+            )}
+            <input ref={docInputRef} type="file" accept={DOCUMENT_TYPES.join(',')} multiple className="sr-only" onChange={handleDocuments} />
+            <FieldError message={errors.documents} />
           </section>
 
           {/* ── Location ── */}

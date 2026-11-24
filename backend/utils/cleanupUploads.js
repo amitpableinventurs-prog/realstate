@@ -3,6 +3,7 @@ import path from 'path';
 import PendingUpload from '../models/pendingUploadModel.js';
 import Property from '../models/propertyModel.js';
 import { deleteImageByUrl, UPLOAD_TMP_DIR } from '../services/mediaStorageService.js';
+import { deleteDocumentFile } from '../services/documentStorageService.js';
 import logger from './logger.js';
 
 // Files uploaded with /api/v1/uploads/presign but never added to a property
@@ -16,12 +17,24 @@ export const cleanupAbandonedUploads = async () => {
     const stale = await PendingUpload.find({ expires_at: { $lt: new Date(Date.now() - 23 * HOUR) } }).limit(500);
     if (stale.length) {
         // Never delete a file a property uses (in case its record wasn't removed)
-        const inUse = new Set((await Property.find({ 'images.url': { $in: stale.map((r) => r.url) } }, 'images.url')
-            .setOptions({ withDeleted: true }).lean())
-            .flatMap((p) => p.images.map((i) => i.url)));
-        for (const record of stale) {
+        const media = stale.filter((r) => r.purpose !== 'DOCUMENT');
+        const documents = stale.filter((r) => r.purpose === 'DOCUMENT');
+        const inUse = new Set(media.length
+            ? (await Property.find({ 'images.url': { $in: media.map((r) => r.url) } }, 'images.url')
+                .setOptions({ withDeleted: true }).lean())
+                .flatMap((p) => p.images.map((i) => i.url))
+            : []);
+        const documentsInUse = new Set(documents.length
+            ? (await Property.find({ 'documents._id': { $in: documents.map((r) => r._id) } }, 'documents._id')
+                .setOptions({ withDeleted: true }).lean())
+                .flatMap((p) => p.documents.map((d) => String(d._id)))
+            : []);
+        for (const record of media) {
             const stored = record.uploaded || record.storage === 's3';
             if (stored && !inUse.has(record.url)) await deleteImageByUrl(record.url);
+        }
+        for (const record of documents) {
+            if (record.uploaded && !documentsInUse.has(String(record._id))) await deleteDocumentFile(record.storage_id);
         }
         await PendingUpload.deleteMany({ _id: { $in: stale.map((r) => r._id) } });
         logger.info('Removed abandoned uploads', { count: stale.length });

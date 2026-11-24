@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { Phone, MessageCircle, Heart, Send } from 'lucide-react';
+import { Phone, MessageCircle, Heart, Send, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import Navbar from '../components/common/Navbar';
 import SimpleFooter from '../components/common/SimpleFooter';
@@ -12,7 +12,7 @@ import PropertyAbout from '../components/property-details/PropertyAbout';
 import PropertyLocation from '../components/property-details/PropertyLocation';
 import ScheduleViewingCard from '../components/property-details/ScheduleViewingCard';
 import BuyerToolsCard from '../components/tools/BuyerToolsCard';
-import { propertiesAPI, enquiriesAPI, apiErrorMessage, type PropertyDetailData } from '../services/api';
+import { propertiesAPI, enquiriesAPI, apiErrorMessage, formatFileSize, type PropertyDetailData } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useSEO } from '../hooks/useSEO';
 import { useWishlistToggle } from '../hooks/useWishlistToggle';
@@ -49,6 +49,53 @@ const LandDetails: React.FC<{ property: Property }> = ({ property }) => {
         ))}
       </dl>
       <p className="font-manrope text-xs text-[#9CA3AF] mt-3">{t('details.verify')}</p>
+    </div>
+  );
+};
+
+// Locked property documents (registry, khatiyan, ...). Buyers only see that
+// they exist; the owner sees the list and can open their own.
+const PropertyDocuments: React.FC<{ detail: PropertyDetailData }> = ({ detail }) => {
+  const { t } = useI18n();
+  const [opening, setOpening] = useState<string | null>(null);
+  const count = detail.document_count ?? 0;
+  if (!count) return null;
+  const own = detail.is_owner ? detail.documents || [] : [];
+
+  const open = async (documentId: string) => {
+    setOpening(documentId);
+    try {
+      await propertiesAPI.openDocument(detail.id, documentId);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t('details.documentOpenFailed')));
+    } finally {
+      setOpening(null);
+    }
+  };
+
+  return (
+    <div className="mb-8 rounded-xl border border-[#EBC9E6] bg-[#FAF1F9] px-5 py-4">
+      <h2 className="font-fraunces text-xl font-semibold text-[#1A0A1E] flex items-center gap-2">
+        <Lock className="w-4 h-4 text-[#A3078F]" aria-hidden="true" /> {t('details.documents')}
+      </h2>
+      <p className="font-manrope text-sm text-[#374151] mt-1">{t('details.documentsCount', { count: String(count) })}</p>
+      <p className="font-manrope text-xs text-[#7A0A74] mt-1">
+        {detail.is_owner ? t('details.documentsLockedOwner') : t('details.documentsLocked')}
+      </p>
+      {own.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {own.map((doc) => (
+            <li key={doc.id} className="flex items-center gap-3 bg-white border border-[#E8E1EA] rounded-lg px-3 py-2 min-w-0">
+              <span className="font-manrope text-sm text-[#1A0A1E] truncate flex-1 min-w-0" title={doc.file_name}>{doc.file_name}</span>
+              <span className="font-manrope text-xs text-[#9CA3AF] tabular-nums shrink-0">{formatFileSize(doc.size)}</span>
+              <button type="button" onClick={() => open(doc.id)} disabled={opening === doc.id}
+                className="font-manrope text-xs font-semibold text-[#A3078F] hover:underline disabled:opacity-60 shrink-0">
+                {opening === doc.id ? t('details.openingDocument') : t('details.viewDocument')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
@@ -293,6 +340,7 @@ const PropertyDetailsPage: React.FC = () => {
                   </p>
                 )}
                 <LandDetails property={property} />
+                <PropertyDocuments detail={detail} />
                 {property.description && <PropertyAbout description={property.description} />}
                 {mapLink && (
                   <PropertyLocation

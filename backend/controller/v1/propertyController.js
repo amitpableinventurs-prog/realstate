@@ -6,7 +6,8 @@ import Wishlist from '../../models/wishlistModel.js';
 import { findActiveDistrict } from '../../utils/districts.js';
 import { dismilPer } from '../../utils/areaUnits.js';
 import { deleteImageByUrl } from '../../services/mediaStorageService.js';
-import { resolveImageUrls, consumeUploads } from './uploadController.js';
+import { deleteDocumentFile } from '../../services/documentStorageService.js';
+import { resolveImageUrls, resolveDocumentIds, consumeUploads } from './uploadController.js';
 import { normalizeMobile } from './authController.js';
 import { parseLang, detectSourceLang, getTranslation, deleteTranslations } from '../../services/listingTranslationService.js';
 import {
@@ -19,6 +20,7 @@ import {
 
 export const MIN_IMAGES = Number(process.env.PROPERTY_MIN_IMAGES ?? 1);
 export const MAX_IMAGES = Number(process.env.PROPERTY_MAX_IMAGES) || 10; // photos and videos together
+export const MAX_DOCUMENTS = Number(process.env.PROPERTY_MAX_DOCUMENTS) || 5;
 const MIN_PHOTOS_MESSAGE = `Add at least ${MIN_IMAGES} photo${MIN_IMAGES === 1 ? '' : 's'}`;
 const tooFewPhotos = (media) => media.filter((m) => m.type !== 'VIDEO').length < MIN_IMAGES;
 
@@ -46,7 +48,7 @@ const requiredText = (body, key, errors, set, { partial }) => {
 /**
  * Reads an add/edit property body (technical document 4.4 / 6.8).
  * `partial` (edits) makes every field optional. Returns
- * { set, errors, imageUrls, clearLocation, place }.
+ * { set, errors, imageUrls, documentIds, clearLocation, place }.
  */
 const readPropertyBody = (body = {}, { partial }) => {
     const set = {};
@@ -120,6 +122,18 @@ const readPropertyBody = (body = {}, { partial }) => {
         }
     } else if (!partial && MIN_IMAGES > 0) {
         errors.image_urls = MIN_PHOTOS_MESSAGE;
+    }
+
+    // Optional private documents (ids from /uploads/presign with purpose DOCUMENT).
+    // On edit the list replaces the current one: keep ids to keep those files; [] or null removes all.
+    if (body.document_ids !== undefined) {
+        const ids = body.document_ids === null ? [] : body.document_ids;
+        if (!Array.isArray(ids) || ids.some((v) => !isObjectId(v))) {
+            errors.document_ids = 'document_ids must be an array of document ids';
+        } else {
+            result.documentIds = [...new Set(ids.map((v) => v.toLowerCase()))];
+            if (result.documentIds.length > MAX_DOCUMENTS) errors.document_ids = `At most ${MAX_DOCUMENTS} documents`;
+        }
     }
 
     if (body.state_id !== undefined || body.district_id !== undefined) {
@@ -240,11 +254,17 @@ export const createProperty = async (req, res) => {
         errors.district_id = 'You can only add properties in your own district';
     }
 
+    const uploaderId = req.admin ? req.admin.id : req.user._id;
     let images;
     if (!errors.image_urls && input.imageUrls) {
-        images = await resolveImageUrls(req.admin ? req.admin.id : req.user._id, input.imageUrls);
+        images = await resolveImageUrls(uploaderId, input.imageUrls);
         if (images.error) errors.image_urls = images.error;
         else if (tooFewPhotos(images.images)) errors.image_urls = MIN_PHOTOS_MESSAGE;
+    }
+    let documents;
+    if (!errors.document_ids && input.documentIds?.length) {
+        documents = await resolveDocumentIds(uploaderId, input.documentIds);
+        if (documents.error) errors.document_ids = documents.error;
     }
     if (Object.keys(errors).length) return validationFailed(res, errors);
 
@@ -254,12 +274,13 @@ export const createProperty = async (req, res) => {
         state_id: place.state_id,
         district_id: place.district_id,
         images: images?.images || [],
+        documents: documents?.documents || [],
         ...(req.admin
             ? { status: 'APPROVED', approved_by: req.admin.id, approved_at: new Date() }
             : { status: 'PENDING' }),
     });
     if (!(await saveOrValidationError(res, property))) return undefined;
-    await consumeUploads(images?.pending);
+    await consumeUploads([...(images?.pending || []), ...(documents?.pending || [])]);
 
     return sendDetail(res, property, {
         viewer: req.user,
@@ -272,7 +293,8 @@ export const createProperty = async (req, res) => {
 /**
  * Applies an edit body to `property` (owner or admin edit). Sends the error
  * response and returns false when the input is invalid; otherwise returns
- * { changed, removedUrls, pending }.
+ * { changed, removedUrls, removedDocuments, pending }. Once the property is
+ * saved, the caller passes this to finishPropertyEdit.
  */
 export const applyPropertyEdit = async (req, res, property, { uploaderId }) => {
     const input = readPropertyBody(req.body || {}, { partial: true });
@@ -292,6 +314,11 @@ export const applyPropertyEdit = async (req, res, property, { uploaderId }) => {
         if (images.error) errors.image_urls = images.error;
         else if (tooFewPhotos(images.images)) errors.image_urls = MIN_PHOTOS_MESSAGE;
     }
+    let documents;
+    if (!errors.document_ids && input.documentIds) {
+        documents = await resolveDocumentIds(uploaderId, input.documentIds, property.documents);
+        if (documents.error) errors.document_ids = documents.error;
+    }
     if (Object.keys(errors).length) {
         validationFailed(res, errors);
         return false;
@@ -309,13 +336,29 @@ export const applyPropertyEdit = async (req, res, property, { uploaderId }) => {
             property.images = images.images;
         }
     }
+    let removedDocuments = [];
+    if (documents) {
+        const before = property.documents.map((d) => String(d._id));
+        const after = documents.documents.map((d) => String(d._id));
+        if (before.join('\n') !== after.join('\n')) {
+            removedDocuments = property.documents.filter((d) => !after.includes(String(d._id))).map((d) => d.storage_id);
+            property.documents = documents.documents;
+        }
+    }
     // Translated text (and price label) is out of date once any of its source changes
     if (['description', 'address', 'area', 'price', 'district_id'].some((path) => property.isModified(path))) {
         await deleteTranslations(property._id);
     }
     const changed = property.isModified();
-    return { changed, removedUrls, pending: images?.pending };
+    return { changed, removedUrls, removedDocuments, pending: [...(images?.pending || []), ...(documents?.pending || [])] };
 };
+
+/** After an edit is saved: drops its upload records and deletes the photos, videos and documents it removed. */
+export const finishPropertyEdit = (edit) => Promise.all([
+    consumeUploads(edit.pending),
+    ...edit.removedUrls.map(deleteImageByUrl),
+    ...edit.removedDocuments.map(deleteDocumentFile),
+]);
 
 // PUT /list-property/:id — edit own property. An approved (or rejected) property
 // goes back to PENDING for review when anything changes.
@@ -330,7 +373,7 @@ export const updateProperty = async (req, res) => {
         property.set({ status: 'PENDING', rejection_reason: undefined, approved_by: undefined, approved_at: undefined });
     }
     if (!(await saveOrValidationError(res, property))) return undefined;
-    await Promise.all([consumeUploads(edit.pending), ...edit.removedUrls.map(deleteImageByUrl)]);
+    await finishPropertyEdit(edit);
     return sendDetail(res, property, {
         viewer: req.user,
         message: property.status === 'PENDING' ? 'Property updated. It will be visible again once approved.' : 'Property updated',
@@ -434,7 +477,8 @@ const SORTS = {
     price_asc: { 'price.amount': 1, created_at: -1 },
     price_desc: { 'price.amount': -1, created_at: -1 },
 };
-const CARD_FIELDS = 'listing_type status khata_number khasra_number area price estimated_total address description location images state_id district_id created_at';
+// documents: cards only show how many there are
+const CARD_FIELDS = 'listing_type status khata_number khasra_number area price estimated_total address description location images documents state_id district_id created_at';
 
 // How many dismil the stored unit is, so amounts in any unit can be compared
 const dismilOfUnit = (unitField) => ({

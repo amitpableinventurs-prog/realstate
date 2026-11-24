@@ -1,16 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'sonner';
-import { Upload, X, MapPin, Home, IndianRupee, Phone, Crosshair, FileText, Play, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, MapPin, Home, IndianRupee, Phone, Crosshair, FileText, Play, Image as ImageIcon, Lock } from 'lucide-react';
 import DistrictOptions from './DistrictOptions';
+import DocumentVault, { DocumentIcon } from './DocumentVault';
 import { fetchDistricts } from '../lib/districts';
 import { uploadMedia, mediaProblem, PHOTO_TYPES, VIDEO_TYPES, MAX_UPLOAD_MB } from '../lib/uploads';
+import { uploadDocuments, documentProblem, formatBytes, DOCUMENT_TYPES, MAX_DOCUMENT_MB, MAX_DOCUMENTS } from '../lib/documents';
+import { getAdminSession } from '../lib/adminSession';
 import { cn } from '../lib/utils';
 import { UNITS, estimateTotal } from '../lib/landUnits';
 
 // Admin "Add Property" / "Edit" form — the property fields of the technical
 // document: Sell/Rent/Lease, Khata, Khasra, Area and Price (per Katha or
 // Dismil), Photos and videos, Description, optional current location, and the district.
+// Plus optional locked documents (registry, khatiyan, ...), which only the
+// super admin can open, with the document password.
 // Adding also needs the owner's mobile number: the property is listed under
 // their account (created if new), so they see it in My Listings.
 
@@ -66,7 +71,7 @@ const initialValues = (property) => ({
 const ERROR_FIELD = {
   'area.value': 'area', 'area.unit': 'area', area: 'area',
   'price.amount': 'price', 'price.per_unit': 'price', price: 'price',
-  state_id: 'district_id', image_urls: 'photos',
+  state_id: 'district_id', image_urls: 'photos', document_ids: 'documents',
   location: 'location', 'location.latitude': 'location', 'location.longitude': 'location',
 };
 
@@ -77,11 +82,16 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
   const [coords, setCoords] = useState(listing?.location || null);
   // Photos and videos in display order: { url } already uploaded, or { file, preview } to upload
   const [photos, setPhotos] = useState(() => (listing?.images || []).map((i) => ({ url: i.url, video: i.type === 'VIDEO' })));
+  // Documents: saved ones { id, file_name, ... } and new ones { file, file_name, size, content_type, id once uploaded }
+  const [savedDocs, setSavedDocs] = useState(() => listing?.documents || []);
+  const [newDocs, setNewDocs] = useState([]);
   const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(null); // upload, 0..1
   const fileInput = useRef(null);
+  const docInput = useRef(null);
+  const isSuperAdmin = getAdminSession()?.isSuperAdmin !== false;
 
   useEffect(() => {
     fetchDistricts().then(setDistricts).catch(() => toast.error('Could not load the districts'));
@@ -115,6 +125,20 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
       if (prev[index].preview) URL.revokeObjectURL(prev[index].preview);
       return prev.filter((_, i) => i !== index);
     });
+  };
+
+  const addDocuments = (e) => {
+    const picked = Array.from(e.target.files || []);
+    if (docInput.current) docInput.current.value = '';
+    const problems = picked.map(documentProblem).filter(Boolean);
+    if (problems.length) toast.error(problems[0]);
+    const ok = picked.filter((f) => !documentProblem(f));
+    const room = MAX_DOCUMENTS - savedDocs.length - newDocs.length;
+    if (ok.length > room) toast.error(`A property can have at most ${MAX_DOCUMENTS} documents`);
+    setNewDocs((prev) => [...prev, ...ok.slice(0, Math.max(0, room)).map((file) => ({
+      file, file_name: file.name, size: file.size, content_type: file.type,
+    }))]);
+    setErrors((prev) => ({ ...prev, documents: undefined }));
   };
 
   const getLocation = () => {
@@ -151,13 +175,22 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
     setSaving(true);
     setErrors({});
     try {
-      // Upload new photos and videos first, keeping the display order
+      // Upload new photos and videos first, keeping the display order, then new documents
       const newFiles = photos.filter((p) => p.file).map((p) => p.file);
-      if (newFiles.length) setProgress(0);
-      const newUrls = await uploadMedia(newFiles, setProgress);
+      const docsToUpload = newDocs.filter((d) => !d.id);
+      const mediaBytes = newFiles.reduce((sum, f) => sum + f.size, 0);
+      const totalBytes = mediaBytes + docsToUpload.reduce((sum, d) => sum + d.size, 0);
+      if (totalBytes) setProgress(0);
+      const newUrls = await uploadMedia(newFiles, (p) => setProgress((p * mediaBytes) / totalBytes));
+      const docIds = await uploadDocuments(docsToUpload.map((d) => d.file),
+        (p) => setProgress((mediaBytes + p * (totalBytes - mediaBytes)) / totalBytes));
       setProgress(null);
       let next = 0;
       const imageUrls = photos.map((p) => p.url || newUrls[next++]);
+      // Uploaded once: a retry after an error sends the same ids
+      let nextDoc = 0;
+      const uploadedDocs = newDocs.map((d) => (d.id ? d : { ...d, id: docIds[nextDoc++] }));
+      setNewDocs(uploadedDocs);
 
       await onSubmit({
         listing_type: values.listing_type,
@@ -168,6 +201,7 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
         description: values.description.trim(),
         address: values.address.trim() || (isEdit ? null : undefined),
         image_urls: imageUrls,
+        document_ids: [...savedDocs.map((d) => d.id), ...uploadedDocs.map((d) => d.id)],
         district_id: values.district_id,
         location: coords,
         ...(!isEdit && { owner_mobile: values.owner_mobile, owner_name: values.owner_name.trim() || undefined }),
@@ -326,6 +360,44 @@ const ListingForm = ({ listing, onSubmit, submitLabel }) => {
         )}
         <input ref={fileInput} type="file" accept={[...PHOTO_TYPES, ...VIDEO_TYPES].join(',')} multiple className="sr-only" onChange={addFiles} />
         <FieldError message={errors.photos} />
+      </div>
+
+      {/* Documents (locked) */}
+      <div className="bg-white rounded-2xl p-6 border border-[#E6D6E8] shadow-card">
+        <SectionHeader icon={Lock} title="Property documents"
+          subtitle={`Optional. Registry, khatiyan, mutation papers… PDF, JPG or PNG, up to ${MAX_DOCUMENT_MB} MB each and ${MAX_DOCUMENTS} in all. Locked: buyers never see them; only the super admin can open them, with the document password.`} />
+        <DocumentVault
+          propertyId={listing?.id}
+          documents={savedDocs}
+          canUnlock={isSuperAdmin}
+          title={listing?.title}
+          onRemove={(id) => setSavedDocs((prev) => prev.filter((d) => d.id !== id))}
+          className="mb-3"
+        />
+        {newDocs.length > 0 && (
+          <ul className="space-y-2 mb-3">
+            {newDocs.map((doc, i) => (
+              <li key={`${doc.file_name}-${i}`} className="flex items-center gap-2 text-sm text-[#17131A] border border-[#A3078F]/30 rounded-xl px-3 py-2 min-w-0">
+                <DocumentIcon type={doc.content_type} className="w-4 h-4 text-[#A3078F] flex-shrink-0" />
+                <span className="truncate flex-1 min-w-0" title={doc.file_name}>{doc.file_name}</span>
+                <span className="text-xs text-[#9CA3AF] tabular-nums flex-shrink-0">{formatBytes(doc.size)}</span>
+                <span className="text-[10px] font-semibold bg-[#A3078F] text-white px-1.5 py-0.5 rounded flex-shrink-0">New</span>
+                <button type="button" onClick={() => setNewDocs((prev) => prev.filter((_, j) => j !== i))} aria-label={`Remove ${doc.file_name}`}
+                  className="p-0.5 rounded text-[#9CA3AF] hover:text-red-600 flex-shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {savedDocs.length + newDocs.length < MAX_DOCUMENTS && (
+          <button type="button" onClick={() => docInput.current?.click()}
+            className="flex items-center gap-2 border-2 border-dashed border-[#A3078F]/40 rounded-xl px-6 py-4 text-[#A3078F] text-sm font-medium hover:border-[#A3078F] hover:bg-[#A3078F]/5 transition-colors">
+            <Upload className="w-4 h-4" /> Add documents ({savedDocs.length + newDocs.length}/{MAX_DOCUMENTS})
+          </button>
+        )}
+        <input ref={docInput} type="file" accept={DOCUMENT_TYPES.join(',')} multiple className="sr-only" onChange={addDocuments} />
+        <FieldError message={errors.documents} />
       </div>
 
       {/* Location */}

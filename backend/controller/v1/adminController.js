@@ -9,13 +9,11 @@ import District from '../../models/districtModel.js';
 import RefreshToken from '../../models/refreshTokenModel.js';
 import { isSuperAdminEmail } from '../../middleware/authMiddleware.js';
 import { notifyPropertyDecision } from '../../services/notificationService.js';
-import { deleteImageByUrl } from '../../services/mediaStorageService.js';
 import { logAdminActivity } from '../../utils/activityLogger.js';
 import { reviewScope, canReviewDistrict, findActiveDistrict } from '../../utils/districts.js';
 import {
-    applyPropertyEdit, buildListingFilter, detailData, saveOrValidationError, DETAIL_POPULATE,
+    applyPropertyEdit, finishPropertyEdit, buildListingFilter, detailData, saveOrValidationError, DETAIL_POPULATE,
 } from './propertyController.js';
-import { consumeUploads } from './uploadController.js';
 import {
     parseEnum, enumList, isObjectId, listResponse, notFound, ok, created, fail, forbidden, parsePage,
     propertyCard, propertyDetail, userOut, validationFailed, refOut, PLACE_POPULATE,
@@ -298,14 +296,15 @@ export const rejectProperty = async (req, res) => {
 };
 
 // PUT /admin/properties/:id — same fields as the owner's edit; the status is kept.
-// image_urls may reorder or remove photos, or add ones the admin uploaded.
+// image_urls may reorder or remove photos, or add ones the admin uploaded;
+// document_ids likewise for documents.
 export const updateProperty = async (req, res) => {
     const property = await loadForAdmin(req, res);
     if (!property) return undefined;
     const edit = await applyPropertyEdit(req, res, property, { uploaderId: req.admin.id });
     if (!edit) return undefined;
     if (!(await saveOrValidationError(res, property))) return undefined;
-    await Promise.all([consumeUploads(edit.pending), ...edit.removedUrls.map(deleteImageByUrl)]);
+    await finishPropertyEdit(edit);
     await logAdminActivity(req.admin.email, 'update_property', 'property', property._id, propertyName(property), {}, req);
     return sendAdminDetail(res, property, 'Property updated');
 };

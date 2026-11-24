@@ -11,6 +11,7 @@ import apiClient from "../services/apiClient";
 import { cn, formatDate } from "../lib/utils";
 import { getAdminSession } from "../lib/adminSession";
 import DistrictOptions from "../components/DistrictOptions";
+import DocumentVault from "../components/DocumentVault";
 import { fetchDistricts } from "../lib/districts";
 import { UNIT_LABELS } from "../lib/landUnits";
 
@@ -329,6 +330,7 @@ const toCard = (p) => ({
   status: p.status,
   rejectionReason: p.rejection_reason,
   approvedAt: p.approved_at,
+  documents: p.documents || [],
 });
 
 const api = {
@@ -356,7 +358,7 @@ const STATUS_BADGE = {
 const PAGE_SIZE = 15;
 
 // ─── Listing Card ─────────────────────────────────────────────────────────────
-const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, onAssignDistrict }) => {
+const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, onAssignDistrict, canUnlockDocuments }) => {
   const badge = STATUS_BADGE[listing.status] || STATUS_BADGE.PENDING;
   const canApprove = listing.status === "PENDING" || listing.status === "REJECTED";
   const canReject = listing.status === "PENDING" || listing.status === "APPROVED";
@@ -448,6 +450,9 @@ const ListingCard = ({ listing, onApprove, onReject, actionLoading, districts, o
             {listing.description}
           </p>
         )}
+
+        {/* Locked documents (registry, khatiyan, ...): the super admin unlocks them with the document password */}
+        <DocumentVault propertyId={listing.id} documents={listing.documents} canUnlock={canUnlockDocuments} title={listing.title} />
 
         {/* Rejection reason / last decision */}
         {listing.status === "REJECTED" && listing.rejectionReason && (
@@ -764,6 +769,7 @@ const PendingListings = () => {
                   actionLoading={actionLoading}
                   districts={isSuperAdmin ? districts || [] : null}
                   onAssignDistrict={handleAssignDistrict}
+                  canUnlockDocuments={isSuperAdmin}
                 />
               ))}
             </div>
